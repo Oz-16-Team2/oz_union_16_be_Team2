@@ -1,3 +1,5 @@
+# oz_union_16_be_Team2
+오즈 코딩스쿨 16기 합동프로젝트 BE
 # Django Project Template
 
 Django REST Framework + PostgreSQL + Docker 기반 프로젝트 템플릿입니다.  
