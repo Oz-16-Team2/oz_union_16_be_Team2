@@ -222,3 +222,15 @@ GitHub 레포 > Settings > Secrets에 아래 값 등록:
 - gunicorn (프로덕션 WSGI)
 - ruff (린트 + 포맷팅)
 - mypy (타입 체크)
+
+## 커밋 템플릿
+
+```
+feat     : 기능 추가
+fix      : 버그 수정
+refactor : 리팩토링 (기능 변화 없음)
+docs     : 문서 수정
+style    : 포맷팅 (black, isort 등)
+test     : 테스트 코드
+chore    : 기타 설정 (ci, docker, env 등)
+```
