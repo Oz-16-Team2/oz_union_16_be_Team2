@@ -66,3 +66,6 @@ mediafiles/
 
 # Claude
 .claude/
+
+#AWS
+.pem
