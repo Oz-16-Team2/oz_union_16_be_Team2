@@ -90,9 +90,9 @@ jobs:
 
             echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            docker compose -f resource/docker-compose.prod.yml --env-file envs/.env pull web
-            docker compose -f resource/docker-compose.prod.yml --env-file envs/.env up -d
+            docker-compose -f resource/docker-compose.prod.yml --env-file envs/.env pull web
+            docker-compose -f resource/docker-compose.prod.yml --env-file envs/.env up -d
 
-            docker compose -f resource/docker-compose.prod.yml --env-file envs/.env exec -T web uv run python manage.py migrate --no-input
+            docker-compose -f resource/docker-compose.prod.yml --env-file envs/.env exec -T web uv run python manage.py migrate --no-input
 
             docker image prune -f
