@@ -58,7 +58,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "resource/docker-compose.prod.yml"
+          source: "resource/docker-compose.prod.yml,resource/nginx/nginx.conf"
           target: "~/app"
 
       - name: Deploy to server
