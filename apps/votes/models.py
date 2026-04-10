@@ -17,7 +17,7 @@ class Vote(models.Model):
     class Meta:
         db_table = "votes"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.question
 
 
@@ -31,7 +31,7 @@ class VoteOption(models.Model):
         db_table = "vote_options"
         ordering = ["sort_order"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.content
 
 

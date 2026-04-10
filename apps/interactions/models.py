@@ -17,7 +17,7 @@ class Comment(models.Model):
     class Meta:
         db_table = "comments"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.user.nickname}: {self.content[:20]}"
 
 

@@ -1,10 +1,17 @@
+from __future__ import annotations
+
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import BaseUserManager, PermissionsMixin
 from django.db import models
 
 
-class UserManager(BaseUserManager):
-    def create_user(self, email, password=None, **extra_fields):
+class UserManager(BaseUserManager["User"]):
+    def create_user(
+        self,
+        email: str,
+        password: str | None = None,
+        **extra_fields: object,
+    ) -> User:
         if not email:
             raise ValueError("이메일은 필수입니다.")
         email = self.normalize_email(email)
@@ -13,7 +20,12 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, password=None, **extra_fields):
+    def create_superuser(
+        self,
+        email: str,
+        password: str | None = None,
+        **extra_fields: object,
+    ) -> User:
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         return self.create_user(email, password, **extra_fields)
@@ -39,7 +51,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     class Meta:
         db_table = "users"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.email} ({self.nickname})"
 
 
@@ -55,7 +67,7 @@ class SocialLogin(models.Model):
         db_table = "social_login"
         unique_together = ("provider", "provider_user_id")
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.user.email} - {self.provider}"
 
 
@@ -68,5 +80,5 @@ class Follow(models.Model):
         db_table = "follows"
         unique_together = ("following_user", "follower_user")
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.follower_user.nickname} → {self.following_user.nickname}"
