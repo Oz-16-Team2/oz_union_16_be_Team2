@@ -27,6 +27,7 @@ DEBUG = os.environ.get("DEBUG", "True").lower() in ("true", "1", "yes")
 
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
 
+AUTH_USER_MODEL = "users.User"
 
 # Application definition
 
@@ -40,6 +41,12 @@ INSTALLED_APPS = [
     "rest_framework",
     "drf_spectacular",
     "apps.goals",
+    "apps.interactions",
+    "apps.posts",
+    "apps.reports",
+    "apps.stats",
+    "apps.users",
+    "apps.votes",
 ]
 
 MIDDLEWARE = [

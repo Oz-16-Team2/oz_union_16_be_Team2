@@ -2,4 +2,4 @@ from django.apps import AppConfig
 
 
 class App2Config(AppConfig):
-    name = "interactions"
+    name = "apps.interactions"
