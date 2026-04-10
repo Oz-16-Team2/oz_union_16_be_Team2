@@ -1,7 +1,7 @@
 services:
   db:
     image: postgres:17
-    container_name: prod_db
+    container_name: jaksim_db
     restart: always
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -16,10 +16,15 @@ services:
       retries: 5
     networks:
       - backend
+  redis:
+    image: redis:7
+    container_name: jaksim_redis
+    ports:
+      - "6379:6379"
 
   web:
     image: ghcr.io/${GITHUB_REPOSITORY}:latest
-    container_name: prod_web
+    container_name: jaksim_web
     restart: always
     ports:
       - "8000:8000"

@@ -1,12 +1,12 @@
 services:
   db:
     image: postgres:17
-    container_name: template_db
+    container_name: jaksim_db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-template_db}
+      POSTGRES_DB: ${POSTGRES_DB:-jaksim}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-zseqsc123}
     ports:
       - "5432:5432"
     volumes:
@@ -17,11 +17,17 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7
+    container_name: jaksim_redis
+    ports:
+      - "6379:6379"
+
   web:
     build:
-      context: ../project_templete
-      dockerfile: Dockerfile
-    container_name: template_web
+      context: ..
+      dockerfile: resource/Dockerfile
+    container_name: jaksim_web
     restart: unless-stopped
     ports:
       - "8000:8000"
