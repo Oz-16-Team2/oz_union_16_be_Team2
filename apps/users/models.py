@@ -1,8 +1,6 @@
 from django.contrib.auth.base_user import AbstractBaseUser
-from django.contrib.auth.models import AbstractUser, BaseUserManager, PermissionsMixin
+from django.contrib.auth.models import BaseUserManager, PermissionsMixin
 from django.db import models
-
-from apps.core.choices import UserRole
 
 
 class UserManager(BaseUserManager):
