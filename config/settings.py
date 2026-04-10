@@ -135,7 +135,8 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "API Documentation",
+    "TITLE": "너는 작심몇일이냐? ㅋㅋ",
+    "DESCRIPTION": "Team2 프로젝트 API 문서입니다.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
 }
