@@ -63,19 +63,22 @@ jobs:
             MENTIONS=""
             for login in $(echo "$REVIEWERS_JSON" | jq -r '.[] | .login'); do
               case "$login" in
-                "chen4023")
-                  MENTIONS="$MENTIONS <@683563560063991848>"
-                  ;;
-                "sysysysyb")
-                  MENTIONS="$MENTIONS <@950597490086924368>"
-                  ;;
-                "ninanochichi")
-                  MENTIONS="$MENTIONS <@1304754118199480381>"
-                  ;;
-                "hj-devlog")
-                  MENTIONS="$MENTIONS <@452332808631746561>"
-                  ;;
-                *)
+            "Brandon-Hyun")
+              AUTHOR_MENTION="<@1427567303960166575>"
+              ;;
+            "SuyeongUeno")
+              AUTHOR_MENTION="<@292254638407811073>"
+              ;;
+            "SUNO-Back")
+              AUTHOR_MENTION="<@335431996102803468>"
+              ;;
+            "unkn0wn-J")
+              AUTHOR_MENTION="<@1428223638342991993>"
+              ;;
+            "whdgk7176")
+              AUTHOR_MENTION="<@454292942002192390>"
+              ;;
+            *)
                   MENTIONS="$MENTIONS @$login"
                   ;;
               esac
@@ -84,11 +87,22 @@ jobs:
             # 만약 요청된 리뷰어가 없으면 현재 리뷰어로 대체
             if [ -z "$MENTIONS" ]; then
               case "$CURRENT_REVIEWER" in
-                "chen4023") MENTIONS="<@683563560063991848>" ;;
-                "sysysysyb") MENTIONS="<@950597490086924368>" ;;
-                "ninanochichi") MENTIONS="<@1304754118199480381>" ;;
-                "hj-devlog") MENTIONS="<@452332808631746561>" ;;
-                *) MENTIONS="@$CURRENT_REVIEWER" ;;
+            "Brandon-Hyun")
+              AUTHOR_MENTION="<@1427567303960166575>"
+              ;;
+            "SuyeongUeno")
+              AUTHOR_MENTION="<@292254638407811073>"
+              ;;
+            "SUNO-Back")
+              AUTHOR_MENTION="<@335431996102803468>"
+              ;;
+            "unkn0wn-J")
+              AUTHOR_MENTION="<@1428223638342991993>"
+              ;;
+            "whdgk7176")
+              AUTHOR_MENTION="<@454292942002192390>"
+              ;;
+            *) MENTIONS="@$CURRENT_REVIEWER" ;;
               esac
             fi
 
@@ -175,7 +189,7 @@ jobs:
             "unkn0wn-J")
               AUTHOR_MENTION="<@1428223638342991993>"
               ;;
-            "                          ")
+            "whdgk7176")
               AUTHOR_MENTION="<@454292942002192390>"
               ;;
             *)
@@ -228,7 +242,7 @@ jobs:
             "unkn0wn-J")
               AUTHOR_MENTION="<@1428223638342991993>"
               ;;
-            "                          ")
+            "whdgk7176")
               AUTHOR_MENTION="<@454292942002192390>"
               ;;
           esac
