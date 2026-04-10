@@ -1,6 +1,7 @@
 from django.db import models
-from apps.users.models import User
+
 from apps.goals.models import Goal
+from apps.users.models import User
 
 
 class Tag(models.Model):
