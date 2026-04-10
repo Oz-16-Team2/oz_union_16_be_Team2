@@ -1,6 +1,7 @@
 from django.db import models
-from apps.users.models import User
+
 from apps.goals.models import Goal
+from apps.users.models import User
 
 
 class Tag(models.Model):
@@ -11,7 +12,7 @@ class Tag(models.Model):
     class Meta:
         db_table = "tags"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -21,7 +22,6 @@ class Post(models.Model):
     title = models.CharField(max_length=255)
     content = models.TextField()
     is_private = models.BooleanField(default=False)
-    # 목표 비정규화 필드
     goal_start_date = models.DateTimeField(null=True, blank=True)
     goal_end_date = models.DateTimeField(null=True, blank=True)
     goal_title = models.CharField(max_length=255, null=True, blank=True)
@@ -33,7 +33,7 @@ class Post(models.Model):
     class Meta:
         db_table = "posts"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.title
 
 

@@ -46,6 +46,8 @@ jobs:
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
+    env:
+      GITHUB_REPOSITORY: ${{ github.repository }}
 
     steps:
       - uses: actions/checkout@v4
@@ -56,7 +58,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "resource/docker-compose.prod.yml"
+          source: "resource/docker-compose.prod.yml,resource/nginx/nginx.conf"
           target: "~/app"
 
       - name: Deploy to server
@@ -66,6 +68,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
+            export GITHUB_REPOSITORY=${{ github.repository }}
             if ! command -v docker &> /dev/null; then
               sudo apt update
               sudo apt install -y docker.io docker-compose
@@ -90,9 +93,9 @@ jobs:
 
             echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            docker compose -f resource/docker-compose.prod.yml --env-file envs/.env pull web
-            docker compose -f resource/docker-compose.prod.yml --env-file envs/.env up -d
+            docker-compose -f resource/docker-compose.prod.yml --env-file envs/.env pull web
+            docker-compose -f resource/docker-compose.prod.yml --env-file envs/.env up -d
 
-            docker compose -f resource/docker-compose.prod.yml --env-file envs/.env exec -T web uv run python manage.py migrate --no-input
+            docker-compose -f resource/docker-compose.prod.yml --env-file envs/.env exec -T web uv run python manage.py migrate --no-input
 
             docker image prune -f

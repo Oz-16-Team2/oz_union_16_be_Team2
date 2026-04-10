@@ -16,7 +16,7 @@ class Goal(models.Model):
     class Meta:
         db_table = "goals"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.title
 
 
@@ -29,7 +29,7 @@ class RoundGoal(models.Model):
     class Meta:
         db_table = "round_goals"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.goal.title} - {self.round_no}회차"
 
 
@@ -41,7 +41,7 @@ class CheckGoal(models.Model):
     class Meta:
         db_table = "check_goals"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.user.nickname} - {self.goal.title}"
 
 
@@ -61,5 +61,5 @@ class Ranking(models.Model):
     class Meta:
         db_table = "rankings"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.user.nickname} 랭킹"

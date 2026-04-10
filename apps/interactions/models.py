@@ -1,8 +1,8 @@
 from django.db import models
 
 from apps.core.choices import CommentStatus
-from apps.users.models import User
 from apps.posts.models import Post
+from apps.users.models import User
 
 
 class Comment(models.Model):
@@ -17,7 +17,7 @@ class Comment(models.Model):
     class Meta:
         db_table = "comments"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.user.nickname}: {self.content[:20]}"
 
 
