@@ -11,5 +11,5 @@ class Tag(models.Model):
         verbose_name = "태그"
         verbose_name_plural = "태그 목록"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
