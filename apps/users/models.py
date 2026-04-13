@@ -4,6 +4,8 @@ from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import BaseUserManager, PermissionsMixin
 from django.db import models
 
+from apps.core.choices import UserStatus
+
 
 class UserManager(BaseUserManager["User"]):
     def create_user(
@@ -42,9 +44,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
-
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["nickname"]
+    status = models.CharField(max_length=20, choices=UserStatus.choices, default=UserStatus.ACTIVE)
 
     objects = UserManager()
 

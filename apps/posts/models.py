@@ -1,5 +1,6 @@
 from django.db import models
 
+from apps.core.choices import PostStatus
 from apps.goals.models import Goal
 from apps.users.models import User
 
@@ -29,6 +30,7 @@ class Post(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    status = models.CharField(max_length=20, choices=PostStatus.choices, default=PostStatus.NORMAL)
 
     class Meta:
         db_table = "posts"
