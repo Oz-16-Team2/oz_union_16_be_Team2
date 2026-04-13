@@ -4,10 +4,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.exceptions import ConflictException, ResourceNotFoundException
-from apps.core.responses import error_response
+from apps.core.response import error_response
 
 
-class AdminBaseAPIView(APIView):  # type: ignore[misc]
+class AdminBaseAPIView(APIView):
     validation_error_msg = "잘못된 요청입니다."
     authentication_error_msg = "관리자 인증이 필요합니다."
     permission_error_msg = "권한이 없습니다."
