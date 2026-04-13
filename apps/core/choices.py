@@ -41,6 +41,7 @@ class UserStatus(models.TextChoices):
     SUSPENDED = "suspended", "정지"
     RESTRICTED = "restricted", "제한"
 
+
 class ReportReasonType(models.TextChoices):
     ABUSE = "ABUSE", "욕설/비하/혐오 표현"
     SPAM = "SPAM", "스팸/광고"

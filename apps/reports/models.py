@@ -1,6 +1,6 @@
 from django.db import models
 
-from apps.core.choices import ReportStatus, TargetType, ReportReasonType
+from apps.core.choices import ReportReasonType, ReportStatus, TargetType
 from apps.users.models import User
 
 
