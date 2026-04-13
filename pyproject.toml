@@ -45,3 +45,6 @@ ignore_missing_imports = true
 
 [tool.django-stubs]
 django_settings_module = "config.settings"
+
+[tool.black]
+target-version = ['py313']

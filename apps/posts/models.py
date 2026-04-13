@@ -70,13 +70,3 @@ class PostTag(models.Model):
     class Meta:
         db_table = "post_tags"
         unique_together = ("post", "tag")
-
-
-class Scrap(models.Model):
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="scraps")
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="scraps")
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        db_table = "scraps"
-        unique_together = ("post", "user")
