@@ -47,7 +47,7 @@ class ReportActions(models.Model):
         blank=True,
         related_name="처리한관리자ID",
     )
-    action_type = models.CharField(max_length=20, choices=ReportActionType.choices, help_text="처분의내용")
+    action_type = models.CharField(max_length=50, choices=ReportActionType.choices, help_text="처분의내용")
     created_at = models.DateTimeField(auto_now_add=True, help_text="생성일")
 
     class Meta:
