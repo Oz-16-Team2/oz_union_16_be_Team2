@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = []
@@ -208,9 +207,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "handled_at",
-                    models.DateTimeField(
-                        blank=True, help_text="신고의 처리 일시", null=True
-                    ),
+                    models.DateTimeField(blank=True, help_text="신고의 처리 일시", null=True),
                 ),
                 (
                     "created_at",
