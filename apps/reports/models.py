@@ -1,6 +1,6 @@
 from django.db import models
 
-from apps.core.choices import ReportReasonType, ReportStatus, TargetType
+from apps.core.choices import ReportActionType, ReportReasonType, ReportStatus, TargetType
 from apps.users.models import User
 
 
@@ -23,7 +23,7 @@ class Report(models.Model):
 class ReportAction(models.Model):
     report = models.ForeignKey(Report, on_delete=models.CASCADE, related_name="actions")
     admin = models.ForeignKey(User, on_delete=models.CASCADE, related_name="report_actions")
-    action_type = models.CharField(max_length=30)
+    action_type = models.CharField(max_length=30, choices=ReportActionType.choices)
     memo = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

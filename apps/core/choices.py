@@ -8,9 +8,8 @@ class Status(models.TextChoices):
 
 
 class TargetType(models.TextChoices):
-    POST = "POST", "게시글"
-    COMMENT = "COMMENT", "댓글"
-    USER = "USER", "유저"
+    POST = "post", "게시글"
+    COMMENT = "comment", "댓글"
 
 
 class ReportStatus(models.TextChoices):
@@ -26,8 +25,8 @@ class VoteStatus(models.TextChoices):
 
 
 class CommentStatus(models.TextChoices):
-    ACTIVE = "ACTIVE", "활성"
-    DELETED = "DELETED", "삭제"
+    ACTIVE = "active", "활성"
+    DELETED = "deleted", "삭제"
 
 
 class PostStatus(models.TextChoices):
@@ -43,9 +42,13 @@ class UserStatus(models.TextChoices):
 
 
 class ReportReasonType(models.TextChoices):
-    ABUSE = "ABUSE", "욕설/비하/혐오 표현"
-    SPAM = "SPAM", "스팸/광고"
-    FALSE_INFO = "FALSE_INFO", "허위정보"
-    SEXUAL = "SEXUAL", "음란/선정적 컨텐츠"
-    INAPPROPRIATE_PROFILE = "INAPPROPRIATE_PROFILE", "부적절한 닉네임/프로필"
-    OTHER = "OTHER", "기타"
+    ABUSE = "abuse", "욕설/비하/혐오 표현"
+    SPAM = "spam", "스팸/광고"
+    FALSE_INFO = "false_info", "허위정보"
+    SEXUAL = "sexual", "음란/선정적 컨텐츠"
+    OTHER = "other", "기타"
+
+
+class ReportActionType(models.TextChoices):
+    DELETE = "delete", "삭제"
+    KEEP = "keep", "유지"
