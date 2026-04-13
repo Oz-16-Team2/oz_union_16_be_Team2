@@ -16,14 +16,26 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="Goal",
             fields=[
-                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
                 ("title", models.CharField(max_length=255)),
                 ("start_date", models.DateField()),
                 ("end_date", models.DateField()),
                 (
                     "status",
                     models.CharField(
-                        choices=[("in_progress", "진행중"), ("failed", "미달성"), ("completed", "완료")],
+                        choices=[
+                            ("in_progress", "진행중"),
+                            ("failed", "미달성"),
+                            ("completed", "완료"),
+                        ],
                         default="in_progress",
                         max_length=20,
                     ),
@@ -33,7 +45,9 @@ class Migration(migrations.Migration):
                 (
                     "user",
                     models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, related_name="goals", to=settings.AUTH_USER_MODEL
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="goals",
+                        to=settings.AUTH_USER_MODEL,
                     ),
                 ),
             ],
@@ -44,7 +58,15 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="CheckGoal",
             fields=[
-                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 (
                     "user",
@@ -57,7 +79,9 @@ class Migration(migrations.Migration):
                 (
                     "goal",
                     models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, related_name="checks", to="goals.goal"
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="checks",
+                        to="goals.goal",
                     ),
                 ),
             ],
@@ -68,7 +92,15 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="Ranking",
             fields=[
-                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
                 ("weekly_rank", models.IntegerField(blank=True, null=True)),
                 ("weekly_cert_count", models.IntegerField(blank=True, null=True)),
                 ("monthly_rank", models.IntegerField(blank=True, null=True)),
@@ -82,7 +114,9 @@ class Migration(migrations.Migration):
                 (
                     "user",
                     models.OneToOneField(
-                        on_delete=django.db.models.deletion.CASCADE, related_name="ranking", to=settings.AUTH_USER_MODEL
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="ranking",
+                        to=settings.AUTH_USER_MODEL,
                     ),
                 ),
             ],
@@ -93,14 +127,24 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="RoundGoal",
             fields=[
-                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
                 ("round_no", models.IntegerField()),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 ("updated_at", models.DateTimeField(auto_now=True)),
                 (
                     "goal",
                     models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, related_name="rounds", to="goals.goal"
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="rounds",
+                        to="goals.goal",
                     ),
                 ),
             ],

@@ -17,14 +17,26 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="Vote",
             fields=[
-                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
                 ("question", models.CharField(max_length=255)),
                 ("start_at", models.DateTimeField()),
                 ("end_at", models.DateTimeField()),
                 (
                     "status",
                     models.CharField(
-                        choices=[("in_progress", "진행중"), ("closed", "종료"), ("hidden", "비공개")],
+                        choices=[
+                            ("in_progress", "진행중"),
+                            ("closed", "종료"),
+                            ("hidden", "비공개"),
+                        ],
                         default="in_progress",
                         max_length=20,
                     ),
@@ -34,7 +46,9 @@ class Migration(migrations.Migration):
                 (
                     "post",
                     models.OneToOneField(
-                        on_delete=django.db.models.deletion.CASCADE, related_name="vote", to="posts.post"
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="vote",
+                        to="posts.post",
                     ),
                 ),
             ],
@@ -45,14 +59,24 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="VoteOption",
             fields=[
-                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
                 ("content", models.CharField(max_length=255)),
                 ("sort_order", models.IntegerField()),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 (
                     "vote",
                     models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, related_name="options", to="votes.vote"
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="options",
+                        to="votes.vote",
                     ),
                 ),
             ],
@@ -64,7 +88,15 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="VoteParticipation",
             fields=[
-                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 (
                     "user",
@@ -77,7 +109,9 @@ class Migration(migrations.Migration):
                 (
                     "vote",
                     models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, related_name="participations", to="votes.vote"
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="participations",
+                        to="votes.vote",
                     ),
                 ),
                 (

@@ -6,7 +6,13 @@ from apps.users.models import User
 
 class Report(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reports")
-    admin = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="handled_reports")
+    admin = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="handled_reports",
+    )
     target_id = models.BigIntegerField()
     target_type = models.CharField(max_length=10, choices=TargetType.choices)
     reason_type = models.CharField(max_length=100, choices=ReportReasonType.choices)

@@ -17,12 +17,22 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="Comment",
             fields=[
-                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
                 ("content", models.CharField(max_length=500)),
                 (
                     "status",
                     models.CharField(
-                        choices=[("ACTIVE", "활성"), ("DELETED", "삭제")], default="ACTIVE", max_length=20
+                        choices=[("ACTIVE", "활성"), ("DELETED", "삭제")],
+                        default="ACTIVE",
+                        max_length=20,
                     ),
                 ),
                 ("deleted_at", models.DateTimeField(blank=True, null=True)),
@@ -31,7 +41,9 @@ class Migration(migrations.Migration):
                 (
                     "post",
                     models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, related_name="comments", to="posts.post"
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="comments",
+                        to="posts.post",
                     ),
                 ),
                 (
@@ -50,12 +62,22 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="CommentLike",
             fields=[
-                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 (
                     "comment",
                     models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, related_name="likes", to="interactions.comment"
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="likes",
+                        to="interactions.comment",
                     ),
                 ),
                 (
@@ -75,12 +97,22 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="PostLike",
             fields=[
-                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 (
                     "post",
                     models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, related_name="likes", to="posts.post"
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="likes",
+                        to="posts.post",
                     ),
                 ),
                 (

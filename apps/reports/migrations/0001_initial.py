@@ -16,12 +16,25 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="Report",
             fields=[
-                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
                 ("target_id", models.BigIntegerField()),
                 (
                     "target_type",
                     models.CharField(
-                        choices=[("POST", "게시글"), ("COMMENT", "댓글"), ("USER", "유저")], max_length=10
+                        choices=[
+                            ("POST", "게시글"),
+                            ("COMMENT", "댓글"),
+                            ("USER", "유저"),
+                        ],
+                        max_length=10,
                     ),
                 ),
                 ("reason_type", models.CharField(max_length=100)),
@@ -29,7 +42,11 @@ class Migration(migrations.Migration):
                 (
                     "status",
                     models.CharField(
-                        choices=[("pending", "대기중"), ("handled", "처리완료"), ("dismissed", "기각")],
+                        choices=[
+                            ("pending", "대기중"),
+                            ("handled", "처리완료"),
+                            ("dismissed", "기각"),
+                        ],
                         default="pending",
                         max_length=20,
                     ),
@@ -50,7 +67,9 @@ class Migration(migrations.Migration):
                 (
                     "user",
                     models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, related_name="reports", to=settings.AUTH_USER_MODEL
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="reports",
+                        to=settings.AUTH_USER_MODEL,
                     ),
                 ),
             ],
@@ -61,7 +80,15 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="ReportAction",
             fields=[
-                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
                 ("action_type", models.CharField(max_length=30)),
                 ("memo", models.TextField(blank=True)),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
@@ -76,7 +103,9 @@ class Migration(migrations.Migration):
                 (
                     "report",
                     models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, related_name="actions", to="reports.report"
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="actions",
+                        to="reports.report",
                     ),
                 ),
             ],

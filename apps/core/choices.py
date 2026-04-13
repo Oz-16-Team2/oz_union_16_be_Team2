@@ -49,3 +49,25 @@ class ReportReasonType(models.TextChoices):
     SEXUAL = "SEXUAL", "음란/선정적 컨텐츠"
     INAPPROPRIATE_PROFILE = "INAPPROPRIATE_PROFILE", "부적절한 닉네임/프로필"
     OTHER = "OTHER", "기타"
+
+
+class ReportTargetType(models.TextChoices):
+    POST = "POST", "게시글"
+    COMMENT = "COMMENT", "댓글"
+    # USER = "USER", "사용자"
+
+
+class ReportActionType(models.TextChoices):
+    DELETED = "DELETED", "삭제"
+    KEEP = "KEEP", "유지"
+
+
+class TagCategory(models.TextChoices):
+    HEALTH = "HEALTH", "건강 / 운동"
+    STUDY = "STUDY", "공부 / 성장"
+    LIFESTYLE = "LIFESTYLE", "습관 / 라이프스타일"
+    MIND = "MIND", "마음관리 / 절제"
+    WORK = "WORK", "일 / 효율"
+    RELATION = "RELATION", "관계 / 소통"
+    FINANCE = "FINANCE", "재정 / 소비습관"
+    HOBBY = "HOBBY", "취미 / 여가"
