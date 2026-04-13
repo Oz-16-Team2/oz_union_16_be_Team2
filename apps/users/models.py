@@ -71,3 +71,16 @@ class SocialLogin(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user.email} - {self.provider}"
+
+
+class Follow(models.Model):
+    following_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="followers")
+    follower_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="followings")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "follows"
+        unique_together = ("following_user", "follower_user")
+
+    def __str__(self) -> str:
+        return f"{self.follower_user.nickname} → {self.following_user.nickname}"
