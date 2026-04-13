@@ -10,7 +10,6 @@ class Status(models.TextChoices):
 class TargetType(models.TextChoices):
     POST = "POST", "게시글"
     COMMENT = "COMMENT", "댓글"
-    USER = "USER", "유저"
 
 
 class ReportStatus(models.TextChoices):
@@ -47,5 +46,8 @@ class ReportReasonType(models.TextChoices):
     SPAM = "SPAM", "스팸/광고"
     FALSE_INFO = "FALSE_INFO", "허위정보"
     SEXUAL = "SEXUAL", "음란/선정적 컨텐츠"
-    INAPPROPRIATE_PROFILE = "INAPPROPRIATE_PROFILE", "부적절한 닉네임/프로필"
     OTHER = "OTHER", "기타"
+
+class ReportActionType(models.TextChoices):
+    DELETE = "DELETE", "삭제"
+    KEEP = "KEEP", "유지"
