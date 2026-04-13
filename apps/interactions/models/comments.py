@@ -24,19 +24,3 @@ class Comment(models.Model):
         db_table = "comments"
         verbose_name = "댓글"
         verbose_name_plural = "댓글 목록"
-
-
-class CommentLike(models.Model):
-    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name="likes", db_column="comment_id")
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name="comment_likes",
-        db_column="user_id",
-    )
-    created_at = models.DateTimeField(auto_now_add=True, help_text="생성일")
-
-    class Meta:
-        db_table = "comment_likes"
-        verbose_name = "댓글 좋아요"
-        verbose_name_plural = "댓글 좋아요 목록"
