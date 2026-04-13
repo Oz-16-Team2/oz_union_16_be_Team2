@@ -1,3 +1,6 @@
+from typing import Any
+
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from apps.core.choices import PostStatus
@@ -17,11 +20,17 @@ class Tag(models.Model):
         return self.name
 
 
+def image_count(value: Any) -> None:
+    if len(value) > 3:
+        raise ValidationError("이미지는 최대 3개까지만 등록 가능합니다.")
+
+
 class Post(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="posts")
     goal = models.ForeignKey(Goal, on_delete=models.SET_NULL, null=True, blank=True, related_name="posts")
     title = models.CharField(max_length=255)
     content = models.TextField()
+    images = models.JSONField(default=list, validators=[image_count], help_text="게시글 이미지 URL 리스트(최대 3개)")
     is_private = models.BooleanField(default=False)
     goal_start_date = models.DateTimeField(null=True, blank=True)
     goal_end_date = models.DateTimeField(null=True, blank=True)
@@ -30,13 +39,27 @@ class Post(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    status = models.CharField(max_length=20, choices=PostStatus.choices, default=PostStatus.NORMAL)
+    status = models.CharField(max_length=20, choices=PostStatus, default=PostStatus.NORMAL)
 
     class Meta:
         db_table = "posts"
 
     def __str__(self) -> str:
         return self.title
+
+
+class PostView(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="post_views", verbose_name="조회 유저")
+    post = models.ForeignKey("Post", on_delete=models.CASCADE, related_name="view_logs", verbose_name="조회 게시글")
+    viewed_at = models.DateTimeField(auto_now_add=True, verbose_name="조회 일시")
+
+    class Meta:
+        db_table = "post_views"
+        verbose_name = "게시글 조회 기록"
+        ordering = ["-viewed_at"]
+
+    def __str__(self) -> str:
+        return f"{self.user} - {self.post.title} ({self.viewed_at})"
 
 
 class PostTag(models.Model):
