@@ -40,3 +40,11 @@ class UserStatus(models.TextChoices):
     ACTIVE = "active", "정상"
     SUSPENDED = "suspended", "정지"
     RESTRICTED = "restricted", "제한"
+
+class ReportReasonType(models.TextChoices):
+    ABUSE = "ABUSE", "욕설/비하/혐오 표현"
+    SPAM = "SPAM", "스팸/광고"
+    FALSE_INFO = "FALSE_INFO", "허위정보"
+    SEXUAL = "SEXUAL", "음란/선정적 컨텐츠"
+    INAPPROPRIATE_PROFILE = "INAPPROPRIATE_PROFILE", "부적절한 닉네임/프로필"
+    OTHER = "OTHER", "기타"
