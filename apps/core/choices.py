@@ -48,6 +48,7 @@ class ReportReasonType(models.TextChoices):
     SEXUAL = "SEXUAL", "음란/선정적 컨텐츠"
     OTHER = "OTHER", "기타"
 
+
 class ReportActionType(models.TextChoices):
     DELETE = "DELETE", "삭제"
     KEEP = "KEEP", "유지"

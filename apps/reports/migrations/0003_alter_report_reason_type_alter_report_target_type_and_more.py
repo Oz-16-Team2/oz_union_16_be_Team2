@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("reports", "0002_alter_report_reason_type"),
     ]
@@ -27,15 +26,11 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="report",
             name="target_type",
-            field=models.CharField(
-                choices=[("POST", "게시글"), ("COMMENT", "댓글")], max_length=10
-            ),
+            field=models.CharField(choices=[("POST", "게시글"), ("COMMENT", "댓글")], max_length=10),
         ),
         migrations.AlterField(
             model_name="reportaction",
             name="action_type",
-            field=models.CharField(
-                choices=[("DELETE", "삭제"), ("KEEP", "유지")], max_length=30
-            ),
+            field=models.CharField(choices=[("DELETE", "삭제"), ("KEEP", "유지")], max_length=30),
         ),
     ]
