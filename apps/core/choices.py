@@ -19,11 +19,6 @@ class ReportStatus(models.TextChoices):
     DISMISSED = "dismissed", "기각"
 
 
-class UserRole(models.TextChoices):
-    User = "user", "일반 회원"
-    Admin = "admin", "관리자"
-
-
 class VoteStatus(models.TextChoices):
     IN_PROGRESS = "in_progress", "진행중"
     CLOSED = "closed", "종료"
@@ -33,3 +28,15 @@ class VoteStatus(models.TextChoices):
 class CommentStatus(models.TextChoices):
     ACTIVE = "ACTIVE", "활성"
     DELETED = "DELETED", "삭제"
+
+
+class PostStatus(models.TextChoices):
+    NORMAL = "normal", "정상"
+    HIDDEN = "hidden", "숨김"
+    REPORTED = "reported", "신고됨"
+
+
+class UserStatus(models.TextChoices):
+    ACTIVE = "active", "정상"
+    SUSPENDED = "suspended", "정지"
+    RESTRICTED = "restricted", "제한"
