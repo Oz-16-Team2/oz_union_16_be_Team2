@@ -1,3 +1,6 @@
+from typing import Any
+
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from apps.core.choices import PostStatus
@@ -17,11 +20,17 @@ class Tag(models.Model):
         return self.name
 
 
+def image_count(value: Any) -> None:
+    if len(value) > 3:
+        raise ValidationError("이미지는 최대 3개까지만 등록 가능합니다.")
+
+
 class Post(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="posts")
     goal = models.ForeignKey(Goal, on_delete=models.SET_NULL, null=True, blank=True, related_name="posts")
     title = models.CharField(max_length=255)
     content = models.TextField()
+    images = models.JSONField(default=list, validators=[image_count], help_text="게시글 이미지 URL 리스트(최대 3개)")
     is_private = models.BooleanField(default=False)
     goal_start_date = models.DateTimeField(null=True, blank=True)
     goal_end_date = models.DateTimeField(null=True, blank=True)
@@ -30,7 +39,7 @@ class Post(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    status = models.CharField(max_length=20, choices=PostStatus.choices, default=PostStatus.NORMAL)
+    status = models.CharField(max_length=20, choices=PostStatus, default=PostStatus.NORMAL)
 
     class Meta:
         db_table = "posts"
