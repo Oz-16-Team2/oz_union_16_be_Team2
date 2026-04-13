@@ -48,6 +48,20 @@ class Post(models.Model):
         return self.title
 
 
+class PostView(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="post_views", verbose_name="조회 유저")
+    post = models.ForeignKey("Post", on_delete=models.CASCADE, related_name="view_logs", verbose_name="조회 게시글")
+    viewed_at = models.DateTimeField(auto_now_add=True, verbose_name="조회 일시")
+
+    class Meta:
+        db_table = "post_views"
+        verbose_name = "게시글 조회 기록"
+        ordering = ["-viewed_at"]
+
+    def __str__(self) -> str:
+        return f"{self.user} - {self.post.title} ({self.viewed_at})"
+
+
 class PostTag(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="post_tags")
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE, related_name="post_tags")
