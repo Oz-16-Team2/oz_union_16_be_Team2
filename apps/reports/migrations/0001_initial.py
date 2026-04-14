@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = []
@@ -69,9 +68,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "handled_at",
-                    models.DateTimeField(
-                        blank=True, help_text="신고의 처리 일시", null=True
-                    ),
+                    models.DateTimeField(blank=True, help_text="신고의 처리 일시", null=True),
                 ),
                 (
                     "created_at",
@@ -99,16 +96,12 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "action_type",
-                    models.CharField(
-                        choices=[("delete", "삭제"), ("keep", "유지")], max_length=50
-                    ),
+                    models.CharField(choices=[("delete", "삭제"), ("keep", "유지")], max_length=50),
                 ),
                 ("memo", models.TextField(blank=True)),
                 (
                     "created_at",
-                    models.DateTimeField(
-                        auto_now_add=True, help_text="신고의 처리 일시"
-                    ),
+                    models.DateTimeField(auto_now_add=True, help_text="신고의 처리 일시"),
                 ),
             ],
             options={
