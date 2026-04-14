@@ -49,6 +49,10 @@ class ReportReasonType(models.TextChoices):
     INAPPROPRIATE_PROFILE = "INAPPROPRIATE_PROFILE", "부적절한 닉네임/프로필"
     OTHER = "OTHER", "기타"
 
+class ReportActionType(models.TextChoices):
+    DELETE = "delete", "삭제"
+    KEEP = "keep", "유지"
+
 
 class ReportTargetType(models.TextChoices):
     POST = "POST", "게시글"
