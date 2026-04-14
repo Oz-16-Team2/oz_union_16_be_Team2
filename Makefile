@@ -35,11 +35,9 @@ createsuperuser:  ## 관리자 계정 생성
 shell:  ## Django shell 접속
 	$(COMPOSE) exec web uv run python manage.py shell
 
-lint:  ## ruff 코드 검사
+code_format:  ## ruff 코드 검사 및 자동 포맷팅
 	$(COMPOSE) exec web uv run ruff check .
 	$(COMPOSE) exec web uv run ruff format --check .
-
-code_format:  ## ruff 자동 포맷팅
 	$(COMPOSE) exec web uv run ruff check --fix .
 	$(COMPOSE) exec web uv run ruff format .
 
