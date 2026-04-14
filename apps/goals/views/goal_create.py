@@ -12,7 +12,7 @@ from apps.goals.serializers.goal_create import GoalSerializer
 from apps.goals.services.goal_create import GoalCreateService
 
 
-class GoalListCreateView(APIView):  # type: ignore
+class GoalListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
@@ -22,7 +22,7 @@ class GoalListCreateView(APIView):  # type: ignore
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class GoalDetailView(APIView):  # type: ignore
+class GoalDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request: Request, goal_id: int, *args: Any, **kwargs: Any) -> Response:
