@@ -52,19 +52,3 @@ class ReportReasonType(models.TextChoices):
 class ReportActionType(models.TextChoices):
     DELETE = "delete", "삭제"
     KEEP = "keep", "유지"
-
-
-class ReportTargetType(models.TextChoices):
-    POST = "post", "게시글"
-    COMMENT = "comment", "댓글"
-
-
-class TagCategory(models.TextChoices):
-    HEALTH = "health", "건강 / 운동"
-    STUDY = "study", "공부 / 성장"
-    LIFESTYLE = "lifestyle", "습관 / 라이프스타일"
-    MIND = "mind", "마음관리 / 절제"
-    WORK = "work", "일 / 효율"
-    RELATION = "relation", "관계 / 소통"
-    FINANCE = "finance", "재정 / 소비습관"
-    HOBBY = "hobby", "취미 / 여가"
