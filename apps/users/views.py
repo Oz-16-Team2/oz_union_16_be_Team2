@@ -54,7 +54,6 @@ class SignupAPIView(APIView):
             OpenApiExample(
                 "회원가입 성공",
                 value={
-                    "success": True,
                     "message": "회원가입이 완료되었습니다.",
                 },
                 response_only=True,
@@ -442,7 +441,6 @@ class NicknameCheckAPIView(APIView):
             OpenApiExample(
                 "닉네임 사용 가능",
                 value={
-                    "success": True,
                     "message": "사용가능한 닉네임입니다.",
                 },
                 response_only=True,
