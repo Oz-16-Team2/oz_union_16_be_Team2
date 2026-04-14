@@ -54,7 +54,7 @@ class SignupAPIView(APIView):
             OpenApiExample(
                 "회원가입 성공",
                 value={
-                    "message": "회원가입이 완료되었습니다.",
+                    "detail": "회원가입이 완료되었습니다.",
                 },
                 response_only=True,
                 status_codes=["201"],
@@ -441,7 +441,7 @@ class NicknameCheckAPIView(APIView):
             OpenApiExample(
                 "닉네임 사용 가능",
                 value={
-                    "message": "사용가능한 닉네임입니다.",
+                    "detail": "사용가능한 닉네임입니다.",
                 },
                 response_only=True,
                 status_codes=["200"],
