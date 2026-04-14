@@ -29,3 +29,7 @@ class GoalCreateService:
 
         goal.save()
         return goal
+
+    @staticmethod
+    def delete_goal(goal: Goal) -> None:
+        goal.delete()
