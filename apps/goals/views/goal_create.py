@@ -24,17 +24,30 @@ class GoalCreateView(APIView):
     @extend_schema(
         tags=["Goals"],
         summary="목표 생성",
+        description="로그인한 유저가 목표를 생성합니다.",
         request=GoalCreateSerializer,
         responses={201: GoalReadSerializer, 400: ErrorDetailSerializer},
         examples=[
             OpenApiExample(
-                "날짜 검증 에러 (400)",
+                "생성 성공 예시",
                 value={
-                    "error_detail": {
-                        "startDate": ["시작날짜가 종료날짜보다 높을 수 없습니다."],
-                        "endDate": ["종료날짜가 시작날짜보다 낮을 수 없습니다."],
-                    }
+                    "goal_id": 1,
+                    "title": "매일 물 2L 마시기",
+                    "startDate": "2026-04-14",
+                    "endDate": "2026-05-14",
+                    "status": "IN_PROGRESS",
+                    "created_at": "2026-04-14T19:00:00",
+                    "currentCount": 0,
+                    "targetCount": 31,
+                    "progressRate": 0.0,
+                    "isCheckedToday": False,
                 },
+                response_only=True,
+                status_codes=["201"],
+            ),
+            OpenApiExample(
+                "날짜 검증 에러 (400)",
+                value={"error_detail": {"startDate": ["종료일은 시작일보다 빠를 수 없습니다."]}},
                 response_only=True,
                 status_codes=["400"],
             ),
@@ -44,13 +57,13 @@ class GoalCreateView(APIView):
         serializer = GoalCreateSerializer(data=request.data)
         if serializer.is_valid():
             goal = GoalCreateService.create_goal(user=request.user, **serializer.validated_data)
-            return Response(GoalCreateSerializer(goal).data, status=status.HTTP_201_CREATED)
+            return Response(GoalReadSerializer(goal).data, status=status.HTTP_201_CREATED)
         return Response({"error_detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(
         tags=["Goals"],
         summary="전체 목표 목록 조회",
-        description="로그인한 유저의 모든 목표를 최신순으로 조회합니다.",
+        description="유저의 모든 목표를 최신순으로 조회합니다.",
         request=GoalReadSerializer,
         responses={200: GoalReadSerializer(many=True), 401: ErrorDetailSerializer},
         examples=[
@@ -136,11 +149,11 @@ class GoalDetailView(APIView):
     )
     def patch(self, request: Request, goal_id: int) -> Response:
         goal = GoalCreateService.get_goal(goal_id, request.user)
-        serializer = GoalCreateSerializer(goal, data=request.data, partial=True)
+        serializer = GoalUpdateSerializer(goal, data=request.data, partial=True)
         if serializer.is_valid():
             try:
                 updated_goal = GoalCreateService.update_goal(goal, **serializer.validated_data)
-                return Response(GoalCreateSerializer(updated_goal).data, status=status.HTTP_200_OK)
+                return Response(GoalReadSerializer(updated_goal).data, status=status.HTTP_200_OK)
             except PermissionError as e:
                 return Response({"error_detail": {"detail": [str(e)]}}, status=status.HTTP_400_BAD_REQUEST)
         return Response({"error_detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
