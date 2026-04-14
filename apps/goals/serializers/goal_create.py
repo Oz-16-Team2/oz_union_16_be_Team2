@@ -6,7 +6,7 @@ from rest_framework import serializers
 from apps.goals.models import Goal
 
 
-class GoalCreateSerializer(serializers.ModelSerializer):  # type: ignore
+class GoalCreateSerializer(serializers.ModelSerializer[Any]):
     startDate = serializers.DateField(source="start_date", help_text="2026-04-14", initial=date(2026, 4, 14))
     endDate = serializers.DateField(source="end_date", help_text="2026-04-15", initial=date(2026, 4, 15))
     title = serializers.CharField(help_text="목표 제목을 입력하세요", initial="매일 물 2L 마시기")
