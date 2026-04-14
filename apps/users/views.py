@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import parsers, status
 from rest_framework.permissions import AllowAny
@@ -22,7 +23,6 @@ from apps.users.serializers import (
 )
 from apps.users.services import (
     change_password,
-    check_nickname,
     google_social_login,
     kakao_social_login,
     login_user,
@@ -30,9 +30,10 @@ from apps.users.services import (
     naver_social_login,
     refresh_token,
     send_email_verification_code,
-    signup_user,
     verify_email,
 )
+
+User = get_user_model()
 
 
 class SignupAPIView(APIView):
@@ -52,7 +53,14 @@ class SignupAPIView(APIView):
         examples=[
             OpenApiExample(
                 "회원가입 성공",
-                value={"detail": "회원가입이 완료되었습니다."},
+                value={
+                    "success": True,
+                    "message": "회원가입이 완료되었습니다.",
+                    "data": {
+                        "email": "user@example.com",
+                        "nickname": "작심유저",
+                    },
+                },
                 response_only=True,
                 status_codes=["201"],
             ),
@@ -83,7 +91,42 @@ class SignupAPIView(APIView):
     def post(self, request: Request) -> Response:
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        return Response(signup_user(), status=status.HTTP_201_CREATED)
+
+        email = serializer.validated_data["email"]
+        password = serializer.validated_data["password"]
+        nickname = serializer.validated_data["nickname"]
+
+        errors: dict[str, list[str]] = {}
+
+        if User.objects.filter(email=email).exists():
+            errors["email"] = ["이미 가입된 이메일입니다."]
+
+        if User.objects.filter(nickname=nickname).exists():
+            errors["nickname"] = ["이미 사용 중인 닉네임입니다."]
+
+        if errors:
+            return Response(
+                {"error_detail": errors},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        user = User.objects.create_user(
+            email=email,
+            password=password,
+            nickname=nickname,
+        )
+
+        return Response(
+            {
+                "success": True,
+                "message": "회원가입이 완료되었습니다.",
+                "data": {
+                    "email": user.email,
+                    "nickname": user.nickname,
+                },
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class EmailVerificationSendAPIView(APIView):
@@ -402,7 +445,14 @@ class NicknameCheckAPIView(APIView):
         examples=[
             OpenApiExample(
                 "닉네임 사용 가능",
-                value={"detail": "사용가능한 닉네임입니다."},
+                value={
+                    "success": True,
+                    "message": "사용가능한 닉네임입니다.",
+                    "data": {
+                        "nickname": "작심유저",
+                        "available": True,
+                    },
+                },
                 response_only=True,
                 status_codes=["200"],
             ),
@@ -423,7 +473,26 @@ class NicknameCheckAPIView(APIView):
     def get(self, request: Request) -> Response:
         serializer = self.serializer_class(data=request.query_params)
         serializer.is_valid(raise_exception=True)
-        return Response(check_nickname(), status=status.HTTP_200_OK)
+
+        nickname = serializer.validated_data["nickname"]
+
+        if User.objects.filter(nickname=nickname).exists():
+            return Response(
+                {"error_detail": {"nickname": ["이미 사용 중인 닉네임입니다."]}},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        return Response(
+            {
+                "success": True,
+                "message": "사용가능한 닉네임입니다.",
+                "data": {
+                    "nickname": nickname,
+                    "available": True,
+                },
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class ChangePasswordAPIView(APIView):
