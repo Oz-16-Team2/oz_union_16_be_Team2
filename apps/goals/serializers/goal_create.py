@@ -23,7 +23,7 @@ class GoalCreateSerializer(serializers.ModelSerializer):  # type: ignore
         return data
 
 
-class GoalReadSerializer(serializers.ModelSerializer):  # type: ignore
+class GoalReadSerializer(serializers.ModelSerializer[Any]):
     startDate = serializers.DateField(source="start_date")
     endDate = serializers.DateField(source="end_date")
     goal_id = serializers.IntegerField(source="id")
@@ -33,7 +33,7 @@ class GoalReadSerializer(serializers.ModelSerializer):  # type: ignore
         fields = ["goal_id", "title", "startDate", "endDate", "status", "created_at"]
 
 
-class GoalUpdateSerializer(serializers.ModelSerializer):  # type: ignore
+class GoalUpdateSerializer(serializers.ModelSerializer[Any]):
     startDate = serializers.DateField(
         source="start_date",
         required=False,
