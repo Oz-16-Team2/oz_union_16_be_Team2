@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("reports", "0004_alter_report_reason_type_alter_report_target_type_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
@@ -32,16 +31,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="report",
             name="handled_at",
-            field=models.DateTimeField(
-                blank=True, help_text="신고의 처리 일시", null=True
-            ),
+            field=models.DateTimeField(blank=True, help_text="신고의 처리 일시", null=True),
         ),
         migrations.AlterField(
             model_name="report",
             name="reason_detail",
-            field=models.TextField(
-                blank=True, help_text="신고 사유 상세 설명", max_length=500, null=True
-            ),
+            field=models.TextField(blank=True, help_text="신고 사유 상세 설명", max_length=500, null=True),
         ),
         migrations.AlterField(
             model_name="report",
@@ -94,9 +89,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="reportaction",
             name="action_type",
-            field=models.CharField(
-                choices=[("delete", "삭제"), ("keep", "유지")], max_length=50
-            ),
+            field=models.CharField(choices=[("delete", "삭제"), ("keep", "유지")], max_length=50),
         ),
         migrations.AlterField(
             model_name="reportaction",
