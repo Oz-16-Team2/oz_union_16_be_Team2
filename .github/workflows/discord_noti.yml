@@ -249,7 +249,10 @@ jobs:
             "whdgk7176")
               AUTHOR_MENTION="<@454292942002192390>"
               ;;
-          esac
+             *)
+               AUTHOR_MENTION="@${{ github.event.pull_request.user.login }}"
+               ;;
+           esac
 
           curl -H "Content-Type: application/json" \
               -X POST \
