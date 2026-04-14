@@ -50,17 +50,6 @@ class ReportReasonType(models.TextChoices):
     OTHER = "OTHER", "기타"
 
 
-class ReportActionType(models.TextChoices):
-    DELETE = "delete", "삭제"
-    KEEP = "keep", "유지"
-    ABUSE = "ABUSE", "욕설/비하/혐오 표현"
-    SPAM = "SPAM", "스팸/광고"
-    FALSE_INFO = "FALSE_INFO", "허위정보"
-    SEXUAL = "SEXUAL", "음란/선정적 컨텐츠"
-    INAPPROPRIATE_PROFILE = "INAPPROPRIATE_PROFILE", "부적절한 닉네임/프로필"
-    OTHER = "OTHER", "기타"
-
-
 class ReportTargetType(models.TextChoices):
     POST = "POST", "게시글"
     COMMENT = "COMMENT", "댓글"
