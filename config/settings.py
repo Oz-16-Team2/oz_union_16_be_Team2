@@ -42,7 +42,6 @@ INSTALLED_APPS = [
     "rest_framework",
     "drf_spectacular",
     "apps.goals",
-    "apps.interactions",
     "apps.posts",
     "apps.reports",
     "apps.stats",

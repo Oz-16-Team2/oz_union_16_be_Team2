@@ -3,7 +3,7 @@ from typing import Any
 from django.core.exceptions import ValidationError
 from django.db import models
 
-from apps.core.choices import PostStatus
+from apps.core.choices import CommentStatus, PostStatus
 from apps.goals.models import Goal
 from apps.users.models import User
 
@@ -11,10 +11,12 @@ from apps.users.models import User
 class Tag(models.Model):
     name = models.CharField(max_length=100, unique=True)
     is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, help_text="생성 시각")
 
     class Meta:
         db_table = "tags"
+        verbose_name = "스크랩"
+        verbose_name_plural = "스크랩 목록"
 
     def __str__(self) -> str:
         return self.name
@@ -46,6 +48,54 @@ class Post(models.Model):
 
     def __str__(self) -> str:
         return self.title
+
+
+class Comment(models.Model):
+    post_id = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="comments", db_column="post_id")
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comments", db_column="user_id")
+    content = models.CharField(max_length=500, help_text="댓글 내용")
+    status = models.CharField(
+        max_length=20,
+        choices=CommentStatus,
+        default="CommentStatus.ACTIVE",
+        help_text="상태(활성, 비활성화)",
+    )
+
+    deleted_at = models.DateTimeField(null=True, blank=True, help_text="삭제일")
+    created_at = models.DateTimeField(auto_now_add=True, help_text="생성일")
+    updated_at = models.DateTimeField(auto_now=True, help_text="수정일")
+
+    class Meta:
+        db_table = "comments"
+        verbose_name = "댓글"
+        verbose_name_plural = "댓글 목록"
+
+    def __str__(self) -> str:
+        return f"{self.user_id.nickname}: {self.content[:20]}"
+
+
+class PostLike(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="likes")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="post_likes")
+    created_at = models.DateTimeField(auto_now_add=True, help_text="생성일")
+
+    class Meta:
+        db_table = "post_likes"
+        unique_together = ("post", "user")
+        verbose_name = "게시글 좋아요"
+        verbose_name_plural = "게시글 좋아요 목록"
+
+
+class CommentLike(models.Model):
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name="likes")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comment_likes")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "comment_likes"
+        unique_together = ("comment", "user")
+        verbose_name = "댓글 좋아요"
+        verbose_name_plural = "댓글 좋아요 목록"
 
 
 class PostView(models.Model):
