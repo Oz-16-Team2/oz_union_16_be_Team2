@@ -44,7 +44,6 @@ INSTALLED_APPS = [
     "apps.goals",
     "apps.posts",
     "apps.reports",
-    "apps.stats",
     "apps.users",
     "apps.votes",
 ]
