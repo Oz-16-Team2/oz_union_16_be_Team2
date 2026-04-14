@@ -56,10 +56,6 @@ class SignupAPIView(APIView):
                 value={
                     "success": True,
                     "message": "회원가입이 완료되었습니다.",
-                    "data": {
-                        "email": "user@example.com",
-                        "nickname": "작심유저",
-                    },
                 },
                 response_only=True,
                 status_codes=["201"],
@@ -448,10 +444,6 @@ class NicknameCheckAPIView(APIView):
                 value={
                     "success": True,
                     "message": "사용가능한 닉네임입니다.",
-                    "data": {
-                        "nickname": "작심유저",
-                        "available": True,
-                    },
                 },
                 response_only=True,
                 status_codes=["200"],
