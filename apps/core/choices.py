@@ -42,12 +42,11 @@ class UserStatus(models.TextChoices):
 
 
 class ReportReasonType(models.TextChoices):
-    ABUSE = "ABUSE", "욕설/비하/혐오 표현"
-    SPAM = "SPAM", "스팸/광고"
-    FALSE_INFO = "FALSE_INFO", "허위정보"
-    SEXUAL = "SEXUAL", "음란/선정적 컨텐츠"
-    INAPPROPRIATE_PROFILE = "INAPPROPRIATE_PROFILE", "부적절한 닉네임/프로필"
-    OTHER = "OTHER", "기타"
+    ABUSE = "abuse", "욕설/비하/혐오 표현"
+    SPAM = "spam", "스팸/광고"
+    FALSE_INFO = "false_info", "허위정보"
+    SEXUAL = "sexual", "음란/선정적 컨텐츠"
+    OTHER = "other", "기타"
 
 
 class ReportActionType(models.TextChoices):
@@ -56,17 +55,16 @@ class ReportActionType(models.TextChoices):
 
 
 class ReportTargetType(models.TextChoices):
-    POST = "POST", "게시글"
-    COMMENT = "COMMENT", "댓글"
-    # USER = "USER", "사용자"
+    POST = "post", "게시글"
+    COMMENT = "comment", "댓글"
 
 
 class TagCategory(models.TextChoices):
-    HEALTH = "HEALTH", "건강 / 운동"
-    STUDY = "STUDY", "공부 / 성장"
-    LIFESTYLE = "LIFESTYLE", "습관 / 라이프스타일"
-    MIND = "MIND", "마음관리 / 절제"
-    WORK = "WORK", "일 / 효율"
-    RELATION = "RELATION", "관계 / 소통"
-    FINANCE = "FINANCE", "재정 / 소비습관"
-    HOBBY = "HOBBY", "취미 / 여가"
+    HEALTH = "health", "건강 / 운동"
+    STUDY = "study", "공부 / 성장"
+    LIFESTYLE = "lifestyle", "습관 / 라이프스타일"
+    MIND = "mind", "마음관리 / 절제"
+    WORK = "work", "일 / 효율"
+    RELATION = "relation", "관계 / 소통"
+    FINANCE = "finance", "재정 / 소비습관"
+    HOBBY = "hobby", "취미 / 여가"
