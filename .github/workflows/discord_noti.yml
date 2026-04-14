@@ -54,7 +54,7 @@ jobs:
           # 현재 리뷰어가 첫 번째 리뷰어인지 확인 (중복 방지)
           REVIEWERS_JSON='${{ toJSON(github.event.pull_request.requested_reviewers) }}'
           FIRST_REVIEWER=$(echo "$REVIEWERS_JSON" | jq -r '.[0].login // empty')
-          CURRENT_REVIEWER="${{ github.event.requested_reviewer.login }}"
+          CURRENT_REVIEWER='${{ github.event.requested_reviewer.login }}'
 
           echo "현재 리뷰어: $CURRENT_REVIEWER"
           echo "첫 번째 리뷰어: $FIRST_REVIEWER"
@@ -249,7 +249,10 @@ jobs:
             "whdgk7176")
               AUTHOR_MENTION="<@454292942002192390>"
               ;;
-          esac
+             *)
+               AUTHOR_MENTION="@${{ github.event.pull_request.user.login }}"
+               ;;
+           esac
 
           curl -H "Content-Type: application/json" \
               -X POST \
