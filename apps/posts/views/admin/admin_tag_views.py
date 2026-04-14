@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.core import DetailMessageSerializer, ErrorDetailStringSerializer, detail_response
-from apps.core.admin import AdminBaseAPIView, IsAdminRole
+from apps.core.admin import AdminBaseAPIView
 from apps.posts.serializers.admin.admin_tag_serializers import (
     AdminTagCreateRequestSerializer,
     AdminTagListQuerySerializer,
@@ -19,8 +18,6 @@ from apps.posts.services.admin.admin_tag_services import AdminTagService
 
 
 class AdminTagListCreateAPIView(AdminBaseAPIView):
-    permission_classes = [IsAuthenticated, IsAdminRole]
-
     @extend_schema(
         tags=["admin-tags"],
         parameters=[
@@ -29,6 +26,7 @@ class AdminTagListCreateAPIView(AdminBaseAPIView):
         ],
         responses={
             200: AdminTagListSuccessResponseSerializer,
+            400: ErrorDetailStringSerializer,
             401: ErrorDetailStringSerializer,
             403: ErrorDetailStringSerializer,
         },
@@ -69,8 +67,6 @@ class AdminTagListCreateAPIView(AdminBaseAPIView):
 
 
 class AdminTagUpdateAPIView(AdminBaseAPIView):
-    permission_classes = [IsAuthenticated, IsAdminRole]
-
     @extend_schema(
         tags=["admin-tags"],
         request=AdminTagUpdateRequestSerializer,

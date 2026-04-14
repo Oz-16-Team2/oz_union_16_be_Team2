@@ -1,13 +1,17 @@
 from django.http import Http404
 from rest_framework import exceptions, status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.admin.permissions import IsAdminRole
 from apps.core.exceptions import ConflictException, ResourceNotFoundException
 from apps.core.response import error_response
 
 
 class AdminBaseAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminRole]
+
     validation_error_msg = "잘못된 요청입니다."
     authentication_error_msg = "관리자 인증이 필요합니다."
     permission_error_msg = "권한이 없습니다."
