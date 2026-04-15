@@ -52,3 +52,10 @@ class ReportReasonType(models.TextChoices):
 class ReportActionType(models.TextChoices):
     DELETE = "delete", "삭제"
     KEEP = "keep", "유지"
+
+
+class ProfileImageCode(models.TextChoices):
+    AVATAR_01 = "avatar_1", "캐릭터 1"
+    AVATAR_02 = "avatar_2", "캐릭터 2"
+    AVATAR_03 = "avatar_3", "캐릭터 3"
+    AVATAR_04 = "avatar_4", "캐릭터 4"

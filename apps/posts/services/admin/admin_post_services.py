@@ -9,7 +9,7 @@ from apps.core.exceptions import ResourceNotFoundException
 from apps.posts.models import Post
 from apps.reports.models import Report
 from apps.votes.models import Vote
-
+from apps.users.constants import PROFILE_IMAGE_URL_MAP
 
 class AdminPostService:
     @staticmethod
@@ -63,7 +63,7 @@ class AdminPostService:
                 "id": post.id,
                 "users_id": post.user_id,
                 "nickname": post.user.nickname,
-                "profile_image_url": post.user.profile_image_url,
+                "profile_image_url": PROFILE_IMAGE_URL_MAP.get(post.user.profile_image),
                 "title": post.title,
                 "content": post.content,
                 "image_url": post.images[0] if post.images else None,
@@ -132,7 +132,7 @@ class AdminPostService:
             "id": post.id,
             "users_id": post.user_id,
             "nickname": post.user.nickname,
-            "profile_image_url": post.user.profile_image_url,
+            "profile_image_url": PROFILE_IMAGE_URL_MAP.get(post.user.profile_image),
             "goals_id": post.goal_id,
             "title": post.title,
             "content": post.content,

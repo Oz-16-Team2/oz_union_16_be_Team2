@@ -4,7 +4,7 @@ from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import BaseUserManager, PermissionsMixin
 from django.db import models
 
-from apps.core.choices import UserStatus
+from apps.core.choices import ProfileImageCode, UserStatus
 
 
 class UserManager(BaseUserManager["User"]):
@@ -37,7 +37,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=128)
     nickname = models.CharField(max_length=100, unique=True)
-    profile_image_url = models.URLField(blank=True, null=True)
+    profile_image = models.CharField(max_length=20, choices=ProfileImageCode, default=ProfileImageCode.AVATAR_01)
     total_goals_count = models.IntegerField(default=0)
     deleted_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -46,7 +46,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["nickname"]
-    status = models.CharField(max_length=20, choices=UserStatus.choices, default=UserStatus.ACTIVE)
+    status = models.CharField(max_length=20, choices=UserStatus, default=UserStatus.ACTIVE)
 
     objects = UserManager()
 
