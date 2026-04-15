@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 from apps.goals.models import Goal
 from apps.goals.serializers.goal_create import (
     ErrorDetailSerializer,
+    GoalCheckSerializer,
     GoalCreateSerializer,
     GoalReadSerializer,
     GoalUpdateSerializer,
@@ -192,3 +193,59 @@ class GoalDetailView(APIView):
         goal = GoalCreateService.get_goal(goal_id, request.user)
         GoalCreateService.delete_goal(goal)
         return Response({"detail": "목표가 성공적으로 삭제되었습니다."}, status=status.HTTP_200_OK)
+
+
+class GoalCheckView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        tags=["Goals"],
+        summary="오늘의 목표 달성 인증",
+        description="특정 목표에 대해 오늘치 인증(도장)을 기록합니다. 자정이 지나면 다시 인증할 수 있습니다.",
+        responses={
+            200: GoalCheckSerializer,
+            400: ErrorDetailSerializer,
+            401: ErrorDetailSerializer,
+            404: ErrorDetailSerializer,
+        },
+        examples=[
+            OpenApiExample(
+                "인증 성공",
+                value={"detail": "오늘의 목표 달성 인증이 완료되었습니다.", "goal_id": 101, "progress_rate": 25.0},
+                response_only=True,
+                status_codes=["200"],
+            ),
+            OpenApiExample(
+                "400 중복 인증 오류",
+                value={"error_detail": {"detail": ["오늘 이미 인증을 완료했습니다."]}},
+                response_only=True,
+                status_codes=["400"],
+            ),
+            OpenApiExample(
+                "400 기간 외 인증 오류",
+                value={"error_detail": {"detail": ["목표 기간이 아닙니다."]}},
+                response_only=True,
+                status_codes=["400"],
+            ),
+            OpenApiExample(
+                "401 인증 오류",
+                value={"error_detail": {"detail": ["자격 인증 데이터가 제공되지 않았습니다."]}},
+                response_only=True,
+                status_codes=["401"],
+            ),
+            OpenApiExample(
+                "404 목표 없음",
+                value={"error_detail": {"detail": ["존재하지 않거나 접근 권한이 없는 목표입니다."]}},
+                response_only=True,
+                status_codes=["404"],
+            ),
+        ],
+    )
+    def post(self, request: Request, goal_id: int) -> Response:
+        try:
+            result = GoalCreateService.check_goal_today(goal_id, request.user)
+            serializer = GoalCheckSerializer(result)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except ValueError as e:
+            return Response({"error_detail": {"detail": [str(e)]}}, status=status.HTTP_400_BAD_REQUEST)
