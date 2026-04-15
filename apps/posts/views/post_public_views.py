@@ -18,7 +18,13 @@ from apps.posts.serializers.post_serializers import (
     PostListQuerySerializer,
     PostPatchSerializer,
 )
-from apps.posts.services import create_post, get_post_detail, list_posts, soft_delete_post, update_post
+from apps.posts.services import (
+    create_post,
+    get_post_detail,
+    list_posts,
+    soft_delete_post,
+    update_post,
+)
 from apps.users.serializers import ErrorDetailFieldListSerializer
 
 TAG_POSTS = "Posts"
@@ -32,7 +38,7 @@ class PostCollectionAPIView(APIView):
         tags=[TAG_POSTS],
         summary="포스트 목록 조회 (REQ-POST-001)",
         description=(
-            "Query: scope (FEED|MY), sortBy (LATEST|POPULAR), page, size. "
+            "Query: scope (FEED|MY), sort_by (LATEST|POPULAR), page, size. "
             "Optional auth affects is_scrapped. MY requires login."
         ),
         parameters=[
@@ -44,7 +50,7 @@ class PostCollectionAPIView(APIView):
                 description="FEED (기본값) 또는 MY",
             ),
             OpenApiParameter(
-                name="sortBy",
+                name="sort_by",
                 type=str,
                 location=OpenApiParameter.QUERY,
                 required=False,
@@ -111,7 +117,7 @@ class PostCollectionAPIView(APIView):
         try:
             body = list_posts(
                 scope=data["scope"],
-                sort_by=data["sortBy"],
+                sort_by=data["sort_by"],
                 page=data["page"],
                 size=data["size"],
                 user=request.user,

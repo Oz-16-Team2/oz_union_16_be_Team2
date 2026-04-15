@@ -27,7 +27,7 @@ class PostListQuerySerializer(serializers.Serializer[Any]):
         default=SCOPE_FEED,
         error_messages={"invalid_choice": "조회 범위가 올바르지 않습니다."},
     )
-    sortBy = serializers.ChoiceField(
+    sort_by = serializers.ChoiceField(
         choices=[SORT_LATEST, SORT_POPULAR],
         required=False,
         default=SORT_LATEST,
@@ -48,7 +48,7 @@ class PostListQuerySerializer(serializers.Serializer[Any]):
 
 class VoteOptionWriteSerializer(serializers.Serializer[Any]):
     content = serializers.CharField(max_length=255)
-    sortOrder = serializers.IntegerField(min_value=0, source="sort_order")
+    sort_order = serializers.IntegerField(min_value=0)
 
 
 class VoteWriteSerializer(serializers.Serializer[Any]):
@@ -60,16 +60,21 @@ class PostCreateSerializer(serializers.Serializer[Any]):
     title = serializers.CharField(max_length=255)
     content = serializers.CharField()
     images = serializers.ListField(child=serializers.CharField(max_length=500), required=False, default=list)
-    isPrivate = serializers.BooleanField(required=False, default=False, source="is_private")
-    hasGoal = serializers.BooleanField(source="has_goal")
-    goalId = serializers.IntegerField(required=False, allow_null=True, source="goal_id")
-    hasVote = serializers.BooleanField(source="has_vote")
+    is_private = serializers.BooleanField(
+        required=False,
+        default=False,
+    )
+    has_goal = serializers.BooleanField()
+    goal_id = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+    )
+    has_vote = serializers.BooleanField()
     vote = VoteWriteSerializer(required=False, allow_null=True)
-    tagIds = serializers.ListField(
+    tag_ids = serializers.ListField(
         child=serializers.IntegerField(min_value=1),
         required=False,
         default=list,
-        source="tag_ids",
     )
 
     def validate_title(self, value: str) -> str:
@@ -94,7 +99,7 @@ class PostCreateSerializer(serializers.Serializer[Any]):
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         if attrs.get("has_goal") and not attrs.get("goal_id"):
-            raise serializers.ValidationError({"goalId": ["목표가 있을 경우 goalId가 필요합니다."]})
+            raise serializers.ValidationError({"goal_id": ["목표가 있을 경우 goal_id가 필요합니다."]})
 
         if attrs.get("has_vote"):
             vote = attrs.get("vote")
@@ -117,19 +122,18 @@ class PostCreateResponseSerializer(serializers.Serializer[Any]):
 
 
 class PostPatchSerializer(serializers.Serializer[Any]):
-    post_id = serializers.IntegerField()
     title = serializers.CharField(max_length=255, required=False, allow_blank=False)
     content = serializers.CharField(required=False)
     images = serializers.ListField(child=serializers.CharField(max_length=500), required=False)
     is_private = serializers.BooleanField(required=False)
-    hasGoal = serializers.BooleanField(required=False, source="has_goal")
-    goalId = serializers.IntegerField(required=False, allow_null=True, source="goal_id")
-    hasVote = serializers.BooleanField(required=False, source="has_vote")
+    has_goal = serializers.BooleanField(required=False)
+    goal_id = serializers.IntegerField(required=False, allow_null=True)
+    has_vote = serializers.BooleanField(required=False)
     vote = VoteWriteSerializer(required=False, allow_null=True)
-    tagIds = serializers.ListField(
+    is_vote_closed = serializers.BooleanField(required=False, default=False)
+    tag_ids = serializers.ListField(
         child=serializers.IntegerField(min_value=1),
         required=False,
-        source="tag_ids",
     )
 
     def validate_images(self, value: list[str]) -> list[str]:
@@ -145,7 +149,7 @@ class PostPatchSerializer(serializers.Serializer[Any]):
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
 
         if attrs.get("has_goal") and not attrs.get("goal_id"):
-            raise serializers.ValidationError({"goalId": ["목표가 있을 경우 goalId가 필요합니다."]})
+            raise serializers.ValidationError({"goal_id": ["목표가 있을 경우 goal_id가 필요합니다."]})
 
         if attrs.get("has_vote"):
             vote = attrs.get("vote")

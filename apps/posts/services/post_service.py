@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
-from typing import Any
+from typing import Any, cast
 
 from django.contrib.auth.models import AnonymousUser
 from django.db import transaction
@@ -9,7 +9,7 @@ from django.db.models import BooleanField, Count, Exists, OuterRef, Value
 from django.utils import timezone
 from rest_framework import serializers
 
-from apps.core.choices import PostStatus, VoteStatus
+from apps.core.choices import PostStatus, Status, VoteStatus
 from apps.goals.models import Goal
 from apps.posts.models import Post, PostTag, Scrap
 from apps.posts.serializers.post_serializers import (
@@ -174,7 +174,7 @@ def create_post(user: User, data: dict[str, Any]) -> Post:
     if data.get("has_goal") and data.get("goal_id"):
         goal = Goal.objects.filter(pk=data["goal_id"], user=user).first()
         if goal is None:
-            raise serializers.ValidationError({"goalId": ["Goal not found."]})
+            raise serializers.ValidationError({"goal_id": ["Goal not found."]})
         snapshot_goal_on_post(post, goal)
     post.save()
     replace_post_tags(post, data.get("tag_ids") or [])
@@ -183,7 +183,7 @@ def create_post(user: User, data: dict[str, Any]) -> Post:
     return post
 
 
-def _ensure_owner(post: Post, user: User, *, action: str = "modify") -> None:
+def _ensure_owner(post: Post, user: User | AnonymousUser, *, action: str = "modify") -> None:
     if not user.is_authenticated or post.user_id != user.id:
         raise serializers.ValidationError(
             {"Authorization": [f"You do not have permission to {action} this post."]},
@@ -191,12 +191,30 @@ def _ensure_owner(post: Post, user: User, *, action: str = "modify") -> None:
 
 
 @transaction.atomic
-def update_post(*, user: User, url_post_id: int, data: dict[str, Any]) -> None:
-
+def update_post(*, user: User | AnonymousUser, url_post_id: int, data: dict[str, Any]) -> None:
     post = Post.objects.filter(id=url_post_id, deleted_at__isnull=True).first()
     if post is None:
-        raise serializers.ValidationError({"postId": ["Post not found."]})
+        raise serializers.ValidationError({"postId": ["해당 게시글(객체)을 찾을 수 없습니다."]})
+
     _ensure_owner(post, user, action="modify")
+    user = cast(User, user)
+
+    if post.goal_id:
+        goal = Goal.objects.filter(id=post.goal_id).first()
+        if goal and goal.status in [Status.FAILED, Status.COMPLETED]:
+            raise serializers.ValidationError(
+                {"goal": ["미달성 또는 완료된 목표가 포함된 게시글은 수정할 수 없습니다."]}
+            )
+
+    vote_obj = Vote.objects.filter(post=post).first()
+    has_participation = vote_obj and vote_obj.participations.exists()
+
+    if has_participation:
+        if "vote" in data:
+            raise serializers.ValidationError({"vote": ["이미 참여자가 있는 투표의 내용은 수정할 수 없습니다."]})
+        if data.get("has_vote") is False:
+            raise serializers.ValidationError({"vote": ["이미 참여자가 있는 투표는 삭제할 수 없습니다."]})
+
     if "title" in data:
         post.title = data["title"]
     if "content" in data:
@@ -205,26 +223,42 @@ def update_post(*, user: User, url_post_id: int, data: dict[str, Any]) -> None:
         post.images = data["images"]
     if "is_private" in data:
         post.is_private = data["is_private"]
+
     if data.get("has_goal") is False:
         _clear_goal_fields(post)
     elif data.get("goal_id"):
         goal = Goal.objects.filter(pk=data["goal_id"], user=user).first()
         if goal is None:
-            raise serializers.ValidationError({"goalId": ["Goal not found."]})
+            raise serializers.ValidationError({"goal_id": ["목표가 없습니다."]})
         snapshot_goal_on_post(post, goal)
+
+    if data.get("is_vote_closed") and vote_obj:
+        if vote_obj.status == VoteStatus.CLOSED:
+            raise serializers.ValidationError({"vote": ["이미 마감된 투표입니다."]})
+        if not has_participation:
+            raise serializers.ValidationError({"vote": ["투표 참여자가 있어야 조기 마감이 가능합니다."]})
+        vote_obj.status = VoteStatus.CLOSED
+        vote_obj.end_at = timezone.now()
+        vote_obj.save()
 
     if data.get("has_vote") is False:
         Vote.objects.filter(post=post).delete()
+
+    elif data.get("has_vote") is True and not vote_obj:
+        if "vote" in data:
+            _create_vote_for_post(post, data["vote"])
+
     if "tag_ids" in data:
         replace_post_tags(post, data["tag_ids"])
+
     post.save()
 
 
 @transaction.atomic
-def soft_delete_post(*, user: User, post_id: int) -> None:
+def soft_delete_post(*, user: User | AnonymousUser, post_id: int) -> None:
     post = Post.objects.filter(id=post_id, deleted_at__isnull=True).first()
     if post is None:
-        raise serializers.ValidationError({"postId": ["Post not found."]})
+        raise serializers.ValidationError({"postId": ["해당 게시글(객체)을 찾을 수 없습니다."]})
     _ensure_owner(post, user, action="delete")
     post.deleted_at = timezone.now()
     post.save()
