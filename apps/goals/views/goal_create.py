@@ -75,7 +75,7 @@ class GoalCreateView(APIView):
         ],
     )
     def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        goals = Goal.objects.filter(user=request.user.id).order_by("-created_at")
+        goals = Goal.objects.filter(user=request.user.id).prefetch_related("checks").order_by("-created_at")
         serializer = GoalReadSerializer(goals, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

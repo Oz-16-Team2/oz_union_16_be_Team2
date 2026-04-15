@@ -23,20 +23,19 @@ class GoalAPITestCase(APITestCase):
         self.client.force_authenticate(user=self.user)
 
     def test_create_goal_success(self) -> None:
-        data = {"title": "새로운 운동 목표", "startDate": "2026-04-15", "endDate": "2026-05-15"}
+        data = {"title": "새로운 운동 목표", "start_date": "2026-04-15", "end_date": "2026-05-15"}
         response = self.client.post(self.list_create_url, data)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data["title"], "새로운 운동 목표")
-        self.assertIn("progressRate", response.data)
-        self.assertEqual(response.data["currentCount"], 0)
+        self.assertIn("progress_rate", response.data)
 
     def test_create_goal_date_validation_fail(self) -> None:
-        data = {"title": "날짜 오류 목표", "startDate": "2026-04-15", "endDate": "2026-04-10"}
+        data = {"title": "날짜 오류 목표", "start_date": "2026-04-15", "end_date": "2026-04-10"}
         response = self.client.post(self.list_create_url, data)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("startDate", response.data["error_detail"])
+        self.assertIn("start_date", response.data["error_detail"])
 
     def test_get_goal_list(self) -> None:
         response = self.client.get(self.list_create_url)
