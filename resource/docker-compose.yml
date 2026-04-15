@@ -33,6 +33,7 @@ services:
       - "8000:8000"
     volumes:
       - ..:/app
+      - /app/.venv  # [수정] 로컬 .venv가 컨테이너에 마운트되지 않도록 익명 볼륨으로 격리
     command: >
       sh -c "echo 'Server is running at http://127.0.0.1:8000/' && 
              uv run python manage.py runserver 0.0.0.0:8000"
