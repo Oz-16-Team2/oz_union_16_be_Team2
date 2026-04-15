@@ -15,8 +15,8 @@ class Tag(models.Model):
 
     class Meta:
         db_table = "tags"
-        verbose_name = "스크랩"
-        verbose_name_plural = "스크랩 목록"
+        verbose_name = "태그"
+        verbose_name_plural = "태그 목록"
 
     def __str__(self) -> str:
         return self.name
@@ -51,13 +51,13 @@ class Post(models.Model):
 
 
 class Comment(models.Model):
-    post_id = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="comments", db_column="post_id")
-    user_id = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comments", db_column="user_id")
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="comments", db_column="post")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comments", db_column="user")
     content = models.CharField(max_length=500, help_text="댓글 내용")
     status = models.CharField(
         max_length=20,
-        choices=CommentStatus,
-        default="CommentStatus.ACTIVE",
+        choices=CommentStatus.choices,
+        default=CommentStatus.ACTIVE,
         help_text="상태(활성, 비활성화)",
     )
 
@@ -71,7 +71,7 @@ class Comment(models.Model):
         verbose_name_plural = "댓글 목록"
 
     def __str__(self) -> str:
-        return f"{self.user_id.nickname}: {self.content[:20]}"
+        return f"{self.user.nickname}: {self.content[:20]}"
 
 
 class PostLike(models.Model):
