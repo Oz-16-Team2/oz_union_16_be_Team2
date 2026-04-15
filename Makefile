@@ -4,8 +4,8 @@ COMPOSE := docker compose -f resource/docker-compose.yml
         migrate makemigrations createsuperuser shell \
         db-shell lint code_format test prune help
 
-build:  ## 이미지 빌드
-	$(COMPOSE) build
+build:  ## 이미지 빌드 + 컨테이너 백그라운드 실행
+	$(COMPOSE) up -d --build
 
 up:  ## 컨테이너 백그라운드 실행
 	$(COMPOSE) up -d
