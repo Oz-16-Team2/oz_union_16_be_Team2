@@ -3,7 +3,7 @@ __pycache__/
 *.py[cod]
 *.pyo
 
-# 가상환경 (너네 구조 기준)
+# 가상환경
 envs/
 .venv/
 venv/
@@ -25,17 +25,24 @@ venv/
 # 테스트 / 캐시
 .pytest_cache/
 .coverage
+.mypy_cache/
+.ruff_cache/
 
 # IDE
 .vscode/
 .idea/
 
-# Node (혹시 프론트 같이 쓰면)
-node_modules/
-
-# Docker 관련 (선택)
+# Docker 관련
 docker-compose.yml
 docker-compose.prod.yml
 
 # 기타
 *.sqlite3
+
+# Python packaging
+build/
+dist/
+*.egg-info/
+
+# coverage html
+htmlcov/
