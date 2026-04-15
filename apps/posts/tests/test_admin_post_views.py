@@ -3,7 +3,7 @@ from __future__ import annotations
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from apps.core.choices import PostStatus
+from apps.core.choices import PostStatus, ProfileImageCode
 from apps.posts.models import Comment, Post, PostLike, PostTag, Scrap, Tag
 from apps.users.models import User
 from apps.votes.models import Vote, VoteOption
@@ -13,7 +13,6 @@ class AdminPostAPIViewTest(APITestCase):
     admin_user: User
     normal_user: User
     author: User
-    comment_user: User
 
     tag1: Tag
     tag2: Tag
@@ -35,19 +34,14 @@ class AdminPostAPIViewTest(APITestCase):
             email="user@test.com",
             password="test1234",
             nickname="normal_user",
+            profile_image=ProfileImageCode.AVATAR_02,
             is_staff=False,
         )
         cls.author = User.objects.create_user(
             email="author@test.com",
             password="test1234",
             nickname="author_user",
-            profile_image_url="https://example.com/characters/char_01.png",
-        )
-        cls.comment_user = User.objects.create_user(
-            email="comment@test.com",
-            password="test1234",
-            nickname="comment_user",
-            profile_image_url="https://example.com/characters/char_02.png",
+            profile_image=ProfileImageCode.AVATAR_01,
         )
 
         cls.tag1 = Tag.objects.create(name="운동", is_active=True)
@@ -80,13 +74,13 @@ class AdminPostAPIViewTest(APITestCase):
 
         Comment.objects.create(
             post=cls.post_with_vote,
-            user=cls.comment_user,
+            user=cls.normal_user,
             content="응원합니다!",
         )
 
         PostLike.objects.create(post=cls.post_with_vote, user=cls.author)
-        PostLike.objects.create(post=cls.post_with_vote, user=cls.comment_user)
-        Scrap.objects.create(post=cls.post_with_vote, user=cls.comment_user)
+        PostLike.objects.create(post=cls.post_with_vote, user=cls.normal_user)
+        Scrap.objects.create(post=cls.post_with_vote, user=cls.normal_user)
 
         cls.vote = Vote.objects.create(
             post=cls.post_with_vote,
