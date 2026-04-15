@@ -1,7 +1,7 @@
 COMPOSE := docker compose -f resource/docker-compose.yml
 
 .PHONY: build up down restart logs ps \
-	    migrate makemigrations createsuperuser shell \
+        migrate makemigrations createsuperuser shell \
         db-shell lint code_format test prune help
 
 build:  ## 이미지 빌드
@@ -35,10 +35,10 @@ createsuperuser:  ## 관리자 계정 생성
 shell:  ## Django shell 접속
 	$(COMPOSE) exec web uv run python manage.py shell
 
-code_format:  ## ruff 코드 검사 및 자동 포맷팅
-	$(COMPOSE) exec web uv run ruff check --fix .
-	$(COMPOSE) exec web uv run ruff format .
-	$(COMPOSE) exec web uv run ruff check .
+code_format:
+	$(COMPOSE) exec web uv run ruff check --fix . && \
+	$(COMPOSE) exec web uv run ruff format . && \
+	$(COMPOSE) exec web uv run ruff check . && \
 	$(COMPOSE) exec web uv run ruff format --check .
 
 test:  ## mypy 타입체크 + pytest 커버리지 테스트
