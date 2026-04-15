@@ -18,7 +18,7 @@ class AdminBaseAPIView(APIView):
     not_found_error_msg = "해당 정보를 찾을 수 없습니다."
 
     def handle_exception(self, exc: Exception) -> Response:
-        if isinstance(exc, exceptions.ValidationError):
+        if isinstance(exc, (exceptions.ParseError, exceptions.ValidationError)):
             return error_response(
                 self.validation_error_msg,
                 status.HTTP_400_BAD_REQUEST,

@@ -26,4 +26,5 @@ urlpatterns = [
     path("api/v1/goals/", include("apps.goals.urls"), name="goals"),
     path("api/v1/accounts/", include("apps.users.urls")),
     path("api/v1/admin/", include("apps.posts.admin_urls")),
+    path("api/v1/admin/", include("apps.posts.admin_urls")),
 ]
