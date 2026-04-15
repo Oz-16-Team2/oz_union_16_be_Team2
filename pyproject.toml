@@ -37,10 +37,7 @@ ignore = ["E501"]
 known-third-party = ["django", "rest_framework", "drf_spectacular"]
 
 [tool.mypy]
-plugins = [
-    "mypy_django_plugin.main",
-    "rest_framework.ext.mypy.plugin",
-    ]
+plugins = ["mypy_django_plugin.main"]
 python_version = "3.13"
 strict = true
 ignore_missing_imports = true
