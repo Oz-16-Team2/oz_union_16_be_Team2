@@ -10,37 +10,51 @@ from apps.votes.models import Vote, VoteOption
 
 
 class AdminPostAPIViewTest(APITestCase):
-    def setUp(self) -> None:
-        self.admin_user = User.objects.create_user(
+    admin_user: User
+    normal_user: User
+    author: User
+    comment_user: User
+
+    tag1: Tag
+    tag2: Tag
+
+    post_with_vote: Post
+    post_without_vote: Post
+
+    vote: Vote
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls.admin_user = User.objects.create_user(
             email="admin@test.com",
             password="test1234",
             nickname="admin_user",
             is_staff=True,
         )
-        self.normal_user = User.objects.create_user(
+        cls.normal_user = User.objects.create_user(
             email="user@test.com",
             password="test1234",
             nickname="normal_user",
             is_staff=False,
         )
-        self.author = User.objects.create_user(
+        cls.author = User.objects.create_user(
             email="author@test.com",
             password="test1234",
             nickname="author_user",
             profile_image_url="https://example.com/characters/char_01.png",
         )
-        self.comment_user = User.objects.create_user(
+        cls.comment_user = User.objects.create_user(
             email="comment@test.com",
             password="test1234",
             nickname="comment_user",
             profile_image_url="https://example.com/characters/char_02.png",
         )
 
-        self.tag1 = Tag.objects.create(name="운동", is_active=True)
-        self.tag2 = Tag.objects.create(name="공부", is_active=True)
+        cls.tag1 = Tag.objects.create(name="운동", is_active=True)
+        cls.tag2 = Tag.objects.create(name="공부", is_active=True)
 
-        self.post_with_vote = Post.objects.create(
-            user=self.author,
+        cls.post_with_vote = Post.objects.create(
+            user=cls.author,
             title="오늘 목표 성공",
             content="운동 완료했습니다.",
             images=[
@@ -52,8 +66,8 @@ class AdminPostAPIViewTest(APITestCase):
             goal_progress=70,
             status=PostStatus.REPORTED,
         )
-        self.post_without_vote = Post.objects.create(
-            user=self.author,
+        cls.post_without_vote = Post.objects.create(
+            user=cls.author,
             title="공부 인증합니다",
             content="오늘은 알고리즘 3문제 풀었습니다.",
             images=["https://example.com/posts/post_2_img_1.png"],
@@ -61,27 +75,27 @@ class AdminPostAPIViewTest(APITestCase):
             status=PostStatus.NORMAL,
         )
 
-        PostTag.objects.create(post=self.post_with_vote, tag=self.tag1)
-        PostTag.objects.create(post=self.post_without_vote, tag=self.tag2)
+        PostTag.objects.create(post=cls.post_with_vote, tag=cls.tag1)
+        PostTag.objects.create(post=cls.post_without_vote, tag=cls.tag2)
 
         Comment.objects.create(
-            post=self.post_with_vote,
-            user=self.comment_user,
+            post=cls.post_with_vote,
+            user=cls.comment_user,
             content="응원합니다!",
         )
 
-        PostLike.objects.create(post=self.post_with_vote, user=self.author)
-        PostLike.objects.create(post=self.post_with_vote, user=self.comment_user)
-        Scrap.objects.create(post=self.post_with_vote, user=self.comment_user)
+        PostLike.objects.create(post=cls.post_with_vote, user=cls.author)
+        PostLike.objects.create(post=cls.post_with_vote, user=cls.comment_user)
+        Scrap.objects.create(post=cls.post_with_vote, user=cls.comment_user)
 
-        self.vote = Vote.objects.create(
-            post=self.post_with_vote,
+        cls.vote = Vote.objects.create(
+            post=cls.post_with_vote,
             question="내일도 운동할까요?",
             start_at="2026-04-13T09:00:00Z",
             end_at="2026-04-14T09:00:00Z",
         )
-        VoteOption.objects.create(vote=self.vote, content="찬성", sort_order=1)
-        VoteOption.objects.create(vote=self.vote, content="반대", sort_order=2)
+        VoteOption.objects.create(vote=cls.vote, content="찬성", sort_order=1)
+        VoteOption.objects.create(vote=cls.vote, content="반대", sort_order=2)
 
     def test_admin_can_get_post_list(self) -> None:
         self.client.force_authenticate(user=self.admin_user)
