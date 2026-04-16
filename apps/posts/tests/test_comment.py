@@ -10,6 +10,7 @@ class TestPostCommentListCreateView(APITestCase):
     REQ-COMM-001 댓글 작성
     REQ-COMM-002 댓글 목록 조회
     """
+
     # setUpTestData에서 동적으로 할당될 변수들의 타입을 정적으로 미리 선언
     user: User
     post: Post
