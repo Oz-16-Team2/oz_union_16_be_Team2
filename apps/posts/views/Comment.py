@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from typing import Any
 
 from django.db.models import BooleanField, Count, Exists, OuterRef, Value
@@ -9,7 +10,9 @@ from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.serializers import BaseSerializer
+from rest_framework.views import exception_handler  # DRF 기본 핸들러
 
+from apps.core.exceptions import ConflictException, ResourceNotFoundException
 from apps.posts.models import Comment, CommentLike, Post
 from apps.posts.serializers.serializers_comment import (
     CommentCreateSerializer,
@@ -17,6 +20,35 @@ from apps.posts.serializers.serializers_comment import (
 )
 
 
+def posts_local_exception_handler(exc: Exception, context: dict[str, Any]) -> Response | None:
+    """
+    [Local Exception Handler]
+    공통 핸들러(apps/core/exception_handler.py)를 거치지 않고 여기서 직접 제어
+    """
+    # DRF의 기본 예외 처리기를 먼저 호출하여 표준 에러(404, 401 등)를 처리
+    response = exception_handler(exc, context)
+
+    # DRF가 처리하지 못하는 파이썬 일반 예외라면 여기서 핸들링
+    if response is None:
+        if isinstance(exc, ConflictException):
+            return Response({"error_detail": exc.detail}, status=status.HTTP_409_CONFLICT)
+
+        if isinstance(exc, ResourceNotFoundException):
+            return Response({"error_detail": exc.detail}, status=status.HTTP_404_NOT_FOUND)
+
+        # 그 외 기타 에러는 None을 리턴하여 Django 기본 500 에러를 유도하거나 아래처럼 공통 포맷으로 리턴
+        return Response({"error_detail": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    # DRF 표준 제외하고 response가 있다면, 응답 양식을 "error_detail"로 통일합니다.
+    if isinstance(response.data, dict) and "detail" in response.data:
+        response.data = {"error_detail": response.data["detail"]}
+    else:
+        response.data = {"error_detail": response.data}
+
+    return response
+
+
+@extend_schema(tags=["댓글 (Comments)"])
 class PostCommentListCreateView(generics.ListCreateAPIView):  # type: ignore[type-arg]
     """
     <GET> 댓글 목록 조회 View
@@ -25,6 +57,10 @@ class PostCommentListCreateView(generics.ListCreateAPIView):  # type: ignore[typ
     """
 
     permission_classes = [IsAuthenticatedOrReadOnly]
+
+    # 로컬 핸들러 주입 (글로벌은 apps/core/exception_handler.py)
+    def get_exception_handler(self) -> Callable[[Exception, dict[str, Any]], Response | None]:
+        return posts_local_exception_handler
 
     def get_serializer_class(self) -> type[BaseSerializer[Any]]:
         if self.request.method == "POST":
@@ -60,6 +96,7 @@ class PostCommentListCreateView(generics.ListCreateAPIView):  # type: ignore[typ
 
 
 @extend_schema_view(
+    get=extend_schema(summary="댓글 상세 조회 (예비용)", tags=["댓글 (Comments)"]),
     patch=extend_schema(
         summary="REQ-COMM-003: 댓글 수정",
         description="본인이 작성한 댓글의 내용을 수정합니다.<br>작성자 본인만 호출할 수 있습니다.",
@@ -70,6 +107,7 @@ class PostCommentListCreateView(generics.ListCreateAPIView):  # type: ignore[typ
         description="본인이 작성한 댓글을 삭제합니다. (Soft Delete) <br> 작성자 본인만 호출할 수 있습니다.",
         tags=["댓글 (Comments)"],
     ),
+    put=extend_schema(exclude=True),
 )
 class PostCommentDetailView(generics.RetrieveUpdateDestroyAPIView):  # type: ignore[type-arg]
     """
@@ -79,6 +117,10 @@ class PostCommentDetailView(generics.RetrieveUpdateDestroyAPIView):  # type: ign
 
     permission_classes = [IsAuthenticated]
     lookup_url_kwarg = "comment_id"
+
+    # 로컬 핸들러 주입 (글로벌은 apps/core/exception_handler.py)
+    def get_exception_handler(self) -> Callable[[Exception, dict[str, Any]], Response | None]:
+        return posts_local_exception_handler
 
     def get_serializer_class(self) -> type[BaseSerializer[Any]]:
         return CommentCreateSerializer

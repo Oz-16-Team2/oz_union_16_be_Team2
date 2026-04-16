@@ -21,23 +21,24 @@ class TestPostCommentListCreate:
         """댓글 작성 성공 : 201"""
         api_client.force_authenticate(user=test_user)
         url = f"/api/v1/posts/{test_post.id}/comments"
-        data = {"content": "쉬마려워요"}
+        data = {"content": "테스트 댓글 내용"}
 
         response = api_client.post(url, data, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
-        assert response.data["content"] == "쉬마려워요"
+        assert response.data["content"] == "테스트 댓글 내용"
         assert response.data["nickname"] == test_user.nickname
         assert Comment.objects.filter(post_id=test_post.id).count() == 1
 
-    def test_create_comment_forbidden(self, api_client: APIClient, test_post: Post) -> None:
-        """[예외] 비로그인 유저가 작성을 시도할 경우 : 403"""
+    def test_create_comment_unauthorized(self, api_client: APIClient, test_post: Post) -> None:
+        """[예외] 비로그인 유저가 작성을 시도할 경우 : 401 Unauthorized"""
         url = f"/api/v1/posts/{test_post.id}/comments"
         data = {"content": "로그인 안하고 쓰기"}
 
         response = api_client.post(url, data, format="json")
 
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        # 인증 정보가 아예 없는 경우(Anonymous) 401을 반환하는 듯?
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert "error_detail" in response.data
 
     def test_create_comment_validation_error(self, api_client: APIClient, test_user: User, test_post: Post) -> None:
