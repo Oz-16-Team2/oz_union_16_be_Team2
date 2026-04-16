@@ -58,6 +58,10 @@ class GoalCreateService:
         if target_count > 0:
             progress_rate = round((current_count / target_count) * 100, 1)
 
+        if progress_rate >= 100.0:
+            goal.status = Status.COMPLETED
+            goal.save()
+
         return {
             "detail": "오늘의 목표 달성 인증이 완료되었습니다.",
             "goal_id": goal.id,
