@@ -48,7 +48,8 @@ class GoalReadSerializer(serializers.ModelSerializer[Any]):
     def get_progress_rate(self, obj: Goal) -> float:
         delta = obj.end_date - obj.start_date
         target = max(0, delta.days + 1)
-        current = obj.checks.count()
+
+        current = len(obj.checks.all())
 
         if target <= 0:
             return 0.0
@@ -56,7 +57,7 @@ class GoalReadSerializer(serializers.ModelSerializer[Any]):
 
     def get_is_checked_today(self, obj: Goal) -> bool:
         today = timezone.now().date()
-        return obj.checks.filter(created_at__date=today).exists()
+        return any(check.created_at.date() == today for check in obj.checks.all())
 
 
 class GoalUpdateSerializer(serializers.ModelSerializer[Any]):
