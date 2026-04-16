@@ -81,3 +81,9 @@ class ErrorDetailSerializer(serializers.Serializer[dict[str, Any]]):
     error_detail = serializers.DictField(
         child=serializers.ListField(child=serializers.CharField()), help_text="필드별 에러 메시지 리스트"
     )
+
+
+class GoalCheckSerializer(serializers.Serializer[dict[str, Any]]):
+    detail = serializers.CharField(help_text="결과 메시지")
+    goal_id = serializers.IntegerField(help_text="목표 고유 ID")
+    progress_rate = serializers.FloatField(help_text="현재 달성률")
