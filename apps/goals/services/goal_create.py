@@ -63,3 +63,21 @@ class GoalCreateService:
             "goal_id": goal.id,
             "progress_rate": progress_rate,
         }
+
+    @staticmethod
+    def update_goal_status(goal: Goal) -> None:
+        today = timezone.now().date()
+
+        if goal.end_date >= today:
+            return
+
+        delta = goal.end_date - goal.start_date
+        target_count = max(0, delta.days + 1)
+        current_count = goal.checks.count()
+
+        if current_count >= target_count:
+            goal.status = Status.COMPLETED
+        else:
+            goal.status = Status.FAILED
+
+        goal.save()

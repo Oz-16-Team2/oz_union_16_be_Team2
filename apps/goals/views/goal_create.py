@@ -1,6 +1,7 @@
-from typing import Any
+from typing import Any, cast
 
-from drf_spectacular.utils import OpenApiExample, extend_schema, inline_serializer
+from django.utils import timezone
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema, inline_serializer
 from rest_framework import serializers as drf_serializers
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -8,6 +9,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.choices import Status
 from apps.goals.models import Goal
 from apps.goals.serializers.goal_create import (
     ErrorDetailSerializer,
@@ -17,6 +19,7 @@ from apps.goals.serializers.goal_create import (
     GoalUpdateSerializer,
 )
 from apps.goals.services.goal_create import GoalCreateService
+from apps.users.models import User
 
 
 class GoalCreateView(APIView):
@@ -34,21 +37,19 @@ class GoalCreateView(APIView):
                 value={
                     "goal_id": 1,
                     "title": "매일 물 2L 마시기",
-                    "startDate": "2026-04-14",
-                    "endDate": "2026-05-14",
+                    "start_date": "2026-04-14",
+                    "end_date": "2026-05-14",
                     "status": "IN_PROGRESS",
                     "created_at": "2026-04-14T19:00:00",
-                    "currentCount": 0,
-                    "targetCount": 31,
-                    "progressRate": 0.0,
-                    "isCheckedToday": False,
+                    "progress_rate": 0.0,
+                    "is_checked_today": False,
                 },
                 response_only=True,
                 status_codes=["201"],
             ),
             OpenApiExample(
                 "날짜 검증 에러 (400)",
-                value={"error_detail": {"startDate": ["종료일은 시작일보다 빠를 수 없습니다."]}},
+                value={"error_detail": {"start_date": ["종료일은 시작일보다 빠를 수 없습니다."]}},
                 response_only=True,
                 status_codes=["400"],
             ),
@@ -65,6 +66,15 @@ class GoalCreateView(APIView):
         tags=["Goals"],
         summary="전체 목표 목록 조회",
         description="유저의 모든 목표를 최신순으로 조회합니다.",
+        parameters=[
+            OpenApiParameter(
+                name="status",
+                type=str,
+                description="in_progress, failed, completed 중 하나 (미입력 시 전체 조회)",
+                enum=["in_progress", "failed", "completed"],
+                required=False,
+            )
+        ],
         request=GoalReadSerializer,
         responses={200: GoalReadSerializer(many=True), 401: ErrorDetailSerializer},
         examples=[
@@ -76,8 +86,28 @@ class GoalCreateView(APIView):
         ],
     )
     def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        goals = Goal.objects.filter(user=request.user.id).prefetch_related("checks").order_by("-created_at")
-        serializer = GoalReadSerializer(goals, many=True)
+        today = timezone.now().date()
+
+        user = cast(User, request.user)
+
+        expired_goals = Goal.objects.filter(user=user, status=Status.IN_PROGRESS, end_date__lt=today)
+        for goal in expired_goals:
+            GoalCreateService.update_goal_status(goal)
+
+        queryset = Goal.objects.filter(user=user).prefetch_related("checks").order_by("-created_at")
+
+        status_filter = request.query_params.get("status")
+
+        if status_filter == "in_progress":
+            queryset = queryset.filter(status=Status.IN_PROGRESS)
+
+        elif status_filter == "failed":
+            queryset = queryset.filter(status=Status.FAILED)
+
+        elif status_filter == "completed":
+            queryset = queryset.filter(status__in=[Status.COMPLETED, Status.FAILED])
+
+        serializer = GoalReadSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -102,7 +132,7 @@ class GoalDetailView(APIView):
             ),
             OpenApiExample(
                 "404 조회 실패",
-                value={"error_detail": {"goalId": ["존재하지 않거나 이미 삭제된 목표입니다."]}},
+                value={"error_detail": {"goal_id": ["존재하지 않거나 이미 삭제된 목표입니다."]}},
                 status_codes=["404"],
             ),
         ],
@@ -125,12 +155,12 @@ class GoalDetailView(APIView):
         examples=[
             OpenApiExample(
                 "목표 수정 데이터 예시",
-                value={"title": "수정된 제목", "startDate": "2026-04-15", "endDate": "2026-05-15"},
+                value={"title": "수정된 제목", "start_date": "2026-04-15", "end_date": "2026-05-15"},
                 request_only=True,
             ),
             OpenApiExample(
-                "400 타입 오류",
-                value={"error_detail": {"targetCount": ["목표 횟수는 숫자여야 합니다."]}},
+                "400 날짜 오류",
+                value={"error_detail": {"start_date": ["종료일은 시작일보다 빠를 수 없습니다."]}},
                 response_only=True,
                 status_codes=["400"],
             ),
@@ -142,7 +172,7 @@ class GoalDetailView(APIView):
             ),
             OpenApiExample(
                 "404 수정 대상 없음",
-                value={"error_detail": {"goalId": ["수정할 목표를 찾을 수 없습니다."]}},
+                value={"error_detail": {"goal_id": ["수정할 목표를 찾을 수 없습니다."]}},
                 response_only=True,
                 status_codes=["404"],
             ),
