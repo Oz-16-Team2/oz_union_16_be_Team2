@@ -54,11 +54,11 @@ class GoalCreateService:
         target_count = max(0, delta.days + 1)
         current_count = goal.checks.count()
 
-        progress_rate = 0.0
+        progress_rate = 0
         if target_count > 0:
-            progress_rate = round((current_count / target_count) * 100, 1)
+            progress_rate = int(round((current_count / target_count) * 100, 0))
 
-        if progress_rate >= 100.0:
+        if progress_rate >= 100:
             goal.status = Status.COMPLETED
             goal.save()
 
