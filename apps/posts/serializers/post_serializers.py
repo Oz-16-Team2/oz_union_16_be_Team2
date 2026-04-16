@@ -194,7 +194,7 @@ class GoalInfoSerializer(serializers.Serializer[Any]):
 class PostFeedItemSerializer(serializers.Serializer[Any]):
     post_id = serializers.IntegerField()
     images = serializers.ListField(child=serializers.CharField(), allow_empty=True)
-    profile_image_url = serializers.CharField(max_length=255, allow_null=True, required=False, allow_blank=True)
+    profile_image = serializers.CharField(max_length=255, allow_null=True, required=False, allow_blank=True)
     nickname = serializers.CharField()
     created_at = serializers.DateTimeField()
     title = serializers.CharField()
@@ -215,7 +215,7 @@ class PostFeedResponseSerializer(serializers.Serializer[Any]):
 class PostDetailSerializer(serializers.Serializer[Any]):
     post_id = serializers.IntegerField()
     images = serializers.ListField(child=serializers.CharField(), allow_empty=True)
-    profile_image_url = serializers.CharField(allow_null=True, required=False, allow_blank=True)
+    profile_image = serializers.CharField(allow_null=True, required=False, allow_blank=True)
     nickname = serializers.CharField()
     created_at = serializers.DateTimeField()
     title = serializers.CharField()
@@ -242,7 +242,7 @@ def build_feed_item(
     return {
         "post_id": post.id,
         "images": post.images or [],
-        "profile_image_url": post.user.profile_image_url,
+        "profile_image": post.user.profile_image,
         "nickname": post.user.nickname,
         "created_at": post.created_at,
         "title": post.title,
@@ -277,7 +277,7 @@ def build_post_detail(
     return {
         "post_id": post.id,
         "images": post.images or [],
-        "profile_image_url": post.user.profile_image_url,
+        "profile_image": post.user.profile_image,
         "nickname": post.user.nickname,
         "created_at": post.created_at,
         "title": post.title,
