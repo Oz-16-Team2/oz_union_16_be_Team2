@@ -52,8 +52,8 @@ class GoalReadSerializer(serializers.ModelSerializer[Any]):
         current = len(obj.checks.all())
 
         if target <= 0:
-            return 0.0
-        return round((current / target) * 100, 1)
+            return 0
+        return int(round((current / target) * 100, 0))
 
     def get_is_checked_today(self, obj: Goal) -> bool:
         today = timezone.now().date()
