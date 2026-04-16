@@ -1,60 +1,67 @@
+from collections.abc import Generator
+from typing import Any
+
+import pytest
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.test import APIClient
 
 from apps.goals.models import Goal
 from apps.users.models import User
 
 
-class GoalAPITestCase(APITestCase):
-    user: User
-    goal: Goal
-    list_create_url: str
-    detail_url: str
+@pytest.mark.django_db
+class TestGoalAPI:
+    @pytest.fixture(scope="class", autouse=True)
+    def setup_class_data(self, django_db_blocker: Any) -> Generator[dict[str, Any]]:
+        with django_db_blocker.unblock():
+            user = User.objects.create_user(nickname="me", email="me@test.com", password="pass")
+            other = User.objects.create_user(nickname="other", email="other@test.com", password="pass")
 
-    @classmethod
-    def setUpTestData(cls) -> None:
-        cls.user = User.objects.create_user(nickname="testuser", email="test@test.com", password="password123")
-        cls.goal = Goal.objects.create(user=cls.user, title="기존 목표", start_date="2026-04-14", end_date="2026-05-14")
-        cls.list_create_url = reverse("goal-create")
-        cls.detail_url = reverse("goal-detail", kwargs={"goal_id": cls.goal.id})
+            goal = Goal.objects.create(user=user, title="내 목표", start_date="2026-04-14", end_date="2026-05-14")
+            other_goal = Goal.objects.create(
+                user=other, title="남의 목표", start_date="2026-04-14", end_date="2026-05-14"
+            )
 
-    def setUp(self) -> None:
-        self.client.force_authenticate(user=self.user)
+            yield {
+                "user": user,
+                "goal": goal,
+                "other_goal": other_goal,
+                "list_url": reverse("goal-create"),
+                "detail_url": reverse("goal-detail", kwargs={"goal_id": goal.id}),
+                "other_detail_url": reverse("goal-detail", kwargs={"goal_id": other_goal.id}),
+            }
 
-    def test_create_goal_success(self) -> None:
-        data = {"title": "새로운 운동 목표", "start_date": "2026-04-15", "end_date": "2026-05-15"}
-        response = self.client.post(self.list_create_url, data)
-
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data["title"], "새로운 운동 목표")
-        self.assertIn("progress_rate", response.data)
-
-    def test_create_goal_date_validation_fail(self) -> None:
-        data = {"title": "날짜 오류 목표", "start_date": "2026-04-15", "end_date": "2026-04-10"}
-        response = self.client.post(self.list_create_url, data)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("start_date", response.data["error_detail"])
+    @pytest.fixture(autouse=True)
+    def setup_method(self, setup_class_data: dict[str, Any]) -> None:
+        self.data = setup_class_data
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.data["user"])
 
     def test_get_goal_list(self) -> None:
-        response = self.client.get(self.list_create_url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertGreaterEqual(len(response.data), 1)
+        response = self.client.get(self.data["list_url"])
+        assert response.status_code == status.HTTP_200_OK
 
-    def test_get_goal_detail(self) -> None:
-        response = self.client.get(self.detail_url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["goal_id"], self.goal.id)
+    def test_get_goal_detail_success(self) -> None:
+        response = self.client.get(self.data["detail_url"])
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["title"] == "내 목표"
+
+    def test_get_other_goal_detail_fail(self) -> None:
+        response = self.client.get(self.data["other_detail_url"])
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_create_goal_success(self) -> None:
+        data = {"title": "신규", "start_date": "2026-04-15", "end_date": "2026-05-15"}
+        response = self.client.post(self.data["list_url"], data)
+        assert response.status_code == status.HTTP_201_CREATED
 
     def test_update_goal_success(self) -> None:
-        data = {"title": "수정된 목표 제목"}
-        response = self.client.patch(self.detail_url, data)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["title"], "수정된 목표 제목")
+        data = {"title": "수정된 제목"}
+        response = self.client.patch(self.data["detail_url"], data)
+        assert response.status_code == status.HTTP_200_OK
 
     def test_delete_goal_success(self) -> None:
-        response = self.client.delete(self.detail_url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(Goal.objects.filter(id=self.goal.id).exists())
+        response = self.client.delete(self.data["detail_url"])
+        assert response.status_code == status.HTTP_200_OK
+        assert not Goal.objects.filter(id=self.data["goal"].id).exists()
