@@ -5,11 +5,10 @@ from typing import Any, cast
 >>>>>>> 13d0857 (chore: 테스트 코드 디버깅)
 
 import pytest
-from typing import Any, cast
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from apps.posts.models import Comment, CommentLike, Post
+from apps.posts.models import Comment, Post
 from apps.users.models import User
 
 
