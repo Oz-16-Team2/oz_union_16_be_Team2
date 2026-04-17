@@ -5,10 +5,11 @@ from typing import Any, cast
 >>>>>>> 13d0857 (chore: 테스트 코드 디버깅)
 
 import pytest
+from typing import Any, cast
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from apps.posts.models import Comment, Post
+from apps.posts.models import Comment, CommentLike, Post
 from apps.users.models import User
 
 
@@ -62,10 +63,7 @@ class TestPostCommentListCreate:
     @pytest.fixture
     def post(self, user: User) -> Post:
         """테스트용 게시글 생성"""
-        p = Post()
-        p.user_id = user.id
-        p.save()
-        return p
+        return Post.objects.create(user_id=user.id)
 
     def test_create_comment_success(self, api_client: APIClient, user: User, post: Post) -> None:
         """[기능] 댓글 작성 성공 (201)"""
