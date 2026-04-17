@@ -1,9 +1,11 @@
 import uuid
-from typing import Any
+from typing import TYPE_CHECKING
 
+import pytest
 from django.contrib.auth import get_user_model
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.response import Response
+from rest_framework.test import APIClient
 
 from apps.core.choices import ReportReasonType
 from apps.posts.models import Post
@@ -11,106 +13,147 @@ from apps.reports.models import Report
 
 User = get_user_model()
 
+if TYPE_CHECKING:
+    from apps.users.models import User as UserType
+else:
+    UserType = User
 
-class PostReportAPITest(APITestCase):
-    user: Any
-    other_user: Any
-    post: Any
 
-    @classmethod
-    def setUpTestData(cls) -> None:
-        cls.user = User.objects.create_user(
-            email=f"user-{uuid.uuid4()}@test.com",
-            password="password123",
-            nickname=f"user-{uuid.uuid4()}",
-        )
+@pytest.fixture
+def api_client() -> APIClient:
+    return APIClient()
 
-        cls.other_user = User.objects.create_user(
-            email=f"other-{uuid.uuid4()}@test.com",
-            password="password123",
-            nickname=f"other-{uuid.uuid4()}",
-        )
 
-        cls.post = Post.objects.create(
-            title="test post",
-            content="content",
-            user=cls.other_user,
-        )
+@pytest.fixture
+def user(db: None) -> UserType:
+    return User.objects.create_user(
+        email=f"user-{uuid.uuid4()}@test.com",
+        password="password123",
+        nickname=f"user-{uuid.uuid4()}",
+    )
 
-    def get_url(self, post_id: int) -> str:
-        return f"/api/v1/posts/{post_id}/reports/"
 
-    def authenticate(self, user: Any) -> None:
-        self.client.force_authenticate(user=user)
+@pytest.fixture
+def other_user(db: None) -> UserType:
+    return User.objects.create_user(
+        email=f"other-{uuid.uuid4()}@test.com",
+        password="password123",
+        nickname=f"other-{uuid.uuid4()}",
+    )
 
-    def test_create_post_report_success(self) -> None:
-        self.authenticate(self.user)
 
-        res = self.client.post(
-            self.get_url(self.post.id),
-            {
-                "reason_type": ReportReasonType.SPAM,
-                "reason_detail": "스팸입니다",
-            },
-        )
+@pytest.fixture
+def post(db: None, other_user: UserType) -> Post:
+    return Post.objects.create(
+        title="test post",
+        content="content",
+        user=other_user,
+    )
 
-        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
 
-    def test_duplicate_report(self) -> None:
-        self.authenticate(self.user)
+def get_url(post_id: int) -> str:
+    return f"/api/v1/posts/{post_id}/reports/"
 
-        Report.objects.create(
-            user_id=self.user.id,
-            target_id=self.post.id,
-            target_type="POST",
-            reason_type=ReportReasonType.SPAM,
-            reason_detail="test",
-            status="PENDING",
-        )
 
-        res = self.client.post(
-            self.get_url(self.post.id),
-            {
-                "reason_type": ReportReasonType.SPAM,
-                "reason_detail": "again",
-            },
-        )
+def authenticate(client: APIClient, user: UserType) -> None:
+    client.force_authenticate(user=user)
 
-        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_post_not_found(self) -> None:
-        self.authenticate(self.user)
+@pytest.mark.django_db
+def test_create_post_report_success(
+    api_client: APIClient,
+    user: UserType,
+    post: Post,
+) -> None:
+    authenticate(api_client, user)
 
-        res = self.client.post(
-            self.get_url(99999),
-            {
-                "reason_type": ReportReasonType.SPAM,
-                "reason_detail": "test",
-            },
-        )
+    res: Response = api_client.post(
+        get_url(post.id),
+        {
+            "reason_type": ReportReasonType.SPAM,
+            "reason_detail": "스팸입니다",
+        },
+    )
 
-        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+    assert res.status_code == status.HTTP_201_CREATED
 
-    def test_validation_error_other_without_detail(self) -> None:
-        self.authenticate(self.user)
 
-        res = self.client.post(
-            self.get_url(self.post.id),
-            {
-                "reason_type": ReportReasonType.OTHER,
-                "reason_detail": "",
-            },
-        )
+@pytest.mark.django_db
+def test_duplicate_report(
+    api_client: APIClient,
+    user: UserType,
+    post: Post,
+) -> None:
+    authenticate(api_client, user)
 
-        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+    Report.objects.create(
+        user_id=user.id,
+        target_id=post.id,
+        target_type="POST",
+        reason_type=ReportReasonType.SPAM,
+        reason_detail="test",
+        status="PENDING",
+    )
 
-    def test_unauthorized(self) -> None:
-        res = self.client.post(
-            self.get_url(self.post.id),
-            {
-                "reason_type": ReportReasonType.SPAM,
-                "reason_detail": "test",
-            },
-        )
+    res: Response = api_client.post(
+        get_url(post.id),
+        {
+            "reason_type": ReportReasonType.SPAM,
+            "reason_detail": "again",
+        },
+    )
 
-        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+    assert res.status_code == status.HTTP_400_BAD_REQUEST
+
+
+@pytest.mark.django_db
+def test_post_not_found(
+    api_client: APIClient,
+    user: UserType,
+) -> None:
+    authenticate(api_client, user)
+
+    res: Response = api_client.post(
+        get_url(99999),
+        {
+            "reason_type": ReportReasonType.SPAM,
+            "reason_detail": "test",
+        },
+    )
+
+    assert res.status_code == status.HTTP_404_NOT_FOUND
+
+
+@pytest.mark.django_db
+def test_validation_error_other_without_detail(
+    api_client: APIClient,
+    user: UserType,
+    post: Post,
+) -> None:
+    authenticate(api_client, user)
+
+    res: Response = api_client.post(
+        get_url(post.id),
+        {
+            "reason_type": ReportReasonType.OTHER,
+            "reason_detail": "",
+        },
+    )
+
+    assert res.status_code == status.HTTP_400_BAD_REQUEST
+
+
+@pytest.mark.django_db
+def test_unauthorized(
+    api_client: APIClient,
+    post: Post,
+) -> None:
+    res: Response = api_client.post(
+        get_url(post.id),
+        {
+            "reason_type": ReportReasonType.SPAM,
+            "reason_detail": "test",
+        },
+    )
+
+    assert res.status_code == status.HTTP_401_UNAUTHORIZED
