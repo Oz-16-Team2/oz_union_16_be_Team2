@@ -31,7 +31,7 @@ class CommentStatus(models.TextChoices):
 
 class PostStatus(models.TextChoices):
     NORMAL = "normal", "정상"
-    HIDDEN = "hidden", "숨김"
+    REMOVED = "removed", "삭제됨"
     REPORTED = "reported", "신고됨"
 
 

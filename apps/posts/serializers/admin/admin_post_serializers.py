@@ -17,7 +17,7 @@ class AdminPostListQuerySerializer(serializers.Serializer[dict[str, Any]]):
     status = serializers.ChoiceField(
         choices=[
             PostStatus.NORMAL.upper(),
-            PostStatus.HIDDEN.upper(),
+            PostStatus.REMOVED.upper(),
             PostStatus.REPORTED.upper(),
         ],
         required=False,
@@ -125,7 +125,6 @@ class AdminPostStatusUpdateRequestSerializer(serializers.Serializer[dict[str, An
     status = serializers.ChoiceField(
         choices=[
             PostStatus.NORMAL.upper(),
-            PostStatus.HIDDEN.upper(),
             PostStatus.REPORTED.upper(),
         ]
     )

@@ -251,7 +251,7 @@ class TestAdminPostAPIView:
 
         response = api_client.patch(
             f"/api/v1/admin/posts/{fresh_post_data['post'].id}/status",
-            {"status": "HIDDEN"},
+            {"status": "REPORTED"},
             format="json",
         )
 
@@ -259,7 +259,7 @@ class TestAdminPostAPIView:
         assert response.data["detail"] == "게시글 상태가 수정되었습니다."
 
         fresh_post_data["post"].refresh_from_db()
-        assert fresh_post_data["post"].status == PostStatus.HIDDEN
+        assert fresh_post_data["post"].status == PostStatus.REPORTED
 
     def test_update_post_status_returns_400_when_status_is_invalid(
         self,
@@ -286,7 +286,7 @@ class TestAdminPostAPIView:
 
         response = api_client.patch(
             "/api/v1/admin/posts/99999/status",
-            {"status": "HIDDEN"},
+            {"status": "REPORTED"},
             format="json",
         )
 
