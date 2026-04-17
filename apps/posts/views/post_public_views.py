@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core import detail_response, error_response
+from apps.goals.serializers.goal_create import ErrorDetailSerializer
 from apps.posts.serializers.post_serializers import (
     SCOPE_MY,
     MessageDetailSerializer,
@@ -25,7 +26,6 @@ from apps.posts.services import (
     soft_delete_post,
     update_post,
 )
-from apps.users.serializers import ErrorDetailFieldListSerializer
 
 TAG_POSTS = "Posts"
 
@@ -61,8 +61,8 @@ class PostCollectionAPIView(APIView):
         ],
         responses={
             200: PostFeedResponseSerializer,
-            400: ErrorDetailFieldListSerializer,
-            401: ErrorDetailFieldListSerializer,
+            400: ErrorDetailSerializer,
+            401: ErrorDetailSerializer,
         },
         examples=[
             OpenApiExample(
@@ -132,8 +132,8 @@ class PostCollectionAPIView(APIView):
         request=PostCreateSerializer,
         responses={
             201: PostCreateResponseSerializer,
-            400: ErrorDetailFieldListSerializer,
-            401: ErrorDetailFieldListSerializer,
+            400: ErrorDetailSerializer,
+            401: ErrorDetailSerializer,
         },
         examples=[
             OpenApiExample(
@@ -186,8 +186,8 @@ class PostDetailAPIView(APIView):
         summary="포스트 상세 조회 (REQ-POST-005)",
         responses={
             200: PostDetailSerializer,
-            401: ErrorDetailFieldListSerializer,
-            404: ErrorDetailFieldListSerializer,
+            401: ErrorDetailSerializer,
+            404: ErrorDetailSerializer,
         },
         examples=[
             OpenApiExample(
@@ -257,9 +257,9 @@ class PostDetailAPIView(APIView):
         request=PostPatchSerializer,
         responses={
             200: MessageDetailSerializer,
-            400: ErrorDetailFieldListSerializer,
-            401: ErrorDetailFieldListSerializer,
-            404: ErrorDetailFieldListSerializer,
+            400: ErrorDetailSerializer,
+            401: ErrorDetailSerializer,
+            404: ErrorDetailSerializer,
         },
         examples=[
             OpenApiExample(
@@ -311,8 +311,8 @@ class PostDetailAPIView(APIView):
         summary="포스트 삭제 (REQ-POST-004)",
         responses={
             200: MessageDetailSerializer,
-            401: ErrorDetailFieldListSerializer,
-            404: ErrorDetailFieldListSerializer,
+            401: ErrorDetailSerializer,
+            404: ErrorDetailSerializer,
         },
         examples=[
             OpenApiExample(
