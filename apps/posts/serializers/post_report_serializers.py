@@ -8,7 +8,6 @@ from apps.core.choices import ReportReasonType
 
 
 class PostReportCreateSerializer(serializers.Serializer[Any]):
-    post_id = serializers.IntegerField(required=True)
     reason_type = serializers.ChoiceField(
         required=True,
         choices=ReportReasonType.choices,
