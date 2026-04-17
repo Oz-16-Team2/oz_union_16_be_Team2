@@ -4,8 +4,8 @@ COMPOSE := docker compose -f resource/docker-compose.yml
         migrate makemigrations createsuperuser shell \
         db-shell lint code_format test prune help
 
-build:  ## 이미지 빌드
-	$(COMPOSE) build
+build:  ## 이미지 빌드 + 컨테이너 백그라운드 실행
+	$(COMPOSE) up -d --build
 
 up:  ## 컨테이너 백그라운드 실행
 	$(COMPOSE) up -d
@@ -35,17 +35,15 @@ createsuperuser:  ## 관리자 계정 생성
 shell:  ## Django shell 접속
 	$(COMPOSE) exec web uv run python manage.py shell
 
-lint:  ## ruff 코드 검사
-	$(COMPOSE) exec web uv run ruff check .
+code_format:
+	$(COMPOSE) exec web uv run ruff check --fix . && \
+	$(COMPOSE) exec web uv run ruff format . && \
+	$(COMPOSE) exec web uv run ruff check . && \
 	$(COMPOSE) exec web uv run ruff format --check .
 
-code_format:  ## ruff 자동 포맷팅
-	$(COMPOSE) exec web uv run ruff check --fix .
-	$(COMPOSE) exec web uv run ruff format .
-
-test:  ## mypy 타입체크 + Django 테스트
+test:  ## mypy 타입체크 + pytest 커버리지 테스트
 	$(COMPOSE) exec web uv run mypy .
-	$(COMPOSE) exec web uv run python manage.py test apps
+	$(COMPOSE) exec web uv run pytest
 
 db-shell:  ## PostgreSQL 직접 접속
 	$(COMPOSE) exec db psql -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-template_db}

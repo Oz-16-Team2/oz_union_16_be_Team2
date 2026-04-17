@@ -4,6 +4,8 @@ from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import BaseUserManager, PermissionsMixin
 from django.db import models
 
+from apps.core.choices import ProfileImageCode, UserStatus
+
 
 class UserManager(BaseUserManager["User"]):
     def create_user(
@@ -35,16 +37,16 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=128)
     nickname = models.CharField(max_length=100, unique=True)
-    profile_image_url = models.URLField(blank=True, null=True)
+    profile_image = models.CharField(max_length=20, choices=ProfileImageCode, default=ProfileImageCode.AVATAR_01)
     total_goals_count = models.IntegerField(default=0)
     deleted_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
-
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["nickname"]
+    status = models.CharField(max_length=20, choices=UserStatus, default=UserStatus.ACTIVE)
 
     objects = UserManager()
 
@@ -72,13 +74,26 @@ class SocialLogin(models.Model):
 
 
 class Follow(models.Model):
-    following_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="followers")
-    follower_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="followings")
-    created_at = models.DateTimeField(auto_now_add=True)
+    follower_user_id = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        related_name="팔로우하는유저id",
+        db_column="follower_id",
+        help_text="팔로우를 하는 유저",
+    )
+    following_user_id = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="팔로우받는유저id",
+        null=True,
+        db_column="following_id",
+        help_text="팔로우를 받는 유저",
+    )
+    created_at = models.DateTimeField(auto_now_add=True, help_text="생성일")
 
     class Meta:
         db_table = "follows"
-        unique_together = ("following_user", "follower_user")
-
-    def __str__(self) -> str:
-        return f"{self.follower_user.nickname} → {self.following_user.nickname}"
+        unique_together = ("follower_user_id", "following_user_id")  # 중복 팔로우 방지
+        verbose_name = "팔로우"
+        verbose_name_plural = "팔로우 목록"

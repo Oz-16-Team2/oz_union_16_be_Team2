@@ -1,19 +1,20 @@
 [project]
-name = "project-templete"
+name = "jaksim"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "black>=26.3.1",
     "django>=6.0.4",
     "djangorestframework>=3.17.1",
+    "djangorestframework-simplejwt>=5.5.1",
+    "djangorestframework-stubs>=3.16.9",
     "drf-spectacular>=0.29.0",
     "gunicorn>=25.3.0",
-    "isort>=8.0.1",
     "psycopg[binary]>=3.3.3",
     "pytest>=9.0.3",
     "pytest-cov>=7.1.0",
+    "python-dotenv>=1.2.2",
     "tree>=0.2.4",
 ]
 
@@ -22,6 +23,7 @@ dev = [
     "django-stubs[compatible-mypy]>=6.0.2",
     "mypy>=1.20.0",
     "ruff>=0.15.9",
+    "pytest-django>=4.11.1",
 ]
 
 [tool.ruff]
@@ -43,3 +45,8 @@ ignore_missing_imports = true
 
 [tool.django-stubs]
 django_settings_module = "config.settings"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py", "*_test.py"]
+addopts = "--cov=apps --cov-report=term-missing --cov-fail-under=80"

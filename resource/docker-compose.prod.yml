@@ -19,15 +19,11 @@ services:
   redis:
     image: redis:7
     container_name: jaksim_redis
-    ports:
-      - "6379:6379"
-
-  redis:
-    image: redis:7
-    container_name: prod_redis
     restart: always
     networks:
       - backend
+    ports:
+      - "6379:6379"
 
   web:
     image: ghcr.io/${GITHUB_REPOSITORY}:latest
