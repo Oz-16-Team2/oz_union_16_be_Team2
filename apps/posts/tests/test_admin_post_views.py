@@ -95,6 +95,34 @@ def admin_post_data(django_db_blocker: Any) -> dict[str, Any]:
 
 
 @pytest.fixture
+def fresh_post_data() -> dict[str, Any]:
+    admin_user = User.objects.create_user(
+        email="admin_post_fresh@test.com",
+        password="test1234",
+        nickname="admin_post_fresh_user",
+        is_staff=True,
+    )
+    author = User.objects.create_user(
+        email="author_post_fresh@test.com",
+        password="test1234",
+        nickname="author_post_fresh_user",
+    )
+    post = Post.objects.create(
+        user=author,
+        title="수정 테스트용 게시글",
+        content="수정 테스트용 내용",
+        is_private=False,
+        status=PostStatus.NORMAL,
+    )
+
+    return {
+        "admin_user": admin_user,
+        "author": author,
+        "post": post,
+    }
+
+
+@pytest.fixture
 def api_client() -> APIClient:
     return APIClient()
 
@@ -195,16 +223,16 @@ class TestAdminPostAPIView:
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert response.data["error_detail"] == "게시글을 찾을 수 없습니다."
 
-    def test_admin_can_delete_post(self, api_client: APIClient, admin_post_data: dict[str, Any]) -> None:
-        api_client.force_authenticate(user=admin_post_data["admin_user"])
+    def test_admin_can_delete_post(self, api_client: APIClient, fresh_post_data: dict[str, Any]) -> None:
+        api_client.force_authenticate(user=fresh_post_data["admin_user"])
 
-        response = api_client.delete(f"/api/v1/admin/posts/{admin_post_data['post_with_vote'].id}/delete")
+        response = api_client.delete(f"/api/v1/admin/posts/{fresh_post_data['post'].id}/delete")
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["detail"] == "게시글이 삭제되었습니다."
 
-        admin_post_data["post_with_vote"].refresh_from_db()
-        assert admin_post_data["post_with_vote"].deleted_at is not None
+        fresh_post_data["post"].refresh_from_db()
+        assert fresh_post_data["post"].deleted_at is not None
 
     def test_delete_post_returns_404_when_post_not_found(
         self,
@@ -218,11 +246,11 @@ class TestAdminPostAPIView:
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert response.data["error_detail"] == "게시글을 찾을 수 없습니다."
 
-    def test_admin_can_update_post_status(self, api_client: APIClient, admin_post_data: dict[str, Any]) -> None:
-        api_client.force_authenticate(user=admin_post_data["admin_user"])
+    def test_admin_can_update_post_status(self, api_client: APIClient, fresh_post_data: dict[str, Any]) -> None:
+        api_client.force_authenticate(user=fresh_post_data["admin_user"])
 
         response = api_client.patch(
-            f"/api/v1/admin/posts/{admin_post_data['post_without_vote'].id}/status",
+            f"/api/v1/admin/posts/{fresh_post_data['post'].id}/status",
             {"status": "HIDDEN"},
             format="json",
         )
@@ -230,18 +258,18 @@ class TestAdminPostAPIView:
         assert response.status_code == status.HTTP_200_OK
         assert response.data["detail"] == "게시글 상태가 수정되었습니다."
 
-        admin_post_data["post_without_vote"].refresh_from_db()
-        assert admin_post_data["post_without_vote"].status == PostStatus.HIDDEN
+        fresh_post_data["post"].refresh_from_db()
+        assert fresh_post_data["post"].status == PostStatus.HIDDEN
 
     def test_update_post_status_returns_400_when_status_is_invalid(
         self,
         api_client: APIClient,
-        admin_post_data: dict[str, Any],
+        fresh_post_data: dict[str, Any],
     ) -> None:
-        api_client.force_authenticate(user=admin_post_data["admin_user"])
+        api_client.force_authenticate(user=fresh_post_data["admin_user"])
 
         response = api_client.patch(
-            f"/api/v1/admin/posts/{admin_post_data['post_without_vote'].id}/status",
+            f"/api/v1/admin/posts/{fresh_post_data['post'].id}/status",
             {"status": "WRONG"},
             format="json",
         )
