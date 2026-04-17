@@ -9,6 +9,7 @@ from apps.users.models import User
 pytestmark = pytest.mark.django_db
 
 
+@pytest.mark.comment
 class TestPostCommentListCreate:
     """
     REQ-COMM-001 댓글 작성
