@@ -21,7 +21,16 @@ from apps.posts.serializers.serializers_comment import (
 
 
 
-@extend_schema(tags=["댓글 (Comments)"])
+@extend_schema_view(
+    get=extend_schema(
+        summary="REQ-COMM-002: 댓글 목록 조회",
+        tags=["댓글 (Comments)"]
+    ),
+    post=extend_schema(
+        summary="REQ-COMM-001: 댓글 작성",
+        tags=["댓글 (Comments)"]
+    )
+)
 class PostCommentListCreateView(generics.ListCreateAPIView):  # type: ignore[type-arg]
     """
     <GET> 댓글 목록 조회 View
@@ -67,12 +76,12 @@ class PostCommentListCreateView(generics.ListCreateAPIView):  # type: ignore[typ
 @extend_schema_view(
     get=extend_schema(summary="댓글 상세 조회 (예비용)", tags=["댓글 (Comments)"]),
     patch=extend_schema(
-        summary="REQ-COMM-003: 댓글 수정",
+        summary="REQ-COMM-006: 댓글 수정",
         description="본인이 작성한 댓글의 내용을 수정합니다.<br>작성자 본인만 호출할 수 있습니다.",
         tags=["댓글 (Comments)"],
     ),
     delete=extend_schema(
-        summary="REQ-COMM-004: 댓글 삭제",
+        summary="REQ-COMM-003: 댓글 삭제",
         description="본인이 작성한 댓글을 삭제합니다. (Soft Delete) <br> 작성자 본인만 호출할 수 있습니다.",
         tags=["댓글 (Comments)"],
     ),

@@ -1,0 +1,96 @@
+from typing import Any
+
+from drf_spectacular.utils import extend_schema
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from apps.core.exceptions import ConflictException, ResourceNotFoundException
+from apps.posts.models import Comment, CommentLike, Post, PostLike
+
+
+class PostLikeView(APIView):
+    """
+    REQ-LIKE-001, 002: 게시글 좋아요 및 취소 API
+    URL: /api/v1/posts/{post_id}/likes
+    """
+    #  좋아요는 로그인한 유저만 가능
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="REQ-LIKE-001: 게시글 좋아요",
+        description="특정 게시글에 좋아요를 누릅니다.",
+        responses={201: None},
+        tags=["좋아요 (Likes)"]
+    )
+    def post(self, request: Request, post_id: int) -> Response:
+        if not Post.objects.filter(id=post_id).exists():
+            raise ResourceNotFoundException("게시글을 찾을 수 없습니다.")
+
+        # get_or_create로 동시성 방어
+        # created가 False라면 이미 좋아요 했다
+        like, created = PostLike.objects.get_or_create(user_id=request.user.id, post_id=post_id)
+        if not created:
+            raise ConflictException("이미 좋아요를 누른 게시글입니다.")
+
+        return Response(status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        summary="REQ-LIKE-002: 게시글 좋아요 취소",
+        description="특정 게시글의 좋아요를 취소합니다.",
+        responses={204: None},
+        tags=["좋아요 (Likes)"]
+    )
+    def delete(self, request: Request, post_id: int) -> Response:
+        if not Post.objects.filter(id=post_id).exists():
+            raise ResourceNotFoundException("게시글을 찾을 수 없습니다.")
+
+        # 삭제된 row의 개수를 반환받아 0개면 예외 처리합니다.
+        deleted, _ = PostLike.objects.filter(user_id=request.user.id, post_id=post_id).delete()
+        if not deleted:
+            raise ResourceNotFoundException("좋아요 기록을 찾을 수 없습니다.")
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class CommentLikeView(APIView):
+    """
+    REQ-LIKE-003, 004: 댓글 좋아요 및 취소 API
+    URL: /api/v1/posts/{post_id}/comments/{comment_id}/likes
+    """
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="REQ-LIKE-003: 댓글 좋아요",
+        description="특정 댓글에 좋아요를 누릅니다.",
+        responses={201: None},
+        tags=["좋아요 (Likes)"]
+    )
+    def post(self, request: Request, post_id: int, comment_id: int) -> Response:
+        # 🛡️ Edge Case: 삭제된(Soft Delete) 댓글이거나, 다른 게시글의 댓글이면 404 차단!
+        if not Comment.objects.filter(id=comment_id, post_id=post_id, deleted_at__isnull=True).exists():
+            raise ResourceNotFoundException("댓글을 찾을 수 없습니다.")
+
+        like, created = CommentLike.objects.get_or_create(user_id=request.user.id, comment_id=comment_id)
+        if not created:
+            raise ConflictException("이미 좋아요를 누른 댓글입니다.")
+
+        return Response(status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        summary="REQ-LIKE-004: 댓글 좋아요 취소",
+        description="특정 댓글의 좋아요를 취소합니다.",
+        responses={204: None},
+        tags=["좋아요 (Likes)"]
+    )
+    def delete(self, request: Request, post_id: int, comment_id: int) -> Response:
+        if not Comment.objects.filter(id=comment_id, post_id=post_id, deleted_at__isnull=True).exists():
+            raise ResourceNotFoundException("댓글을 찾을 수 없습니다.")
+
+        deleted, _ = CommentLike.objects.filter(user_id=request.user.id, comment_id=comment_id).delete()
+        if not deleted:
+            raise ResourceNotFoundException("좋아요 기록을 찾을 수 없습니다.")
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
