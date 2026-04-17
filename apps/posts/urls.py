@@ -16,3 +16,4 @@ urlpatterns = [
     # <PATCH> 댓글 수정, <DELETE> 댓글 삭제 API
     path("<int:post_id>/comments/<int:comment_id>", PostCommentDetailView.as_view(), name="post-comment-detail"),
 ]
+
