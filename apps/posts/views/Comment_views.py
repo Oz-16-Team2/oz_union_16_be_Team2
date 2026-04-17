@@ -1,4 +1,3 @@
-from collections.abc import Callable
 from typing import Any
 
 from django.db.models import BooleanField, Count, Exists, OuterRef, Value
@@ -10,9 +9,7 @@ from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.serializers import BaseSerializer
-from rest_framework.views import exception_handler  # DRF 기본 핸들러
 
-from apps.core.exceptions import ConflictException, ResourceNotFoundException
 from apps.posts.models import Comment, CommentLike, Post
 from apps.posts.serializers.serializers_comment import (
     CommentCreateSerializer,
@@ -20,16 +17,9 @@ from apps.posts.serializers.serializers_comment import (
 )
 
 
-
 @extend_schema_view(
-    get=extend_schema(
-        summary="REQ-COMM-002: 댓글 목록 조회",
-        tags=["댓글 (Comments)"]
-    ),
-    post=extend_schema(
-        summary="REQ-COMM-001: 댓글 작성",
-        tags=["댓글 (Comments)"]
-    )
+    get=extend_schema(summary="REQ-COMM-002: 댓글 목록 조회", tags=["댓글 (Comments)"]),
+    post=extend_schema(summary="REQ-COMM-001: 댓글 작성", tags=["댓글 (Comments)"]),
 )
 class PostCommentListCreateView(generics.ListCreateAPIView):  # type: ignore[type-arg]
     """
