@@ -57,7 +57,7 @@ def admin_post_data(django_db_blocker: Any) -> dict[str, Any]:
             content="오늘은 알고리즘 3문제 풀었습니다.",
             images=["https://example.com/posts/post_2_img_1.png"],
             is_private=False,
-            status=PostStatus.NORMAL,
+            status=PostStatus.ACTIVE,
         )
 
         PostTag.objects.create(post=post_with_vote, tag=tag1)
@@ -112,7 +112,7 @@ def fresh_post_data() -> dict[str, Any]:
         title="수정 테스트용 게시글",
         content="수정 테스트용 내용",
         is_private=False,
-        status=PostStatus.NORMAL,
+        status=PostStatus.ACTIVE,
     )
 
     return {

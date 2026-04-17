@@ -179,7 +179,7 @@ class AdminPostService:
         except Post.DoesNotExist as exc:
             raise ResourceNotFoundException("게시글을 찾을 수 없습니다.") from exc
 
-        post.status = PostStatus.REMOVED
+        post.status = PostStatus.DELETED
         post.deleted_at = timezone.now()
         post.save(update_fields=["status", "deleted_at", "updated_at"])
 

@@ -16,8 +16,8 @@ class AdminPostListQuerySerializer(serializers.Serializer[dict[str, Any]]):
     users_id = serializers.IntegerField(required=False, min_value=1)
     status = serializers.ChoiceField(
         choices=[
-            PostStatus.NORMAL.upper(),
-            PostStatus.REMOVED.upper(),
+            PostStatus.ACTIVE.upper(),
+            PostStatus.DELETED.upper(),
             PostStatus.REPORTED.upper(),
         ],
         required=False,
@@ -124,7 +124,7 @@ class AdminPostDetailSuccessResponseSerializer(serializers.Serializer[dict[str, 
 class AdminPostStatusUpdateRequestSerializer(serializers.Serializer[dict[str, Any]]):
     status = serializers.ChoiceField(
         choices=[
-            PostStatus.NORMAL.upper(),
+            PostStatus.ACTIVE.upper(),
             PostStatus.REPORTED.upper(),
         ]
     )

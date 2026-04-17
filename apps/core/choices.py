@@ -27,11 +27,12 @@ class VoteStatus(models.TextChoices):
 class CommentStatus(models.TextChoices):
     ACTIVE = "active", "활성"
     DELETED = "deleted", "삭제"
+    REPORTED = "reported", "신고됨"
 
 
 class PostStatus(models.TextChoices):
-    NORMAL = "normal", "정상"
-    REMOVED = "removed", "삭제됨"
+    ACTIVE = "active", "활성"
+    DELETED = "deleted", "삭제"
     REPORTED = "reported", "신고됨"
 
 

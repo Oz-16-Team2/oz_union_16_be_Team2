@@ -37,7 +37,7 @@ def get_tags_by_post_id(post_ids: list[int]) -> dict[int, list[str]]:
 
 
 def _base_visible_posts() -> Any:
-    return Post.objects.filter(deleted_at__isnull=True, status=PostStatus.NORMAL)
+    return Post.objects.filter(deleted_at__isnull=True, status=PostStatus.ACTIVE)
 
 
 def feed_queryset(*, scope: str, sort_by: str, user: User | AnonymousUser) -> Any:
