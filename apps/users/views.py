@@ -5,6 +5,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.exceptions import ConflictException
 from apps.users.serializers import (
     ChangePasswordSerializer,
     EmailVerificationSendSerializer,
@@ -84,7 +85,13 @@ class SignupAPIView(APIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        result = signup_user(**serializer.validated_data)
+        try:
+            result = signup_user(**serializer.validated_data)
+        except ConflictException as exc:
+            return Response(
+                {"error_detail": exc.detail},
+                status=status.HTTP_409_CONFLICT,
+            )
 
         return Response(result, status=status.HTTP_201_CREATED)
 
@@ -127,7 +134,13 @@ class NicknameCheckAPIView(APIView):
         serializer = self.serializer_class(data=request.query_params)
         serializer.is_valid(raise_exception=True)
 
-        result = check_nickname(**serializer.validated_data)
+        try:
+            result = check_nickname(**serializer.validated_data)
+        except ConflictException as exc:
+            return Response(
+                {"error_detail": exc.detail},
+                status=status.HTTP_409_CONFLICT,
+            )
 
         return Response(result, status=status.HTTP_200_OK)
 

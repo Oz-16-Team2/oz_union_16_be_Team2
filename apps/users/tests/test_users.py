@@ -13,7 +13,9 @@ User = get_user_model()
 
 @pytest.fixture
 def api_client() -> APIClient:
-    return APIClient()
+    client = APIClient()
+    client.raise_request_exception = False
+    return client
 
 
 @pytest.fixture
