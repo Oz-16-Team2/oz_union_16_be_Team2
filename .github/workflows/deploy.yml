@@ -97,7 +97,6 @@ jobs:
             docker-compose -f resource/docker-compose.prod.yml --env-file envs/.env pull web
             
             if [ ! -d "$CERT_DIR" ]; then
-              echo "🚨 인증서가 없어서 임시 HTTP 서버를 띄워 발급받습니다."
 
               cp resource/nginx/nginx.conf resource/nginx/nginx.conf.bak
               cat << 'EOF' > resource/nginx/nginx.conf
