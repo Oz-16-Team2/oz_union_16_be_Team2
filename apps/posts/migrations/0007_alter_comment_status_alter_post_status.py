@@ -4,20 +4,28 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('posts', '0006_alter_tag_options_remove_comment_post_id_and_more'),
+        ("posts", "0006_alter_tag_options_remove_comment_post_id_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='comment',
-            name='status',
-            field=models.CharField(choices=[('active', '활성'), ('deleted', '삭제'), ('reported', '신고됨')], default='active', help_text='상태(활성, 비활성화)', max_length=20),
+            model_name="comment",
+            name="status",
+            field=models.CharField(
+                choices=[("active", "활성"), ("deleted", "삭제"), ("reported", "신고됨")],
+                default="active",
+                help_text="상태(활성, 비활성화)",
+                max_length=20,
+            ),
         ),
         migrations.AlterField(
-            model_name='post',
-            name='status',
-            field=models.CharField(choices=[('active', '활성'), ('deleted', '삭제'), ('reported', '신고됨')], default='active', max_length=20),
+            model_name="post",
+            name="status",
+            field=models.CharField(
+                choices=[("active", "활성"), ("deleted", "삭제"), ("reported", "신고됨")],
+                default="active",
+                max_length=20,
+            ),
         ),
     ]
