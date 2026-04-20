@@ -31,6 +31,7 @@ class AdminReportTargetPreviewSerializer(serializers.Serializer[dict[str, Any]])
     id = serializers.IntegerField()
     title = serializers.CharField(required=False)
     content = serializers.CharField(required=False)
+    status = serializers.CharField(required=False)
 
 
 class AdminReportListItemSerializer(serializers.Serializer[dict[str, Any]]):
@@ -38,22 +39,13 @@ class AdminReportListItemSerializer(serializers.Serializer[dict[str, Any]]):
     user_id = serializers.IntegerField()
     admin_id = serializers.IntegerField(allow_null=True)
     target_id = serializers.IntegerField()
-    target_type = serializers.ChoiceField(
-        choices=[
-            TargetType.POST.upper(),
-            TargetType.COMMENT.upper(),
-        ]
-    )
+    target_type = serializers.CharField()
     target_preview = AdminReportTargetPreviewSerializer()
     reason_type = serializers.CharField()
     reason_detail = serializers.CharField(allow_null=True, allow_blank=True)
-    status = serializers.ChoiceField(
-        choices=[
-            ReportStatus.PENDING.upper(),
-            ReportStatus.HANDLED.upper(),
-            ReportStatus.DISMISSED.upper(),
-        ]
-    )
+    status = serializers.CharField()
+    action_type = serializers.CharField(allow_null=True, required=False)
+    memo = serializers.CharField(allow_blank=True, allow_null=True, required=False)
     handled_at = serializers.DateTimeField(allow_null=True)
     created_at = serializers.DateTimeField()
     updated_at = serializers.DateTimeField()

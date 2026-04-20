@@ -36,18 +36,23 @@ class AdminReportService:
         offset = (page - 1) * size
         reports = list(queryset[offset : offset + size])
 
+        report_ids = [report.id for report in reports]
+
+        latest_actions = ReportAction.objects.filter(report_id__in=report_ids).order_by("report_id", "-created_at")
+
+        action_map: dict[int, ReportAction] = {}
+        for action in latest_actions:
+            if action.report_id not in action_map:
+                action_map[action.report_id] = action
+
         post_ids = [report.target_id for report in reports if report.target_type == TargetType.POST]
         comment_ids = [report.target_id for report in reports if report.target_type == TargetType.COMMENT]
 
-        post_map = {
-            post.id: post
-            for post in Post.objects.filter(id__in=post_ids).only("id", "title")
-        }
+        post_map = {post.id: post for post in Post.objects.filter(id__in=post_ids).only("id", "title", "status")}
         comment_map = {
             comment.id: comment
-            for comment in Comment.objects.filter(id__in=comment_ids).only("id", "content")
+            for comment in Comment.objects.filter(id__in=comment_ids).only("id", "content", "status")
         }
-
         result: list[dict[str, Any]] = []
         for report in reports:
             target_preview: dict[str, Any]
@@ -57,13 +62,17 @@ class AdminReportService:
                 target_preview = {
                     "id": report.target_id,
                     "title": post.title if post else "삭제되었거나 존재하지 않는 게시글",
+                    "status": str(post.status).upper() if post else None,
                 }
             else:
                 comment = comment_map.get(report.target_id)
                 target_preview = {
                     "id": report.target_id,
                     "content": comment.content if comment else "삭제되었거나 존재하지 않는 댓글",
+                    "status": str(comment.status).upper() if comment else None,
                 }
+
+            action = action_map.get(report.id)
 
             result.append(
                 {
@@ -76,6 +85,8 @@ class AdminReportService:
                     "reason_type": str(report.reason_type).upper(),
                     "reason_detail": report.reason_detail,
                     "status": str(report.status).upper(),
+                    "action_type": str(action.action_type).upper() if action else None,
+                    "memo": action.memo if action else None,
                     "handled_at": report.handled_at,
                     "created_at": report.created_at,
                     "updated_at": report.updated_at,
