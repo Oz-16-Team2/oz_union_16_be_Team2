@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 
 from django.db.models import BooleanField, Count, Exists, OuterRef, Value
 from django.db.models.query import QuerySet
@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.serializers import BaseSerializer
 
 from apps.posts.models import Comment, CommentLike, Post
-from apps.posts.serializers.serializers_comment import (
+from apps.posts.serializers.comment_serializers import (
     CommentCreateSerializer,
     CommentListSerializer,
 )
@@ -32,8 +32,8 @@ class PostCommentListCreateView(generics.ListCreateAPIView):  # type: ignore[typ
 
     def get_serializer_class(self) -> type[BaseSerializer[Any]]:
         if self.request.method == "POST":
-            return CommentCreateSerializer
-        return CommentListSerializer
+            return cast(type[BaseSerializer[Any]], CommentCreateSerializer)
+        return cast(type[BaseSerializer[Any]], CommentListSerializer)
 
     def get_queryset(self) -> QuerySet[Comment]:
         post_id: int = self.kwargs.get("post_id")
@@ -87,7 +87,7 @@ class PostCommentDetailView(generics.RetrieveUpdateDestroyAPIView):  # type: ign
     lookup_url_kwarg = "comment_id"
 
     def get_serializer_class(self) -> type[BaseSerializer[Any]]:
-        return CommentCreateSerializer
+        return cast(type[BaseSerializer[Any]], CommentCreateSerializer)
 
     def get_queryset(self) -> QuerySet[Comment]:
         post_id: Any = self.kwargs.get("post_id")
