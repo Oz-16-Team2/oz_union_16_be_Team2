@@ -1,24 +1,53 @@
+from drf_spectacular.utils import OpenApiExample, extend_schema
+from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.core.response import detail_response, error_response
+from apps.goals.serializers.goal_create import ErrorDetailSerializer
 from apps.posts.models import Post
+from apps.posts.serializers.post_like_serializers import PostLikeResponseSerializer
 from apps.posts.services.post_like_service import PostLikeService
 
 
 class PostLikeView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        tags=["Post_likes"],
+        summary="게시글 좋아요 토글",
+        description="로그인한 유저가 게시글에 좋아요를 남기거나 취소합니다.",
+        responses={
+            200: PostLikeResponseSerializer,
+            401: ErrorDetailSerializer,
+            404: ErrorDetailSerializer,
+        },
+        examples=[
+            OpenApiExample(
+                "좋아요 성공 예시",
+                value={"detail": "게시글 좋아요 처리가 완료되었습니다.", "is_liked": True},
+                response_only=True,
+                status_codes=["200"],
+            ),
+            OpenApiExample(
+                "게시글 없음 예시 (404)",
+                value={"error_detail": {"postId": ["해당 게시글을 찾을 수 없습니다."]}},
+                response_only=True,
+                status_codes=["404"],
+            ),
+        ],
+    )
     def post(self, request: Request, post_id: int) -> Response:
         if not request.user.is_authenticated:
-            return error_response({"detail": ["로그인이 필요합니다."]}, 401)
+            return Response({"detail": ["로그인이 필요합니다."]}, 401)
 
         try:
             is_liked = PostLikeService.toggle_like(post_id=post_id, user=request.user)
 
-            return detail_response({"detail": "게시글 좋아요 처리가 완료되었습니다.", "is_liked": is_liked}, 200)
+            return Response(
+                {"detail": "게시글 좋아요 처리가 완료되었습니다.", "is_liked": is_liked}, status=status.HTTP_200_OK
+            )
 
         except Post.DoesNotExist:
-            return error_response({"error_detail": {"postId": ["해당 게시글을 찾을 수 없습니다."]}}, 404)
+            return Response({"error_detail": {"postId": ["해당 게시글을 찾을 수 없습니다."]}}, 404)
