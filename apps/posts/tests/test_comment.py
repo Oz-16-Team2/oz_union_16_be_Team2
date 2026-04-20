@@ -1,8 +1,5 @@
 import uuid
-<<<<<<< HEAD
 from typing import Any, cast
-=======
->>>>>>> 13d0857 (chore: 테스트 코드 디버깅)
 
 import pytest
 from rest_framework import status
@@ -12,16 +9,11 @@ from apps.posts.models import Comment, Post
 from apps.users.models import User
 
 
-<<<<<<< HEAD
 # ==========================================
 # 1. 댓글 목록 조회 및 작성 (REQ-COMM-001, 002)
 # ==========================================
 @pytest.mark.django_db
 class TestPostCommentListCreateView:
-=======
-@pytest.mark.django_db
-class TestPostCommentListCreate:
->>>>>>> 13d0857 (chore: 테스트 코드 디버깅)
     """
     REQ-COMM-001 댓글 작성
     REQ-COMM-002 댓글 목록 조회
@@ -29,15 +21,10 @@ class TestPostCommentListCreate:
 
     @pytest.fixture
     def api_client(self) -> APIClient:
-<<<<<<< HEAD
-=======
-        """API 호출을 위한 클라이언트 객체"""
->>>>>>> 13d0857 (chore: 테스트 코드 디버깅)
         return APIClient()
 
     @pytest.fixture
     def user(self) -> User:
-<<<<<<< HEAD
         # 💡 [Best Practice] uuid를 활용하여 매번 완벽하게 유니크한 독립적인 유저를 생성합니다.
         unique_id = uuid.uuid4().hex[:8]
         return User.objects.create(email=f"test_{unique_id}@test.com", nickname=f"user_{unique_id}")
@@ -54,27 +41,10 @@ class TestPostCommentListCreate:
         api_client.force_authenticate(user=user)
         url = f"/api/v1/posts/{post.id}/comments"
         data = {"content": "쉬마려워요"}
-=======
-        """uuid를 활용하여 DB 오염을 방지하는 유니크 유저 생성"""
-        uid = uuid.uuid4().hex[:8]
-        return User.objects.create_user(email=f"user_{uid}@test.com", nickname=f"nick_{uid}", password="password123")
-
-    @pytest.fixture
-    def post(self, user: User) -> Post:
-        """테스트용 게시글 생성"""
-        return Post.objects.create(user_id=user.id)
-
-    def test_create_comment_success(self, api_client: APIClient, user: User, post: Post) -> None:
-        """[기능] 댓글 작성 성공 (201)"""
-        api_client.force_authenticate(user=user)
-        url = f"/api/v1/posts/{post.id}/comments"
-        data = {"content": "테스트 댓글입니다."}
->>>>>>> 13d0857 (chore: 테스트 코드 디버깅)
 
         response = api_client.post(url, data, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
-<<<<<<< HEAD
         assert response.data["content"] == "쉬마려워요"
         assert response.data["nickname"] == user.nickname
         assert Comment.objects.filter(post_id=post.id).count() == 1
@@ -115,31 +85,10 @@ class TestPostCommentListCreate:
 
         url = f"/api/v1/posts/{post.id}/comments"
 
-=======
-        assert response.data["content"] == "테스트 댓글입니다."
-        assert Comment.objects.filter(post_id=post.id).count() == 1
-
-    def test_create_comment_unauthorized(self, api_client: APIClient, post: Post) -> None:
-        """[예외] 비로그인 유저 접근 차단 (401)"""
-        url = f"/api/v1/posts/{post.id}/comments"
-        data = {"content": "로그인 안 함"}
-
-        response = api_client.post(url, data, format="json")
-
-        assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
-        assert "error_detail" in response.data
-
-    def test_get_comment_success_unauthenticated(self, api_client: APIClient, user: User, post: Post) -> None:
-        """[기능] 비로그인 유저 목록 조회 성공 (200)"""
-        Comment.objects.create(user_id=user.id, post_id=post.id, content="댓글")
-
-        url = f"/api/v1/posts/{post.id}/comments"
->>>>>>> 13d0857 (chore: 테스트 코드 디버깅)
         response = api_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
 
-<<<<<<< HEAD
         assert len(results) == 1
         assert results[0]["content"] == "테스트 댓글"
         assert results[0]["like_count"] == 1
@@ -270,12 +219,3 @@ class TestPostCommentDetailView:
         response = api_client.delete(url)
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
-=======
-        # 페이징 여부에 따른 데이터 추출 대응
-        results = (
-            response.data["results"]
-            if isinstance(response.data, dict) and "results" in response.data
-            else response.data
-        )
-        assert len(results) >= 1
->>>>>>> 13d0857 (chore: 테스트 코드 디버깅)
