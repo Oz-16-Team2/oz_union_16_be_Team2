@@ -41,9 +41,9 @@ class AdminReportService:
         latest_actions = ReportAction.objects.filter(report_id__in=report_ids).order_by("report_id", "-created_at")
 
         action_map: dict[int, ReportAction] = {}
-        for action in latest_actions:
-            if action.report_id not in action_map:
-                action_map[action.report_id] = action
+        for report_action in latest_actions:
+            if report_action.report_id not in action_map:
+                action_map[report_action.report_id] = report_action
 
         post_ids = [report.target_id for report in reports if report.target_type == TargetType.POST]
         comment_ids = [report.target_id for report in reports if report.target_type == TargetType.COMMENT]
@@ -72,7 +72,7 @@ class AdminReportService:
                     "status": str(comment.status).upper() if comment else None,
                 }
 
-            action = action_map.get(report.id)
+            latest_action = action_map.get(report.id)
 
             result.append(
                 {
@@ -85,8 +85,8 @@ class AdminReportService:
                     "reason_type": str(report.reason_type).upper(),
                     "reason_detail": report.reason_detail,
                     "status": str(report.status).upper(),
-                    "action_type": str(action.action_type).upper() if action else None,
-                    "memo": action.memo if action else None,
+                    "action_type": str(latest_action.action_type).upper() if latest_action else None,
+                    "memo": latest_action.memo if latest_action else None,
                     "handled_at": report.handled_at,
                     "created_at": report.created_at,
                     "updated_at": report.updated_at,
