@@ -1,5 +1,6 @@
 from django.urls import path
 
+from apps.posts.views.admin.admin_comment_views import AdminCommentDeleteAPIView
 from apps.posts.views.admin.admin_post_views import (
     AdminPostDeleteAPIView,
     AdminPostDetailAPIView,
@@ -10,7 +11,6 @@ from apps.posts.views.admin.admin_tag_views import (
     AdminTagListCreateAPIView,
     AdminTagUpdateAPIView,
 )
-from apps.posts.views.admin.admin_comment_views import AdminCommentDeleteAPIView
 
 urlpatterns = [
     path("posts", AdminPostListAPIView.as_view(), name="admin-post-list"),
