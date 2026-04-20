@@ -5,6 +5,7 @@ import pytest
 from rest_framework import status
 from rest_framework.test import APIClient
 
+# 💡 [수정1] CommentLike 모델을 import 에 추가했습니다.
 from apps.posts.models import Comment, CommentLike, Post
 from apps.users.models import User
 
@@ -88,7 +89,13 @@ class TestPostCommentListCreateView:
         response = api_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        results = response.data["results"] if isinstance(response.data, dict) else response.data
+
+        # 💡 [수정2] 누락되었던 results 변수 선언 복구
+        results = (
+            response.data["results"]
+            if isinstance(response.data, dict) and "results" in response.data
+            else response.data
+        )
 
         assert len(results) == 1
         assert results[0]["content"] == "테스트 댓글"
@@ -105,7 +112,11 @@ class TestPostCommentListCreateView:
         response = api_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        results = response.data["results"] if isinstance(response.data, dict) else response.data
+        results = (
+            response.data["results"]
+            if isinstance(response.data, dict) and "results" in response.data
+            else response.data
+        )
         assert results[0]["like_count"] == 1
         assert results[0]["is_liked"] is True
 
@@ -206,7 +217,11 @@ class TestPostCommentDetailView:
         # 2. 목록 조회 시 더 이상 안 보이는지 이중 검증
         list_url = f"/api/v1/posts/{post.id}/comments"
         list_response = api_client.get(list_url)
-        results = list_response.data["results"] if isinstance(list_response.data, dict) else list_response.data
+        results = (
+            list_response.data["results"]
+            if isinstance(list_response.data, dict) and "results" in list_response.data
+            else list_response.data
+        )
 
         assert len(results) == 0
 
