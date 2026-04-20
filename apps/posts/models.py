@@ -41,7 +41,7 @@ class Post(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    status = models.CharField(max_length=20, choices=PostStatus, default=PostStatus.NORMAL)
+    status = models.CharField(max_length=20, choices=PostStatus, default=PostStatus.ACTIVE)
 
     class Meta:
         db_table = "posts"

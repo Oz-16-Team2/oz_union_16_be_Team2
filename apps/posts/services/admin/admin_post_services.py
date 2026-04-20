@@ -5,6 +5,7 @@ from typing import Any
 from django.db.models import Count, Exists, OuterRef
 from django.utils import timezone
 
+from apps.core.choices import PostStatus
 from apps.core.exceptions import ResourceNotFoundException
 from apps.posts.models import Post
 from apps.reports.models import Report
@@ -178,8 +179,9 @@ class AdminPostService:
         except Post.DoesNotExist as exc:
             raise ResourceNotFoundException("게시글을 찾을 수 없습니다.") from exc
 
+        post.status = PostStatus.DELETED
         post.deleted_at = timezone.now()
-        post.save(update_fields=["deleted_at", "updated_at"])
+        post.save(update_fields=["status", "deleted_at", "updated_at"])
 
     @staticmethod
     def update_post_status(*, post_id: int, status_value: str) -> None:
