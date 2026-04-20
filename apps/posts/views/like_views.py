@@ -23,10 +23,10 @@ class PostLikeView(APIView):
         if not Post.objects.filter(id=post_id).exists():
             raise ResourceNotFoundException("게시글을 찾을 수 없습니다.")
 
-        # Mypy 대응: IsAuthenticated but cast
         user_id = cast(int, request.user.id)
 
         like, created = PostLike.objects.get_or_create(user_id=user_id, post_id=post_id)
+
         if not created:
             raise ConflictException("이미 좋아요를 누른 게시글입니다.")
 
