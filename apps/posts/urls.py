@@ -5,6 +5,7 @@ from apps.posts.views.like_views import CommentLikeView, PostLikeView
 from apps.posts.views.post_public_views import (
     PostCollectionAPIView,
     PostDetailAPIView,
+    PresignedUrlAPIView,
 )
 from apps.posts.views.post_report_views import PostReportView
 
@@ -20,4 +21,5 @@ urlpatterns = [
     path("<int:post_id>/likes", PostLikeView.as_view(), name="post-like"),
     # [REQ-COMM-004] 댓글 좋아요
     path("comments/<int:comment_id>/likes", CommentLikeView.as_view(), name="comment-like"),
+    path("presigned-url/", PresignedUrlAPIView.as_view(), name="presigned-url"),
 ]
