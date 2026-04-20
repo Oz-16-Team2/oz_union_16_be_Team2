@@ -69,16 +69,19 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             export GITHUB_REPOSITORY=${{ github.repository }}
+            DOMAIN="jaksim.duckdns.org"
+            EMAIL="tnsgusdh1234@gmail.com"
+            CERT_DIR="/home/${{ secrets.SERVER_USER }}/app/certbot/conf/live/$DOMAIN"
+            
             if ! command -v docker &> /dev/null; then
               sudo apt update
               sudo apt install -y docker.io docker-compose
               sudo usermod -aG docker $USER
-              newgrp docker
             fi
-
-            mkdir -p ~/app/resource
-            mkdir -p ~/app/envs
-
+            
+            mkdir -p ~/app/resource ~/app/envs
+            mkdir -p ~/app/certbot/conf ~/app/certbot/www
+            
             if [ ! -f ~/app/envs/.env ]; then
               echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> ~/app/envs/.env
               echo "DEBUG=False" >> ~/app/envs/.env
@@ -88,14 +91,36 @@ jobs:
               echo "POSTGRES_HOST=db" >> ~/app/envs/.env
               echo "POSTGRES_PORT=5432" >> ~/app/envs/.env
             fi
-
+            
             cd ~/app
-
             echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
             docker-compose -f resource/docker-compose.prod.yml --env-file envs/.env pull web
+            
+            if [ ! -d "$CERT_DIR" ]; then
+
+              cp resource/nginx/nginx.conf resource/nginx/nginx.conf.bak
+              cat << 'EOF' > resource/nginx/nginx.conf
+              events {}
+              http {
+                  server {
+                      listen 80;
+                      server_name DOMAIN_PLACEHOLDER;
+                      location /.well-known/acme-challenge/ { root /var/www/certbot; }
+                  }
+              }
+              EOF
+              sed -i "s/DOMAIN_PLACEHOLDER/$DOMAIN/g" resource/nginx/nginx.conf
+
+              docker-compose -f resource/docker-compose.prod.yml --env-file envs/.env up -d nginx
+              docker run --rm --name certbot \
+                -v ~/app/certbot/conf:/etc/letsencrypt \
+                -v ~/app/certbot/www:/var/www/certbot \
+                certbot/certbot certonly --webroot -w /var/www/certbot \
+                -d $DOMAIN --email $EMAIL --agree-tos --non-interactive
+            
+              mv resource/nginx/nginx.conf.bak resource/nginx/nginx.conf
+            fi
+            
             docker-compose -f resource/docker-compose.prod.yml --env-file envs/.env up -d
-
             docker-compose -f resource/docker-compose.prod.yml --env-file envs/.env exec -T web uv run python manage.py migrate --no-input
-
             docker image prune -f
