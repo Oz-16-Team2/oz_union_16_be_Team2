@@ -220,6 +220,7 @@ class EmailVerificationVerifyAPIView(APIView):
 
 @extend_schema(tags=["Accounts"])
 class KakaoSocialLoginAPIView(APIView):
+    serializer_class = TokenResponseSerializer
     permission_classes = [AllowAny]
 
     @extend_schema(summary="소셜 카카오 회원가입,로그인")
@@ -315,8 +316,8 @@ class LoginAPIView(APIView):
 
 
 @extend_schema(tags=["Accounts"])
-@extend_schema(tags=["Accounts"])
 class LogoutAPIView(APIView):
+    serializer_class = MessageResponseSerializer
     permission_classes = [AllowAny]
 
     @extend_schema(
