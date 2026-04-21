@@ -1,7 +1,7 @@
 from django.urls import path
 
 from apps.posts.views.comment_views import PostCommentDetailView, PostCommentListCreateView
-from apps.posts.views.like_views import CommentLikeView, PostLikeView
+from apps.posts.views.like_views import CommentLikeView
 from apps.posts.views.post_public_views import (
     PostCollectionAPIView,
     PostDetailAPIView,
@@ -9,6 +9,7 @@ from apps.posts.views.post_public_views import (
 )
 from apps.posts.views.post_report_views import PostReportView
 from apps.posts.views.scrap_views import PostScrapView, UserScrapListView
+from apps.posts.views.tag_views import TagListView
 
 urlpatterns = [
     path("", PostCollectionAPIView.as_view(), name="posts-list"),
@@ -18,8 +19,6 @@ urlpatterns = [
     path("<int:post_id>/comments", PostCommentListCreateView.as_view(), name="post-comments"),
     # [REQ-COMM-003] 댓글 삭제, [REQ-COMM-006] 댓글 수정 API
     path("<int:post_id>/comments/<int:comment_id>", PostCommentDetailView.as_view(), name="post-comment-detail"),
-    # [REQ-POST-007] 게시글 좋아요
-    path("<int:post_id>/likes", PostLikeView.as_view(), name="post-like"),
     # [REQ-COMM-004] 댓글 좋아요
     path("comments/<int:comment_id>/likes", CommentLikeView.as_view(), name="comment-like"),
     path("presigned-url/", PresignedUrlAPIView.as_view(), name="presigned-url"),
@@ -27,4 +26,6 @@ urlpatterns = [
     path("<int:post_id>/scraps", PostScrapView.as_view(), name="post-scrap"),
     # [REQ-SCRP-002]내 스크랩 전체 목록 조회 (GET)
     path("scraps", UserScrapListView.as_view(), name="user-scrap-list"),
+    # [REQ-TAG-002, 003]
+    path("tags", TagListView.as_view(), name="tag-list"),
 ]
