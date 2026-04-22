@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 from datetime import timedelta
-from typing import Any, cast
+from typing import Any
 
-from django.contrib.auth.models import AnonymousUser
 from django.db import transaction
-from django.db.models import BooleanField, Count, Exists, OuterRef, Value
+from django.db.models import BooleanField, Count, Exists, OuterRef, Q, Value
 from django.utils import timezone
 from rest_framework import serializers
 
@@ -23,7 +22,6 @@ from apps.posts.serializers.post_serializers import (
     replace_post_tags,
     snapshot_goal_on_post,
 )
-from apps.users.models import User
 from apps.votes.models import Vote, VoteOption
 
 
@@ -40,13 +38,13 @@ def _base_visible_posts() -> Any:
     return Post.objects.filter(deleted_at__isnull=True, status=PostStatus.ACTIVE)
 
 
-def feed_queryset(*, scope: str, sort_by: str, user: User | AnonymousUser) -> Any:
+def feed_queryset(*, scope: str, sort_by: str, user: Any) -> Any:
     qs = _base_visible_posts().select_related("user", "goal")
     if scope == SCOPE_FEED:
         qs = qs.filter(is_private=False)
     elif scope == SCOPE_MY:
         if not user.is_authenticated:
-            raise serializers.ValidationError({"scope": ["MY scope requires authentication."]})
+            raise serializers.ValidationError({"scope": ["나의 게시글 조회는 로그인이 필요합니."]})
         qs = qs.filter(user=user)
     cq = active_comment_q()
     qs = qs.annotate(
@@ -66,8 +64,7 @@ def feed_queryset(*, scope: str, sort_by: str, user: User | AnonymousUser) -> An
     return qs
 
 
-def list_posts(*, scope: str, sort_by: str, page: int, size: int, user: User | AnonymousUser) -> dict[str, Any]:
-    qs = feed_queryset(scope=scope, sort_by=sort_by, user=user)
+def _build_feed_from_qs(qs: Any, page: int, size: int, user: Any) -> tuple[list[dict[str, Any]], int]:
     total = qs.count()
     chunk = qs[page * size : page * size + size]
     ids = [p.id for p in chunk]
@@ -82,7 +79,38 @@ def list_posts(*, scope: str, sort_by: str, page: int, size: int, user: User | A
         )
         for p in chunk
     ]
+    return posts_out, total
+
+
+def list_posts(*, scope: str, sort_by: str, page: int, size: int, user: Any) -> dict[str, Any]:
+    qs = feed_queryset(scope=scope, sort_by=sort_by, user=user)
+    posts_out, total = _build_feed_from_qs(qs, page, size, user)
     return {"posts": posts_out, "page": page, "size": size, "total_count": total}
+
+
+def search_posts(*, keyword: str, type: str | None, page: int, size: int, user: Any) -> dict[str, Any]:
+
+    qs = _base_visible_posts().filter(is_private=False).select_related("user", "goal")
+    if type == "title":
+        qs = qs.filter(title__icontains=keyword)
+    elif type == "content":
+        qs = qs.filter(content__icontains=keyword)
+    else:
+        qs = qs.filter(Q(title__icontains=keyword) | Q(content__icontains=keyword))
+
+    cq = active_comment_q()
+    qs = qs.annotate(
+        like_count=Count("likes", distinct=True),
+        comment_count=Count("comments", filter=cq, distinct=True),
+    ).order_by("-created_at")
+
+    if user.is_authenticated:
+        qs = qs.annotate(is_scrapped=Exists(Scrap.objects.filter(post_id=OuterRef("pk"), user_id=user.id)))
+    else:
+        qs = qs.annotate(is_scrapped=Value(False, output_field=BooleanField()))
+
+    posts_out, total = _build_feed_from_qs(qs, page, size, user)
+    return {"search_results": posts_out, "keyword": keyword, "total_count": total}
 
 
 def _get_post_for_detail(post_id: int) -> Post:
@@ -97,13 +125,13 @@ def _get_post_for_detail(post_id: int) -> Post:
     return post
 
 
-def can_view_post(post: Post, user: User | AnonymousUser) -> bool:
+def can_view_post(post: Post, user: Any) -> bool:
     if not post.is_private:
         return True
     return bool(user.is_authenticated and post.user_id == user.id)
 
 
-def get_post_detail(*, post_id: int, user: User | AnonymousUser) -> dict[str, Any]:
+def get_post_detail(*, post_id: int, user: Any) -> dict[str, Any]:
     post = _get_post_for_detail(post_id)
     if not can_view_post(post, user):
         raise serializers.ValidationError({"postId": ["해당 게시글(객체)을 찾을 수 없습니다."]})
@@ -163,7 +191,7 @@ def _clear_goal_fields(post: Post) -> None:
 
 
 @transaction.atomic
-def create_post(user: User, data: dict[str, Any]) -> Post:
+def create_post(user: Any, data: dict[str, Any]) -> Post:
     post = Post(
         user=user,
         title=data["title"],
@@ -183,7 +211,7 @@ def create_post(user: User, data: dict[str, Any]) -> Post:
     return post
 
 
-def _ensure_owner(post: Post, user: User | AnonymousUser, *, action: str = "modify") -> None:
+def _ensure_owner(post: Post, user: Any, *, action: str = "modify") -> None:
     if not user.is_authenticated or post.user_id != user.id:
         raise serializers.ValidationError(
             {"Authorization": [f"You do not have permission to {action} this post."]},
@@ -191,13 +219,12 @@ def _ensure_owner(post: Post, user: User | AnonymousUser, *, action: str = "modi
 
 
 @transaction.atomic
-def update_post(*, user: User | AnonymousUser, url_post_id: int, data: dict[str, Any]) -> None:
+def update_post(*, user: Any, url_post_id: int, data: dict[str, Any]) -> None:
     post = Post.objects.filter(id=url_post_id, deleted_at__isnull=True).first()
     if post is None:
         raise serializers.ValidationError({"postId": ["해당 게시글(객체)을 찾을 수 없습니다."]})
 
     _ensure_owner(post, user, action="modify")
-    user = cast(User, user)
 
     if post.goal_id:
         goal = Goal.objects.filter(id=post.goal_id).first()
@@ -255,7 +282,7 @@ def update_post(*, user: User | AnonymousUser, url_post_id: int, data: dict[str,
 
 
 @transaction.atomic
-def soft_delete_post(*, user: User | AnonymousUser, post_id: int) -> None:
+def soft_delete_post(*, user: Any, post_id: int) -> None:
     post = Post.objects.filter(id=post_id, deleted_at__isnull=True).first()
     if post is None:
         raise serializers.ValidationError({"postId": ["해당 게시글(객체)을 찾을 수 없습니다."]})

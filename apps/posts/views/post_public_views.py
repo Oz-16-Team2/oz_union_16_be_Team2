@@ -23,11 +23,14 @@ from apps.posts.serializers.post_serializers import (
     PostFeedResponseSerializer,
     PostListQuerySerializer,
     PostPatchSerializer,
+    PostSearchQuerySerializer,
+    PostSearchResponseSerializer,
 )
 from apps.posts.services import (
     create_post,
     get_post_detail,
     list_posts,
+    search_posts,
     soft_delete_post,
     update_post,
 )
@@ -129,7 +132,7 @@ class PostCollectionAPIView(APIView):
             )
         except serializers.ValidationError as exc:
             return error_response(exc.detail, status.HTTP_400_BAD_REQUEST)
-        return detail_response(body, 200)
+        return Response(body, status=200)
 
     @extend_schema(
         tags=[TAG_POSTS],
@@ -359,6 +362,46 @@ class PresignedUrlAPIView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [parsers.JSONParser]
 
+
+class PostSearchAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        tags=[TAG_POSTS],
+        summary="포스트 검색",
+        parameters=[
+            OpenApiParameter(
+                name="keyword",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="검색어 (최소 2글자)",
+            ),
+            OpenApiParameter(
+                name="type", type=str, location=OpenApiParameter.QUERY, required=False, description="title 또는 content"
+            ),
+            OpenApiParameter(name="page", type=int, location=OpenApiParameter.QUERY, default=0),
+            OpenApiParameter(name="size", type=int, location=OpenApiParameter.QUERY, default=20),
+        ],
+        responses={200: PostSearchResponseSerializer, 400: ErrorDetailSerializer, 404: ErrorDetailSerializer},
+    )
+    def get(self, request: Request) -> Response:
+        q = PostSearchQuerySerializer(data=request.query_params)
+        if not q.is_valid():
+            return error_response(q.errors, 400)
+        data = q.validated_data
+        try:
+            body = search_posts(
+                keyword=data["keyword"],
+                type=data.get("type"),
+                page=data["page"],
+                size=data["size"],
+                user=request.user,
+            )
+        except serializers.ValidationError as exc:
+            return error_response(exc.detail, 400)
+        return Response(body, status=200)
+
     @extend_schema(
         tags=[TAG_POSTS],
         summary="이미지 업로드용 URL 발급 ",
@@ -411,3 +454,43 @@ class PresignedUrlAPIView(APIView):
 
         except Exception as e:
             return error_response({"server_error": [str(e)]}, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class MyPostsAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        tags=[TAG_POSTS],
+        summary="나의 포스트 목록 조회",
+        description="로그인한 사용자의 게시글 목록을 조회합니다. 쿼리: sort_by (LATEST|POPULAR), page, size",
+        parameters=[
+            OpenApiParameter(
+                name="sort_by", type=str, location=OpenApiParameter.QUERY, required=False, default="LATEST"
+            ),
+            OpenApiParameter(name="page", type=int, location=OpenApiParameter.QUERY, default=0),
+            OpenApiParameter(name="size", type=int, location=OpenApiParameter.QUERY, default=20),
+        ],
+        responses={200: PostFeedResponseSerializer, 400: ErrorDetailSerializer, 401: ErrorDetailSerializer},
+    )
+    def get(self, request: Request) -> Response:
+        q = PostListQuerySerializer(data=request.query_params)
+        if not q.is_valid():
+            return error_response(q.errors, 400)
+        data = q.validated_data
+
+        if not request.user.is_authenticated:
+            return error_response(
+                {"Authorization": ["나의 게시물을 조회하려면 로그인이 필요합니다."]}, status.HTTP_401_UNAUTHORIZED
+            )
+
+        try:
+            body = list_posts(
+                scope=SCOPE_MY,
+                sort_by=data["sort_by"],
+                page=data["page"],
+                size=data["size"],
+                user=request.user,
+            )
+        except serializers.ValidationError as exc:
+            return error_response(exc.detail, 400)
+        return Response(body, 200)

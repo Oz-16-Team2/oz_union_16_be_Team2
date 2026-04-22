@@ -33,6 +33,43 @@ class PostListQuerySerializer(serializers.Serializer[Any]):
         default=SORT_LATEST,
         error_messages={"invalid_choice": "정렬 기준이 올바르지 않습니다."},
     )
+    page = serializers.IntegerField(required=False, min_value=0, default=0)
+    size = serializers.IntegerField(required=False, min_value=1, max_value=100, default=20)
+
+
+class PostSearchQuerySerializer(serializers.Serializer[Any]):
+    keyword = serializers.CharField(
+        min_length=2, error_messages={"min_length": "검색어는 최소 2글자 이상 입력해야 합니다."}
+    )
+    type = serializers.ChoiceField(choices=["title", "content"], required=False)
+    page = serializers.IntegerField(required=False, min_value=0, default=0)
+    size = serializers.IntegerField(required=False, min_value=1, max_value=100, default=20)
+
+
+class PostFeedItemSerializer(serializers.Serializer[Any]):
+    post_id = serializers.IntegerField()
+    images = serializers.ListField(child=serializers.CharField(), allow_empty=True)
+    profile_image = serializers.CharField(max_length=255, allow_null=True, required=False, allow_blank=True)
+    nickname = serializers.CharField()
+    created_at = serializers.DateTimeField()
+    title = serializers.CharField()
+    tags = serializers.ListField(child=serializers.CharField())
+    content_preview = serializers.CharField()
+    like_count = serializers.IntegerField()
+    comment_count = serializers.IntegerField()
+    is_scrapped = serializers.BooleanField()
+
+
+class PostSearchResponseSerializer(serializers.Serializer[Any]):
+    search_results = PostFeedItemSerializer(many=True)
+    keyword = serializers.CharField()
+    total_count = serializers.IntegerField()
+    sort_by = serializers.ChoiceField(
+        choices=[SORT_LATEST, SORT_POPULAR],
+        required=False,
+        default=SORT_LATEST,
+        error_messages={"invalid_choice": "정렬 기준이 올바르지 않습니다."},
+    )
     page = serializers.IntegerField(
         required=False,
         min_value=0,
@@ -189,20 +226,6 @@ class GoalInfoSerializer(serializers.Serializer[Any]):
     goal_start_date = serializers.DateTimeField(allow_null=True)
     goal_end_date = serializers.DateTimeField(allow_null=True)
     goal_progress = serializers.IntegerField(allow_null=True)
-
-
-class PostFeedItemSerializer(serializers.Serializer[Any]):
-    post_id = serializers.IntegerField()
-    images = serializers.ListField(child=serializers.CharField(), allow_empty=True)
-    profile_image = serializers.CharField(max_length=255, allow_null=True, required=False, allow_blank=True)
-    nickname = serializers.CharField()
-    created_at = serializers.DateTimeField()
-    title = serializers.CharField()
-    tags = serializers.ListField(child=serializers.CharField())
-    content_preview = serializers.CharField()
-    like_count = serializers.IntegerField()
-    comment_count = serializers.IntegerField()
-    is_scrapped = serializers.BooleanField()
 
 
 class PostFeedResponseSerializer(serializers.Serializer[Any]):

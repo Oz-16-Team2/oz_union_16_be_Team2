@@ -49,7 +49,7 @@ class TestPosts:
 
         assert res.status_code == 200
 
-        body = res.data["detail"]
+        body = res.data
         assert "posts" in body
         assert "page" in body
         assert "size" in body
