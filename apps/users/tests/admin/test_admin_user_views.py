@@ -294,6 +294,7 @@ class TestAdminUserStatusUpdateAPIView:
         assert response.status_code == status.HTTP_403_FORBIDDEN
         assert response.json() == {"error_detail": "권한이 없습니다."}
 
+
 def test_admin_user_list_filter_by_status(
     self,
     api_client: APIClient,
@@ -316,6 +317,7 @@ def test_admin_user_list_filter_by_status(
     data = response.json()["detail"]
     assert len(data) >= 1
     assert all(item["status"] == "SUSPENDED" for item in data)
+
 
 def test_admin_user_status_update_active_clears_expire_and_memo(
     self,

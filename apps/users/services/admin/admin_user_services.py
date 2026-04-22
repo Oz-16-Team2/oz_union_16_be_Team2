@@ -99,7 +99,13 @@ class AdminUserService:
         ]
 
     @staticmethod
-    def update_user_status(*,user_id: int,status_value: str,status_expires_at,memo: str | None,) -> None:
+    def update_user_status(
+        *,
+        user_id: int,
+        status_value: str,
+        status_expires_at,
+        memo: str | None,
+    ) -> None:
         try:
             user = User.objects.get(id=user_id)
         except User.DoesNotExist as exc:

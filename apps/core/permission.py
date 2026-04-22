@@ -1,6 +1,7 @@
 # apps/core/permissions.py
 
 from rest_framework.permissions import BasePermission
+
 from apps.core.choices import UserStatus
 
 
