@@ -4,15 +4,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('users', '0006_user_memo_user_status_expires_at'),
+        ("users", "0006_user_memo_user_status_expires_at"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='user',
-            name='status',
-            field=models.CharField(choices=[('active', '정상'), ('suspended', '정지')], default='active', max_length=20),
+            model_name="user",
+            name="status",
+            field=models.CharField(
+                choices=[("active", "정상"), ("suspended", "정지")], default="active", max_length=20
+            ),
         ),
     ]

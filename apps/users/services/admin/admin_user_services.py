@@ -50,20 +50,12 @@ class AdminUserService:
 
         post_count_map = {
             item["user_id"]: item["count"]
-            for item in (
-                Post.objects.filter(user_id__in=user_ids)
-                .values("user_id")
-                .annotate(count=Count("id"))
-            )
+            for item in (Post.objects.filter(user_id__in=user_ids).values("user_id").annotate(count=Count("id")))
         }
 
         comment_count_map = {
             item["user_id"]: item["count"]
-            for item in (
-                Comment.objects.filter(user_id__in=user_ids)
-                .values("user_id")
-                .annotate(count=Count("id"))
-            )
+            for item in (Comment.objects.filter(user_id__in=user_ids).values("user_id").annotate(count=Count("id")))
         }
 
         post_rows = list(Post.objects.filter(user_id__in=user_ids).values("id", "user_id"))

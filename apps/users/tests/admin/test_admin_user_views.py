@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 import pytest
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -10,8 +13,7 @@ from apps.core.choices import ReportReasonType, TargetType, UserStatus
 from apps.posts.models import Comment, Post
 from apps.reports.models import Report
 from apps.users.models import User
-from django.utils import timezone
-from datetime import datetime
+
 
 @pytest.fixture
 def admin_user(db: object) -> User:
