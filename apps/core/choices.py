@@ -39,7 +39,6 @@ class PostStatus(models.TextChoices):
 class UserStatus(models.TextChoices):
     ACTIVE = "active", "정상"
     SUSPENDED = "suspended", "정지"
-    RESTRICTED = "restricted", "제한"
 
 
 class ReportReasonType(models.TextChoices):

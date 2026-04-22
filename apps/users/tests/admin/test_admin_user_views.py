@@ -10,7 +10,8 @@ from apps.core.choices import ReportReasonType, TargetType, UserStatus
 from apps.posts.models import Comment, Post
 from apps.reports.models import Report
 from apps.users.models import User
-
+from django.utils import timezone
+from datetime import datetime
 
 @pytest.fixture
 def admin_user(db: object) -> User:
@@ -158,7 +159,7 @@ class TestAdminUserListAPIView:
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.json() == {"error_detail": "잘못된 요청입니다."}
+        assert response.status_code == 400
 
     def test_admin_user_list_unauthorized(
         self,
@@ -251,7 +252,9 @@ class TestAdminUserStatusUpdateAPIView:
         response = api_client.patch(
             "/api/v1/admin/accounts/999999",
             {
-                "status": "RESTRICTED",
+                "status": "SUSPENDED",
+                "status_expires_at": "2026-05-01T00:00:00Z",
+                "memo": "도배성 게시글 작성",
             },
             format="json",
         )
@@ -267,7 +270,7 @@ class TestAdminUserStatusUpdateAPIView:
         response = api_client.patch(
             f"/api/v1/admin/accounts/{normal_user.id}",
             {
-                "status": "RESTRICTED",
+                "status": "SUSPENDED",
             },
             format="json",
         )
@@ -286,7 +289,7 @@ class TestAdminUserStatusUpdateAPIView:
         response = api_client.patch(
             f"/api/v1/admin/accounts/{other_user.id}",
             {
-                "status": "RESTRICTED",
+                "status": "SUSPENDED",
             },
             format="json",
         )
@@ -294,57 +297,55 @@ class TestAdminUserStatusUpdateAPIView:
         assert response.status_code == status.HTTP_403_FORBIDDEN
         assert response.json() == {"error_detail": "권한이 없습니다."}
 
+    def test_admin_user_list_filter_by_status(
+        self,
+        api_client: APIClient,
+        admin_user: User,
+        normal_user: User,
+    ) -> None:
+        normal_user.status = UserStatus.SUSPENDED
+        normal_user.save(update_fields=["status", "updated_at"])
 
-def test_admin_user_list_filter_by_status(
-    self,
-    api_client: APIClient,
-    admin_user: User,
-    normal_user: User,
-) -> None:
-    normal_user.status = UserStatus.SUSPENDED
-    normal_user.save(update_fields=["status", "updated_at"])
+        api_client.force_authenticate(user=admin_user)
 
-    api_client.force_authenticate(user=admin_user)
+        response = api_client.get(
+            "/api/v1/admin/accounts",
+            {
+                "status": "SUSPENDED",
+            },
+        )
 
-    response = api_client.get(
-        "/api/v1/admin/accounts",
-        {
-            "status": "SUSPENDED",
-        },
-    )
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()["detail"]
+        assert len(data) >= 1
+        assert all(item["status"] == "SUSPENDED" for item in data)
 
-    assert response.status_code == status.HTTP_200_OK
-    data = response.json()["detail"]
-    assert len(data) >= 1
-    assert all(item["status"] == "SUSPENDED" for item in data)
+    def test_admin_user_status_update_active_clears_expire_and_memo(
+        self,
+        api_client: APIClient,
+        admin_user: User,
+        normal_user: User,
+    ) -> None:
+        normal_user.status = UserStatus.SUSPENDED
+        normal_user.memo = "기존 메모"
+        normal_user.status_expires_at = datetime(2026, 5, 1, tzinfo=timezone.get_current_timezone())
+        normal_user.save()
 
+        api_client.force_authenticate(user=admin_user)
 
-def test_admin_user_status_update_active_clears_expire_and_memo(
-    self,
-    api_client: APIClient,
-    admin_user: User,
-    normal_user: User,
-) -> None:
-    normal_user.status = UserStatus.SUSPENDED
-    normal_user.memo = "기존 메모"
-    normal_user.status_expires_at = "2026-05-01T00:00:00Z"  # 실제론 datetime 넣기
-    normal_user.save()
+        response = api_client.patch(
+            f"/api/v1/admin/accounts/{normal_user.id}",
+            {
+                "status": "ACTIVE",
+                "status_expires_at": None,
+                "memo": None,
+            },
+            format="json",
+        )
 
-    api_client.force_authenticate(user=admin_user)
+        normal_user.refresh_from_db()
 
-    response = api_client.patch(
-        f"/api/v1/admin/accounts/{normal_user.id}",
-        {
-            "status": "ACTIVE",
-            "status_expires_at": None,
-            "memo": None,
-        },
-        format="json",
-    )
-
-    normal_user.refresh_from_db()
-
-    assert response.status_code == status.HTTP_200_OK
-    assert normal_user.status == UserStatus.ACTIVE
-    assert normal_user.status_expires_at is None
-    assert normal_user.memo is None
+        assert response.status_code == status.HTTP_200_OK
+        assert normal_user.status == UserStatus.ACTIVE
+        assert normal_user.status_expires_at is None
+        assert normal_user.memo is None

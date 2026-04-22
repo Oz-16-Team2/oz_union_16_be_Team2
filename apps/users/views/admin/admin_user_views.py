@@ -37,7 +37,6 @@ class AdminUserListAPIView(AdminBaseAPIView):
     def get(self, request: Request) -> Response:
         serializer = AdminUserListQuerySerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
-
         users = AdminUserService.get_users(**serializer.validated_data)
         return detail_response(users, status.HTTP_200_OK)
 
