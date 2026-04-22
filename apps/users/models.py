@@ -47,6 +47,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["nickname"]
     status = models.CharField(max_length=20, choices=UserStatus, default=UserStatus.ACTIVE)
+    status_expires_at = models.DateTimeField(null=True, blank=True)
+    # 정지(SUSPENDED) 또는 제한(RESTRICTED) 상태가 해제되는 시점 (기한 없으면 null)
+    memo = models.TextField(null=True, blank=True)
+    # 관리자 메모 (정지/제한 사유 등 기록)
 
     objects = UserManager()
 

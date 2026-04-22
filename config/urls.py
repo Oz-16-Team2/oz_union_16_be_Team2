@@ -11,4 +11,5 @@ urlpatterns = [
     path("api/v1/posts/", include("apps.posts.urls")),
     path("api/v1/admin/", include("apps.posts.admin_urls")),
     path("api/v1/admin/", include("apps.reports.admin_urls")),
+    path("api/v1/admin/", include("apps.users.admin_urls")),
 ]

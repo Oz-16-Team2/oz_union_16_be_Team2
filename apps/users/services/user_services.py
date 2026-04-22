@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from django.contrib.auth import get_user_model
+from django.utils import timezone
 from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from apps.core.choices import UserStatus
 from apps.core.exceptions import ConflictException
-
-User = get_user_model()
+from apps.users.models import User
 
 
 def signup_user(
@@ -56,6 +56,8 @@ def login_user(*, email: str, password: str) -> dict[str, str]:
     if user is None or not user.check_password(password):
         raise AuthenticationFailed("이메일 또는 비밀번호가 올바르지 않습니다.")
 
+    user = refresh_user_status(user)
+
     deleted_at = getattr(user, "deleted_at", None)
     if deleted_at is not None:
         raise PermissionDenied(
@@ -64,6 +66,8 @@ def login_user(*, email: str, password: str) -> dict[str, str]:
                 "expire_at": deleted_at.strftime("%Y-%m-%d"),
             }
         )
+    if user.status == UserStatus.SUSPENDED:
+        raise PermissionDenied("정지된 계정입니다.")
 
     refresh = RefreshToken.for_user(user)
 
@@ -127,3 +131,17 @@ def naver_social_login() -> dict[str, str]:
 
 def google_social_login() -> dict[str, str]:
     return {"detail": "구글 로그인 성공"}
+
+
+def refresh_user_status(user: User) -> User:
+
+    now = timezone.now()
+
+    if user.status == UserStatus.SUSPENDED:
+        if user.status_expires_at and user.status_expires_at < now:
+            user.status = UserStatus.ACTIVE
+            user.status_expires_at = None
+            user.memo = None
+            user.save(update_fields=["status", "status_expires_at", "memo", "updated_at"])
+
+    return user

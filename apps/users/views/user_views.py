@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.exceptions import ConflictException
-from apps.users.serializers import (
+from apps.users.serializers.user_serializers import (
     ChangePasswordSerializer,
     EmailVerificationSendSerializer,
     EmailVerificationSuccessSerializer,
@@ -21,7 +21,7 @@ from apps.users.serializers import (
     TokenRefreshSerializer,
     TokenResponseSerializer,
 )
-from apps.users.services import (
+from apps.users.services.user_services import (
     change_password,
     check_nickname,
     google_social_login,
