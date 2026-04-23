@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import Any
 
+import pytest_django.django_compat
 from django.db import transaction
 from django.db.models import BooleanField, Count, Exists, OuterRef, Q, Value
 from django.utils import timezone
@@ -90,7 +91,8 @@ def list_posts(*, scope: str, sort_by: str, page: int, size: int, user: Any) -> 
 
 def search_posts(*, keyword: str, type: str | None, page: int, size: int, user: Any) -> dict[str, Any]:
 
-    qs = _base_visible_posts().filter(is_private=False).select_related("user", "goal")
+    qs = _base_visible_posts().filter(is_private=False).select_related("user")
+
     if type == "title":
         qs = qs.filter(title__icontains=keyword)
     elif type == "content":
@@ -98,20 +100,27 @@ def search_posts(*, keyword: str, type: str | None, page: int, size: int, user: 
     else:
         qs = qs.filter(Q(title__icontains=keyword) | Q(content__icontains=keyword))
 
-    cq = active_comment_q()
-    qs = qs.annotate(
-        like_count=Count("likes", distinct=True),
-        comment_count=Count("comments", filter=cq, distinct=True),
-    ).order_by("-created_at")
+    qs = qs.order_by("-created_at")
 
-    if user.is_authenticated:
-        qs = qs.annotate(is_scrapped=Exists(Scrap.objects.filter(post_id=OuterRef("pk"), user_id=user.id)))
-    else:
-        qs = qs.annotate(is_scrapped=Value(False, output_field=BooleanField()))
+    total = qs.count()
+    chunk = qs[page * size : page * size + size]
 
-    posts_out, total = _build_feed_from_qs(qs, page, size, user)
-    return {"search_results": posts_out, "keyword": keyword, "total_count": total}
 
+    posts_out = [
+        {
+            "post_id": p.id,
+            "title": p.title,
+            "nickname": p.user.nickname,
+            "created_at": p.created_at,
+        }
+        for p in chunk
+    ]
+
+    return {
+        "search_results": posts_out,
+        "keyword": keyword,
+        "total_count": total,
+    }
 
 def _get_post_for_detail(post_id: int) -> Post:
     post = (

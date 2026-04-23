@@ -79,7 +79,7 @@ class PostCollectionAPIView(APIView):
                     "posts": [
                         {
                             "post_id": 301,
-                            "images": ["https://cdn.example.com/posts/301-1.jpg"],
+                            "images": [],
                             "profile_image_url": "https://cdn.example.com/profiles/user-10.jpg",
                             "nickname": "user",
                             "created_at": "2026-04-08T00:00:00Z",
@@ -202,7 +202,7 @@ class PostDetailAPIView(APIView):
                 "200 OK",
                 value={
                     "post_id": 301,
-                    "images": ["https://cdn.example.com/posts/301-1.jpg"],
+                    "images": [],
                     "profile_image_url": "https://cdn.example.com/profiles/user-10.jpg",
                     "nickname": "user",
                     "created_at": "2026-04-08T00:00:00Z",
@@ -462,15 +462,37 @@ class MyPostsAPIView(APIView):
     @extend_schema(
         tags=[TAG_POSTS],
         summary="나의 포스트 목록 조회",
-        description="로그인한 사용자의 게시글 목록을 조회합니다. 쿼리: sort_by (LATEST|POPULAR), page, size",
-        parameters=[
-            OpenApiParameter(
-                name="sort_by", type=str, location=OpenApiParameter.QUERY, required=False, default="LATEST"
-            ),
-            OpenApiParameter(name="page", type=int, location=OpenApiParameter.QUERY, default=0),
-            OpenApiParameter(name="size", type=int, location=OpenApiParameter.QUERY, default=20),
+        description="로그인한 사용자의 게시글 목록을 조회합니다.",
+        responses={200: PostFeedResponseSerializer},
+        examples=[
+            OpenApiExample(
+                "200 OK",
+                value={
+                    "posts": [
+                        {
+                            "post_id": 301,
+                            "images": [
+                                "https://cdn.example.com/posts/301-1.jpg",
+                                "https://cdn.example.com/posts/301-2.jpg",
+                            ],
+                            "profile_image_url": "https://cdn.example.com/profiles/user-10.jpg",
+                            "nickname": "유저",
+                            "created_at": "2026-04-08T00:00:00Z",
+                            "title": "오늘도 운동 완료!",
+                            "tags": ["운동", "러닝"],
+                            "content_preview": "오늘은 5km 러닝하고 왔어요.",
+                            "like_count": 15,
+                            "comment_count": 4,
+                            "is_scrapped": True,
+                        }
+                    ],
+                    "page": 0,
+                    "size": 20,
+                    "total_count": 150,
+                },
+                response_only=True,
+            )
         ],
-        responses={200: PostFeedResponseSerializer, 400: ErrorDetailSerializer, 401: ErrorDetailSerializer},
     )
     def get(self, request: Request) -> Response:
         q = PostListQuerySerializer(data=request.query_params)
