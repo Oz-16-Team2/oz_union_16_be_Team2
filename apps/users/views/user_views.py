@@ -1,3 +1,5 @@
+from typing import Any
+
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import parsers, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -176,7 +178,10 @@ class EmailVerificationSendAPIView(APIView):
     def post(self, request: Request) -> Response:
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        return Response(send_email_verification_code(), status=status.HTTP_200_OK)
+        return Response(
+            send_email_verification_code(**serializer.validated_data),
+            status=status.HTTP_200_OK,
+        )
 
 
 @extend_schema(tags=["Accounts"])
@@ -212,10 +217,15 @@ class EmailVerificationVerifyAPIView(APIView):
             ),
         ],
     )
-    def get(self, request: Request) -> Response:
-        serializer = self.serializer_class(data=request.query_params)
-        serializer.is_valid(raise_exception=True)
-        return Response(verify_email(), status=status.HTTP_200_OK)
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        email = request.GET.get("email")
+        code = request.GET.get("code")
+
+        if email is None or code is None:
+            raise ValueError("email or code missing")
+
+        result = verify_email(email=email, code=code)
+        return Response(result)
 
 
 @extend_schema(tags=["Accounts"])
