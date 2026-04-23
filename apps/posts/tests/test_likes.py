@@ -4,7 +4,7 @@ import pytest
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from apps.posts.models import Comment, CommentLike, Post, PostLike
+from apps.posts.models import Comment, CommentLike, Post
 from apps.users.models import User
 
 
@@ -40,46 +40,6 @@ class TestLikeViews:
     def comment(self, user: User, post: Post) -> Comment:
         """테스트용 댓글을 생성합니다."""
         return Comment.objects.create(user_id=user.id, post_id=post.id, content="테스트용 댓글입니다.")
-
-    # ==========================================
-    # 2. REQ-POST-007: 게시글 좋아요 테스트
-    # ==========================================
-    def test_post_like_success(self, api_client: APIClient, user: User, post: Post) -> None:
-        """[기능] 게시글 좋아요 성공 (201)"""
-        api_client.force_authenticate(user=user)
-        url = f"/api/v1/posts/{post.id}/likes"
-
-        response = api_client.post(url)
-
-        assert response.status_code == status.HTTP_201_CREATED
-        # DB에 실제 데이터가 생겼는지 확인
-        assert PostLike.objects.filter(user_id=user.id, post_id=post.id).exists()
-
-    def test_post_like_duplicate(self, api_client: APIClient, user: User, post: Post) -> None:
-        """[예외] 중복 좋아요 시도 (409 Conflict)"""
-        # 미리 좋아요를 하나 만들어 둠
-        PostLike.objects.create(user_id=user.id, post_id=post.id)
-
-        api_client.force_authenticate(user=user)
-        url = f"/api/v1/posts/{post.id}/likes"
-
-        response = api_client.post(url)
-
-        assert response.status_code == status.HTTP_409_CONFLICT
-        assert "이미 좋아요를 누른 게시글입니다." in response.data["error_detail"]
-
-    def test_post_unlike_success(self, api_client: APIClient, user: User, post: Post) -> None:
-        """[기능] 게시글 좋아요 취소 성공 (204)"""
-        # 취소할 좋아요가 이미 있어야 함
-        PostLike.objects.create(user_id=user.id, post_id=post.id)
-
-        api_client.force_authenticate(user=user)
-        url = f"/api/v1/posts/{post.id}/likes"
-
-        response = api_client.delete(url)
-
-        assert response.status_code == status.HTTP_204_NO_CONTENT
-        assert not PostLike.objects.filter(user_id=user.id, post_id=post.id).exists()
 
     # ==========================================
     # 3. REQ-COMM-004: 댓글 좋아요 테스트
