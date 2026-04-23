@@ -24,7 +24,6 @@ from factory.faker import Faker
 from apps.posts.models import Post, PostLike, PostTag, Tag
 from apps.users.models import User
 
-
 # ── 팩토리 클래스 ──────────────────────────────────────────────────
 
 

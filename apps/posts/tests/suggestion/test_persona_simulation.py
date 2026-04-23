@@ -34,7 +34,6 @@ from apps.posts.tests.suggestion.personas import (
 )
 from apps.users.models import User
 
-
 # ============================================================
 # Method A: Update 우회 기법
 # ============================================================
@@ -80,9 +79,7 @@ class TestMethodA_UpdateBypass:
             PostTagFactory_create(post=post, tag=health_tag)
 
             days_ago = random.randint(0, 90)
-            Post.objects.filter(pk=post.pk).update(
-                created_at=timezone.now() - datetime.timedelta(days=days_ago)
-            )
+            Post.objects.filter(pk=post.pk).update(created_at=timezone.now() - datetime.timedelta(days=days_ago))
             bot_posts.append(post)
 
         PostLikeFactory_create(user=real_user, post=bot_posts[0])
@@ -109,9 +106,7 @@ class TestMethodA_UpdateBypass:
 
         old_post = PostFactory_create(user=creator)
         PostTagFactory_create(post=old_post, tag=tag)
-        Post.objects.filter(pk=old_post.pk).update(
-            created_at=timezone.now() - datetime.timedelta(days=15)
-        )
+        Post.objects.filter(pk=old_post.pk).update(created_at=timezone.now() - datetime.timedelta(days=15))
 
         new_post = PostFactory_create(user=creator)
         PostTagFactory_create(post=new_post, tag=tag)
@@ -153,10 +148,7 @@ class TestMethodB_BulkCreate:
 
         with freeze_time(target_date):
             frozen_now = timezone.now()
-            instances = [
-                Post(user=creator, title=f"과거글 {i}", content="bulk_create 테스트")
-                for i in range(5)
-            ]
+            instances = [Post(user=creator, title=f"과거글 {i}", content="bulk_create 테스트") for i in range(5)]
             created = Post.objects.bulk_create(instances)
 
         for post in created:
@@ -251,9 +243,7 @@ class TestMethodB_BulkCreate:
 # ============================================================
 
 
-def _create_persona_posts(
-    persona: BotPersona, tag_map: dict[str, Tag]
-) -> tuple[list[User], list[Post]]:
+def _create_persona_posts(persona: BotPersona, tag_map: dict[str, Tag]) -> tuple[list[User], list[Post]]:
     """Method B (bulk_create)로 페르소나 봇의 게시글을 시간 압축하여 생성."""
     now = timezone.now()
     bots: list[User] = []
@@ -334,9 +324,7 @@ class TestPersonaSimulation:
 
         real_user = UserFactory_create()
         health_bots = User.objects.filter(email__startswith=f"{health_persona.prefix}_")
-        health_posts = Post.objects.filter(
-            user__in=health_bots, post_tags__tag__name="건강 / 운동"
-        ).distinct()
+        health_posts = Post.objects.filter(user__in=health_bots, post_tags__tag__name="건강 / 운동").distinct()
 
         first_health_post = health_posts.first()
         if first_health_post is not None:
@@ -355,9 +343,7 @@ class TestPersonaSimulation:
 
         real_user = UserFactory_create()
         miracle_bots = User.objects.filter(email__startswith=f"{MIRACLE_MORNING_USER.prefix}_")
-        study_posts = Post.objects.filter(
-            user__in=miracle_bots, post_tags__tag__name="공부 / 성장"
-        ).distinct()
+        study_posts = Post.objects.filter(user__in=miracle_bots, post_tags__tag__name="공부 / 성장").distinct()
 
         first_study_post = study_posts.first()
         if first_study_post is not None:

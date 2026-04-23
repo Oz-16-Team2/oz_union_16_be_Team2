@@ -6,6 +6,7 @@
 - Freezegun: 시스템 시계를 고정하여 time_decay 공식을 결정론적으로 검증
 - Method A (Update 우회): 생성 후 UPDATE 쿼리로 created_at 강제 변경
 """
+
 from __future__ import annotations
 
 import datetime
@@ -29,7 +30,6 @@ from apps.posts.tests.factories import (
     TagFactory_create,
     UserFactory_create,
 )
-
 
 # ============================================================
 # 1. _time_decay 수학 공식 정확도 검증 (순수 함수, DB 불필요)
@@ -99,9 +99,7 @@ class TestTimeDecayWithFrozenClock:
         # Method A: 오래된 게시글 (15일 전, decay = 1 - 15/20 = 0.25)
         old_post = PostFactory_create(user=creator)
         PostTagFactory_create(post=old_post, tag=tag)
-        Post.objects.filter(pk=old_post.pk).update(
-            created_at=timezone.now() - datetime.timedelta(days=15)
-        )
+        Post.objects.filter(pk=old_post.pk).update(created_at=timezone.now() - datetime.timedelta(days=15))
 
         posts, _ = get_recommended_posts(requester, page=1, size=10)
         post_ids = [p.pk for p in posts]
@@ -165,9 +163,7 @@ class TestTimeDecayWithFrozenClock:
         # Method A: 1년 전 게시글 (decay = max(0.1, 1 - 365/20) = 0.1)
         ancient_post = PostFactory_create(user=creator)
         PostTagFactory_create(post=ancient_post, tag=tag)
-        Post.objects.filter(pk=ancient_post.pk).update(
-            created_at=timezone.now() - datetime.timedelta(days=365)
-        )
+        Post.objects.filter(pk=ancient_post.pk).update(created_at=timezone.now() - datetime.timedelta(days=365))
 
         posts, _ = get_recommended_posts(requester, page=1, size=100)
         assert any(p.pk == ancient_post.pk for p in posts), (
@@ -190,9 +186,7 @@ class TestTimeDecayWithFrozenClock:
         # Method A: 1년 전 게시글
         ancient_post = PostFactory_create(user=creator)
         PostTagFactory_create(post=ancient_post, tag=tag)
-        Post.objects.filter(pk=ancient_post.pk).update(
-            created_at=timezone.now() - datetime.timedelta(days=365)
-        )
+        Post.objects.filter(pk=ancient_post.pk).update(created_at=timezone.now() - datetime.timedelta(days=365))
 
         # 신규 게시글
         new_post = PostFactory_create(user=creator)
@@ -230,9 +224,7 @@ class TestRecommendationCoreLogic:
 
         assert len(posts) == 8
         for p in posts:
-            assert p.post_tags.filter(tag=tag).exists(), (
-                "CBF 추천이므로 모든 추천 게시글에 관심 태그가 있어야 합니다"
-            )
+            assert p.post_tags.filter(tag=tag).exists(), "CBF 추천이므로 모든 추천 게시글에 관심 태그가 있어야 합니다"
 
     def test_own_posts_excluded_from_recommendations(self) -> None:
         """내가 작성한 게시글은 추천 목록에 포함되지 않아야 한다."""
@@ -273,9 +265,7 @@ class TestRecommendationCoreLogic:
 
         posts, _ = get_recommended_posts(new_user, page=1, size=10)
         created_ats = [p.created_at for p in posts]
-        assert created_ats == sorted(created_ats, reverse=True), (
-            "Cold Start Fallback은 최신순 정렬이어야 합니다"
-        )
+        assert created_ats == sorted(created_ats, reverse=True), "Cold Start Fallback은 최신순 정렬이어야 합니다"
 
     def test_pagination_returns_disjoint_pages(self) -> None:
         """페이지 1과 페이지 2는 중복 없이 서로 다른 게시글을 반환한다."""

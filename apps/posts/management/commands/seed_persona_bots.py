@@ -1,3 +1,8 @@
+from __future__ import annotations
+
+from argparse import ArgumentParser
+from typing import Any
+
 from django.core.management.base import BaseCommand, CommandError
 
 from apps.posts.models import Tag
@@ -18,7 +23,7 @@ SCENARIOS = {
 class Command(BaseCommand):
     help = "페르소나 봇 및 테스트 데이터 생성"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument(
             "--scenario",
             type=str,
@@ -32,7 +37,7 @@ class Command(BaseCommand):
             help="사용 가능한 시나리오 목록 출력",
         )
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         if options["list"]:
             self.stdout.write("사용 가능한 시나리오:")
             for key, scenario in SCENARIOS.items():

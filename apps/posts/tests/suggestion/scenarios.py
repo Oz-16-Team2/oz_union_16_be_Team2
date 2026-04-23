@@ -1,4 +1,7 @@
-from dataclasses import dataclass
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any
 
 from apps.posts.tests.suggestion.personas import (
     CASUAL_USER,
@@ -20,7 +23,7 @@ class TestScenario:
     enable_engagement: bool = True
     enable_time_distribution: bool = True
 
-    extra_config: dict = None
+    extra_config: dict[str, Any] = field(default_factory=dict)
 
 
 # 시나리오 1: 기본 추천 알고리즘 테스트
