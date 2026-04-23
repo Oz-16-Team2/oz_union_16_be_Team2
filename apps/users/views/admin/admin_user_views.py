@@ -1,5 +1,3 @@
-# apps/users/views/admin/admin_user_views.py
-
 from __future__ import annotations
 
 from drf_spectacular.utils import extend_schema
@@ -38,7 +36,9 @@ class AdminUserListAPIView(AdminBaseAPIView):
         serializer = AdminUserListQuerySerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
         users = AdminUserService.get_users(**serializer.validated_data)
-        return detail_response(users, status.HTTP_200_OK)
+
+        response_serializer = AdminUserListSuccessResponseSerializer(instance={"detail": users})
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
 
 
 @extend_schema(tags=["admin-accounts"])
