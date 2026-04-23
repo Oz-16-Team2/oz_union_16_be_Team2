@@ -18,6 +18,7 @@ from apps.goals.serializers.goal_create import (
     GoalReadSerializer,
     GoalUpdateSerializer,
 )
+from apps.goals.services.goal_check import GoalCheckService
 from apps.goals.services.goal_create import GoalCreateService
 from apps.users.models import User
 
@@ -105,7 +106,7 @@ class GoalCreateView(APIView):
             queryset = queryset.filter(status=Status.FAILED)
 
         elif status_filter == "completed":
-            queryset = queryset.filter(status__in=[Status.COMPLETED, Status.FAILED])
+            queryset = queryset.filter(status=Status.COMPLETED)
 
         serializer = GoalReadSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -231,7 +232,7 @@ class GoalCheckView(APIView):
     @extend_schema(
         tags=["Goals"],
         summary="오늘의 목표 달성 인증",
-        description="특정 목표에 대해 오늘치 인증(도장)을 기록합니다. 자정이 지나면 다시 인증할 수 있습니다.",
+        description="특정 목표에 대해 오늘치 인증을 기록합니다. 자정이 지나면 다시 인증할 수 있습니다.",
         responses={
             200: GoalCheckSerializer,
             400: ErrorDetailSerializer,
@@ -273,7 +274,7 @@ class GoalCheckView(APIView):
     )
     def post(self, request: Request, goal_id: int) -> Response:
         try:
-            result = GoalCreateService.check_goal_today(goal_id, request.user)
+            result = GoalCheckService.check_goal_today(goal_id, request.user)
             serializer = GoalCheckSerializer(result)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
