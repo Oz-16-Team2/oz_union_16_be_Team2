@@ -46,7 +46,7 @@ class SignupSerializer(serializers.Serializer[Any]):
         required=False,
         default=ProfileImageCode.AVATAR_01,
     )
-    email_token = serializers.CharField(max_length=255)
+    email_token = serializers.CharField(required=True, max_length=1024)
 
 
 class EmailVerificationSendSerializer(serializers.Serializer[Any]):

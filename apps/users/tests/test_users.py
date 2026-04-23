@@ -8,6 +8,8 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from apps.users.services.user_services import generate_email_token
+
 User = get_user_model()
 
 
@@ -65,12 +67,14 @@ def change_password_url() -> str:
 
 @pytest.mark.django_db
 def test_signup_success(api_client: APIClient, signup_url: str) -> None:
+    email = "newuser@example.com"
+
     payload = {
-        "email": "newuser@example.com",
+        "email": email,
         "password": "newpass123!",
         "nickname": "newtester",
         "profile_image": "avatar_1",
-        "email_token": "verified-email-token",
+        "email_token": generate_email_token(email),
     }
 
     response = api_client.post(signup_url, payload, format="json")
@@ -86,12 +90,14 @@ def test_signup_duplicate_email(
     signup_url: str,
     user: Any,
 ) -> None:
+    email = "test@example.com"
+
     payload = {
-        "email": "test@example.com",
+        "email": email,
         "password": "newpass123!",
         "nickname": "anothernick",
         "profile_image": "avatar_1",
-        "email_token": "verified-email-token",
+        "email_token": generate_email_token(email),
     }
 
     response = api_client.post(signup_url, payload, format="json")
@@ -110,12 +116,14 @@ def test_signup_duplicate_nickname(
     signup_url: str,
     user: Any,
 ) -> None:
+    email = "another@example.com"
+
     payload = {
-        "email": "another@example.com",
+        "email": email,
         "password": "newpass123!",
         "nickname": "tester",
         "profile_image": "avatar_1",
-        "email_token": "verified-email-token",
+        "email_token": generate_email_token(email),
     }
 
     response = api_client.post(signup_url, payload, format="json")
