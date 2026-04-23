@@ -41,7 +41,8 @@ class AdminReportListAPIView(AdminBaseAPIView):
             page=serializer.validated_data["page"],
             size=serializer.validated_data["size"],
         )
-        return detail_response(reports, status.HTTP_200_OK)
+        response_serializer = AdminReportListSuccessResponseSerializer(instance={"detail": reports})
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
 
 
 class AdminReportActionAPIView(AdminBaseAPIView):

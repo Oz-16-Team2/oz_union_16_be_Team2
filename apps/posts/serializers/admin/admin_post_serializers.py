@@ -5,6 +5,7 @@ from typing import Any
 from rest_framework import serializers
 
 from apps.core.choices import CommentStatus, PostStatus
+from apps.core.common_serializers import KSTDateTimeField
 
 
 class AdminPostTagSerializer(serializers.Serializer[dict[str, Any]]):
@@ -49,10 +50,9 @@ class AdminPostListItemSerializer(serializers.Serializer[dict[str, Any]]):
     like_count = serializers.IntegerField()
     scrap_count = serializers.IntegerField()
     report_count = serializers.IntegerField()
-    is_private = serializers.BooleanField()
-    created_at = serializers.DateTimeField()
-    updated_at = serializers.DateTimeField()
-    deleted_at = serializers.DateTimeField(allow_null=True)
+    created_at = KSTDateTimeField()
+    updated_at = KSTDateTimeField()
+    deleted_at = KSTDateTimeField(allow_null=True)
 
 
 class AdminPostListSuccessResponseSerializer(serializers.Serializer[dict[str, Any]]):
@@ -70,8 +70,8 @@ class AdminPostDetailCommentSerializer(serializers.Serializer[dict[str, Any]]):
             CommentStatus.DELETED.upper(),
         ]
     )
-    created_at = serializers.DateTimeField()
-    updated_at = serializers.DateTimeField()
+    created_at = KSTDateTimeField()
+    updated_at = KSTDateTimeField()
 
 
 class AdminPostDetailVoteOptionSerializer(serializers.Serializer[dict[str, Any]]):
@@ -83,8 +83,8 @@ class AdminPostDetailVoteOptionSerializer(serializers.Serializer[dict[str, Any]]
 class AdminPostDetailVoteSerializer(serializers.Serializer[dict[str, Any]]):
     id = serializers.IntegerField()
     question = serializers.CharField()
-    start_at = serializers.DateTimeField()
-    end_at = serializers.DateTimeField()
+    start_at = KSTDateTimeField()
+    end_at = KSTDateTimeField()
     status = serializers.CharField()
     options = AdminPostDetailVoteOptionSerializer(many=True)
 
@@ -98,23 +98,22 @@ class AdminPostDetailItemSerializer(serializers.Serializer[dict[str, Any]]):
     title = serializers.CharField()
     content = serializers.CharField()
     status = serializers.CharField()
-    is_private = serializers.BooleanField()
     images = serializers.ListField(
         child=serializers.CharField(),
         allow_empty=True,
     )
     tags = AdminPostTagSerializer(many=True)
-    goal_start_date = serializers.DateTimeField(allow_null=True)
-    goal_end_date = serializers.DateTimeField(allow_null=True)
+    goal_start_date = KSTDateTimeField(allow_null=True)
+    goal_end_date = KSTDateTimeField(allow_null=True)
     goal_title = serializers.CharField(allow_null=True)
     goal_progress = serializers.IntegerField(allow_null=True)
     like_count = serializers.IntegerField()
     scrap_count = serializers.IntegerField()
     comments = AdminPostDetailCommentSerializer(many=True)
     vote = AdminPostDetailVoteSerializer(allow_null=True)
-    created_at = serializers.DateTimeField()
-    updated_at = serializers.DateTimeField()
-    deleted_at = serializers.DateTimeField(allow_null=True)
+    created_at = KSTDateTimeField()
+    updated_at = KSTDateTimeField()
+    deleted_at = KSTDateTimeField(allow_null=True)
 
 
 class AdminPostDetailSuccessResponseSerializer(serializers.Serializer[dict[str, Any]]):
