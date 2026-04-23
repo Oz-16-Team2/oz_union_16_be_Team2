@@ -82,7 +82,6 @@ class AdminPostService:
                 "like_count": post.like_count,
                 "scrap_count": post.scrap_count,
                 "report_count": report_count_map.get(post.id, 0),
-                "is_private": post.is_private,
                 "created_at": post.created_at,
                 "updated_at": post.updated_at,
                 "deleted_at": post.deleted_at,
@@ -139,7 +138,6 @@ class AdminPostService:
             "title": post.title,
             "content": post.content,
             "status": str(post.status).upper(),
-            "is_private": post.is_private,
             "images": post.images,
             "tags": [
                 {
@@ -164,7 +162,7 @@ class AdminPostService:
                     "created_at": comment.created_at,
                     "updated_at": comment.updated_at,
                 }
-                for comment in post.comments.all().order_by("created_at")
+                for comment in post.comments.all().order_by("-created_at")[:3]
             ],
             "vote": vote_data,
             "created_at": post.created_at,
