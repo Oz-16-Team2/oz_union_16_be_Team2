@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, time
 from typing import Any
+
 from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone
@@ -287,10 +288,10 @@ def build_feed_item(
         "post_id": post.id,
         "images": post.images or [],
         "profile_image_url": (
-    f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.{settings.AWS_REGION}.amazonaws.com/{post.user.profile_image}"
-    if post.user.profile_image
-    else None
-),
+            f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.{settings.AWS_REGION}.amazonaws.com/{post.user.profile_image}"
+            if post.user.profile_image
+            else None
+        ),
         "nickname": post.user.nickname,
         "created_at": post.created_at,
         "title": post.title,
@@ -325,11 +326,11 @@ def build_post_detail(
     return {
         "post_id": post.id,
         "images": post.images or [],
-        "profile_image_url":  (
-    f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.{settings.AWS_REGION}.amazonaws.com/{post.user.profile_image}"
-    if post.user.profile_image
-    else None
-),
+        "profile_image_url": (
+            f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.{settings.AWS_REGION}.amazonaws.com/{post.user.profile_image}"
+            if post.user.profile_image
+            else None
+        ),
         "nickname": post.user.nickname,
         "created_at": post.created_at,
         "title": post.title,

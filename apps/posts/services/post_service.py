@@ -3,7 +3,6 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import Any
 
-import pytest_django.django_compat
 from django.db import transaction
 from django.db.models import BooleanField, Count, Exists, OuterRef, Q, Value
 from django.utils import timezone
@@ -105,7 +104,6 @@ def search_posts(*, keyword: str, type: str | None, page: int, size: int, user: 
     total = qs.count()
     chunk = qs[page * size : page * size + size]
 
-
     posts_out = [
         {
             "post_id": p.id,
@@ -121,6 +119,7 @@ def search_posts(*, keyword: str, type: str | None, page: int, size: int, user: 
         "keyword": keyword,
         "total_count": total,
     }
+
 
 def _get_post_for_detail(post_id: int) -> Post:
     post = (
