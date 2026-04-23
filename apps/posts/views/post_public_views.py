@@ -362,46 +362,6 @@ class PresignedUrlAPIView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [parsers.JSONParser]
 
-
-class PostSearchAPIView(APIView):
-    permission_classes = [AllowAny]
-
-    @extend_schema(
-        tags=[TAG_POSTS],
-        summary="포스트 검색",
-        parameters=[
-            OpenApiParameter(
-                name="keyword",
-                type=str,
-                location=OpenApiParameter.QUERY,
-                required=True,
-                description="검색어 (최소 2글자)",
-            ),
-            OpenApiParameter(
-                name="type", type=str, location=OpenApiParameter.QUERY, required=False, description="title 또는 content"
-            ),
-            OpenApiParameter(name="page", type=int, location=OpenApiParameter.QUERY, default=0),
-            OpenApiParameter(name="size", type=int, location=OpenApiParameter.QUERY, default=20),
-        ],
-        responses={200: PostSearchResponseSerializer, 400: ErrorDetailSerializer, 404: ErrorDetailSerializer},
-    )
-    def get(self, request: Request) -> Response:
-        q = PostSearchQuerySerializer(data=request.query_params)
-        if not q.is_valid():
-            return error_response(q.errors, 400)
-        data = q.validated_data
-        try:
-            body = search_posts(
-                keyword=data["keyword"],
-                type=data.get("type"),
-                page=data["page"],
-                size=data["size"],
-                user=request.user,
-            )
-        except serializers.ValidationError as exc:
-            return error_response(exc.detail, 400)
-        return Response(body, status=200)
-
     @extend_schema(
         tags=[TAG_POSTS],
         summary="이미지 업로드용 URL 발급 ",
@@ -454,6 +414,46 @@ class PostSearchAPIView(APIView):
 
         except Exception as e:
             return error_response({"server_error": [str(e)]}, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class PostSearchAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        tags=[TAG_POSTS],
+        summary="포스트 검색",
+        parameters=[
+            OpenApiParameter(
+                name="keyword",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="검색어 (최소 2글자)",
+            ),
+            OpenApiParameter(
+                name="type", type=str, location=OpenApiParameter.QUERY, required=False, description="title 또는 content"
+            ),
+            OpenApiParameter(name="page", type=int, location=OpenApiParameter.QUERY, default=0),
+            OpenApiParameter(name="size", type=int, location=OpenApiParameter.QUERY, default=20),
+        ],
+        responses={200: PostSearchResponseSerializer, 400: ErrorDetailSerializer, 404: ErrorDetailSerializer},
+    )
+    def get(self, request: Request) -> Response:
+        q = PostSearchQuerySerializer(data=request.query_params)
+        if not q.is_valid():
+            return error_response(q.errors, 400)
+        data = q.validated_data
+        try:
+            body = search_posts(
+                keyword=data["keyword"],
+                type=data.get("type"),
+                page=data["page"],
+                size=data["size"],
+                user=request.user,
+            )
+        except serializers.ValidationError as exc:
+            return error_response(exc.detail, 400)
+        return Response(body, status=200)
 
 
 class MyPostsAPIView(APIView):
