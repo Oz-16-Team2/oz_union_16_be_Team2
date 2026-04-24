@@ -49,7 +49,9 @@ class AdminPostListAPIView(AdminBaseAPIView):
             page=serializer.validated_data["page"],
             size=serializer.validated_data["size"],
         )
-        return detail_response(posts, status.HTTP_200_OK)
+
+        response_serializer = AdminPostListSuccessResponseSerializer(instance={"detail": posts})
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
 
 
 class AdminPostDetailAPIView(AdminBaseAPIView):
@@ -64,7 +66,8 @@ class AdminPostDetailAPIView(AdminBaseAPIView):
     )
     def get(self, request: Request, post_id: int) -> Response:
         post_detail = AdminPostService.get_post_detail(post_id=post_id)
-        return detail_response(post_detail, status.HTTP_200_OK)
+        response_serializer = AdminPostDetailSuccessResponseSerializer(instance={"detail": post_detail})
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
 
 
 class AdminPostDeleteAPIView(AdminBaseAPIView):

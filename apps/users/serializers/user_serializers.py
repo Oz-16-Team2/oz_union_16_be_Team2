@@ -3,6 +3,8 @@ from typing import Any
 from rest_framework import serializers
 
 from apps.core.choices import ProfileImageCode
+from apps.users.constants import PROFILE_IMAGE_URL_MAP
+from apps.users.models import User
 
 
 class MessageResponseSerializer(serializers.Serializer[Any]):
@@ -44,7 +46,7 @@ class SignupSerializer(serializers.Serializer[Any]):
         required=False,
         default=ProfileImageCode.AVATAR_01,
     )
-    email_token = serializers.CharField(max_length=255)
+    email_token = serializers.CharField(required=True, max_length=1024)
 
 
 class EmailVerificationSendSerializer(serializers.Serializer[Any]):
@@ -108,3 +110,14 @@ class ChangePasswordSerializer(serializers.Serializer[Any]):
         if attrs["new_password"] != attrs["new_password_confirm"]:
             raise serializers.ValidationError({"new_password_confirm": ["비밀번호가 일치하지 않습니다."]})
         return attrs
+
+
+class UserProfileSerializer(serializers.ModelSerializer[Any]):
+    profile_img_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ["id", "nickname", "profile_img_url"]
+
+    def get_profile_img_url(self, obj: User) -> str:
+        return PROFILE_IMAGE_URL_MAP.get(obj.profile_image, "")

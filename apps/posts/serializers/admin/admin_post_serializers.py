@@ -16,8 +16,8 @@ class AdminPostListQuerySerializer(serializers.Serializer[dict[str, Any]]):
     users_id = serializers.IntegerField(required=False, min_value=1)
     status = serializers.ChoiceField(
         choices=[
-            PostStatus.NORMAL.upper(),
-            PostStatus.HIDDEN.upper(),
+            PostStatus.ACTIVE.upper(),
+            PostStatus.DELETED.upper(),
             PostStatus.REPORTED.upper(),
         ],
         required=False,
@@ -49,7 +49,6 @@ class AdminPostListItemSerializer(serializers.Serializer[dict[str, Any]]):
     like_count = serializers.IntegerField()
     scrap_count = serializers.IntegerField()
     report_count = serializers.IntegerField()
-    is_private = serializers.BooleanField()
     created_at = serializers.DateTimeField()
     updated_at = serializers.DateTimeField()
     deleted_at = serializers.DateTimeField(allow_null=True)
@@ -98,7 +97,6 @@ class AdminPostDetailItemSerializer(serializers.Serializer[dict[str, Any]]):
     title = serializers.CharField()
     content = serializers.CharField()
     status = serializers.CharField()
-    is_private = serializers.BooleanField()
     images = serializers.ListField(
         child=serializers.CharField(),
         allow_empty=True,
@@ -124,8 +122,7 @@ class AdminPostDetailSuccessResponseSerializer(serializers.Serializer[dict[str, 
 class AdminPostStatusUpdateRequestSerializer(serializers.Serializer[dict[str, Any]]):
     status = serializers.ChoiceField(
         choices=[
-            PostStatus.NORMAL.upper(),
-            PostStatus.HIDDEN.upper(),
+            PostStatus.ACTIVE.upper(),
             PostStatus.REPORTED.upper(),
         ]
     )

@@ -9,7 +9,10 @@ from rest_framework.views import APIView
 
 from apps.core.response import detail_response, error_response
 from apps.goals.serializers.goal_create import ErrorDetailSerializer
-from apps.posts.serializers.post_report_serializers import PostReportCreateSerializer
+from apps.posts.serializers.post_report_serializers import (
+    PostReportCreateResponseSerializer,
+    PostReportCreateSerializer,
+)
 from apps.posts.services.post_report_service import create_post_report
 
 
@@ -22,7 +25,7 @@ class PostReportView(APIView):
         description="로그인한 유저가 특정 게시글을 신고합니다.",
         request=PostReportCreateSerializer,
         responses={
-            201: PostReportCreateSerializer,
+            201: PostReportCreateResponseSerializer,
             400: ErrorDetailSerializer,
             401: ErrorDetailSerializer,
             404: ErrorDetailSerializer,

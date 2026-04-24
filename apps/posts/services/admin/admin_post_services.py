@@ -5,6 +5,7 @@ from typing import Any
 from django.db.models import Count, Exists, OuterRef
 from django.utils import timezone
 
+from apps.core.choices import PostStatus
 from apps.core.exceptions import ResourceNotFoundException
 from apps.posts.models import Post
 from apps.reports.models import Report
@@ -81,7 +82,6 @@ class AdminPostService:
                 "like_count": post.like_count,
                 "scrap_count": post.scrap_count,
                 "report_count": report_count_map.get(post.id, 0),
-                "is_private": post.is_private,
                 "created_at": post.created_at,
                 "updated_at": post.updated_at,
                 "deleted_at": post.deleted_at,
@@ -138,7 +138,6 @@ class AdminPostService:
             "title": post.title,
             "content": post.content,
             "status": str(post.status).upper(),
-            "is_private": post.is_private,
             "images": post.images,
             "tags": [
                 {
@@ -163,7 +162,7 @@ class AdminPostService:
                     "created_at": comment.created_at,
                     "updated_at": comment.updated_at,
                 }
-                for comment in post.comments.all().order_by("created_at")
+                for comment in post.comments.all().order_by("-created_at")[:3]
             ],
             "vote": vote_data,
             "created_at": post.created_at,
@@ -178,8 +177,12 @@ class AdminPostService:
         except Post.DoesNotExist as exc:
             raise ResourceNotFoundException("게시글을 찾을 수 없습니다.") from exc
 
+        if post.status == PostStatus.DELETED:
+            raise ResourceNotFoundException("게시글을 찾을 수 없습니다.")
+
+        post.status = PostStatus.DELETED
         post.deleted_at = timezone.now()
-        post.save(update_fields=["deleted_at", "updated_at"])
+        post.save(update_fields=["status", "deleted_at", "updated_at"])
 
     @staticmethod
     def update_post_status(*, post_id: int, status_value: str) -> None:

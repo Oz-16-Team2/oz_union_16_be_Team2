@@ -47,6 +47,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["nickname"]
     status = models.CharField(max_length=20, choices=UserStatus, default=UserStatus.ACTIVE)
+    status_expires_at = models.DateTimeField(null=True, blank=True)
+    # 정지(SUSPENDED) 또는 제한(RESTRICTED) 상태가 해제되는 시점 (기한 없으면 null)
+    memo = models.TextField(null=True, blank=True)
+    # 관리자 메모 (정지/제한 사유 등 기록)
 
     objects = UserManager()
 
@@ -71,29 +75,3 @@ class SocialLogin(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user.email} - {self.provider}"
-
-
-class Follow(models.Model):
-    follower_user_id = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        null=True,
-        related_name="팔로우하는유저id",
-        db_column="follower_id",
-        help_text="팔로우를 하는 유저",
-    )
-    following_user_id = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name="팔로우받는유저id",
-        null=True,
-        db_column="following_id",
-        help_text="팔로우를 받는 유저",
-    )
-    created_at = models.DateTimeField(auto_now_add=True, help_text="생성일")
-
-    class Meta:
-        db_table = "follows"
-        unique_together = ("follower_user_id", "following_user_id")  # 중복 팔로우 방지
-        verbose_name = "팔로우"
-        verbose_name_plural = "팔로우 목록"

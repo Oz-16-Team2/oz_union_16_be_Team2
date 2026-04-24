@@ -1,3 +1,5 @@
+from typing import Any
+
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import parsers, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -6,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.exceptions import ConflictException
-from apps.users.serializers import (
+from apps.users.serializers.user_serializers import (
     ChangePasswordSerializer,
     EmailVerificationSendSerializer,
     EmailVerificationSuccessSerializer,
@@ -21,7 +23,7 @@ from apps.users.serializers import (
     TokenRefreshSerializer,
     TokenResponseSerializer,
 )
-from apps.users.services import (
+from apps.users.services.user_services import (
     change_password,
     check_nickname,
     google_social_login,
@@ -176,7 +178,10 @@ class EmailVerificationSendAPIView(APIView):
     def post(self, request: Request) -> Response:
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        return Response(send_email_verification_code(), status=status.HTTP_200_OK)
+        return Response(
+            send_email_verification_code(**serializer.validated_data),
+            status=status.HTTP_200_OK,
+        )
 
 
 @extend_schema(tags=["Accounts"])
@@ -212,14 +217,20 @@ class EmailVerificationVerifyAPIView(APIView):
             ),
         ],
     )
-    def get(self, request: Request) -> Response:
-        serializer = self.serializer_class(data=request.query_params)
-        serializer.is_valid(raise_exception=True)
-        return Response(verify_email(), status=status.HTTP_200_OK)
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        email = request.GET.get("email")
+        code = request.GET.get("code")
+
+        if email is None or code is None:
+            raise ValueError("email or code missing")
+
+        result = verify_email(email=email, code=code)
+        return Response(result)
 
 
 @extend_schema(tags=["Accounts"])
 class KakaoSocialLoginAPIView(APIView):
+    serializer_class = TokenResponseSerializer
     permission_classes = [AllowAny]
 
     @extend_schema(summary="소셜 카카오 회원가입,로그인")
@@ -315,8 +326,8 @@ class LoginAPIView(APIView):
 
 
 @extend_schema(tags=["Accounts"])
-@extend_schema(tags=["Accounts"])
 class LogoutAPIView(APIView):
+    serializer_class = MessageResponseSerializer
     permission_classes = [AllowAny]
 
     @extend_schema(
