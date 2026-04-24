@@ -6,11 +6,10 @@ from django.contrib import admin, messages
 from django.contrib.admin import SimpleListFilter
 from django.db.models import Count, Exists, IntegerField, OuterRef, QuerySet, Subquery
 from django.http import HttpRequest
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html
 from django_stubs_ext import monkeypatch
-from django.urls import reverse
-from django.utils.html import format_html
 
 from apps.core.choices import CommentStatus, PostStatus, TargetType
 from apps.posts.models import Comment, Post, PostTag, Tag
