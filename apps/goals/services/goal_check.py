@@ -33,7 +33,7 @@ class GoalCheckService:
         goal = get_object_or_404(Goal, id=goal_id, user=user)
 
         now = timezone.now()
-        today = now.date()
+        today = timezone.localdate()
 
         if not (goal.start_date <= today <= goal.end_date):
             raise ValueError("목표 기간이 아닙니다.")
