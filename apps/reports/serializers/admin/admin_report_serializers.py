@@ -5,7 +5,6 @@ from typing import Any
 from rest_framework import serializers
 
 from apps.core.choices import ReportActionType, ReportStatus, TargetType
-from apps.core.common_serializers import KSTDateTimeField
 
 
 class AdminReportListQuerySerializer(serializers.Serializer[dict[str, Any]]):
@@ -47,9 +46,9 @@ class AdminReportListItemSerializer(serializers.Serializer[dict[str, Any]]):
     status = serializers.CharField()
     action_type = serializers.CharField(allow_null=True, required=False)
     memo = serializers.CharField(allow_blank=True, allow_null=True, required=False)
-    handled_at = KSTDateTimeField(allow_null=True)
-    created_at = KSTDateTimeField()
-    updated_at = KSTDateTimeField()
+    handled_at = serializers.DateTimeField(allow_null=True)
+    created_at = serializers.DateTimeField()
+    updated_at = serializers.DateTimeField()
 
 
 class AdminReportListSuccessResponseSerializer(serializers.Serializer[dict[str, Any]]):
