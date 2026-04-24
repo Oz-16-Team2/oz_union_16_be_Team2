@@ -1,5 +1,6 @@
 from django.urls import path
 
+from apps.posts.views.comment_report_views import CommentReportView
 from apps.posts.views.comment_views import PostCommentDetailView, PostCommentListCreateView
 from apps.posts.views.like_views import CommentLikeView
 from apps.posts.views.post_like_view import PostLikeView
@@ -27,6 +28,8 @@ urlpatterns = [
     path("<int:post_id>/comments/<int:comment_id>", PostCommentDetailView.as_view(), name="post-comment-detail"),
     # [REQ-COMM-004] 댓글 좋아요
     path("comments/<int:comment_id>/likes", CommentLikeView.as_view(), name="comment-like"),
+    # 댓글 신고
+    path("comments/<int:comment_id>/report", CommentReportView.as_view(), name="comment-report"),
     path("presigned-url/", PresignedUrlAPIView.as_view(), name="presigned-url"),
     path("search", PostSearchAPIView.as_view(), name="posts-search"),
     # [REQ-SCRP-001,REQ-SCRP-003]특정 게시글 스크랩(POST) / 취소(DELETE)
