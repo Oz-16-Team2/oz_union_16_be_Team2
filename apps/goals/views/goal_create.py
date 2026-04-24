@@ -4,6 +4,7 @@ from django.utils import timezone
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema, inline_serializer
 from rest_framework import serializers as drf_serializers
 from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -21,6 +22,12 @@ from apps.goals.serializers.goal_create import (
 from apps.goals.services.goal_check import GoalCheckService
 from apps.goals.services.goal_create import GoalCreateService
 from apps.users.models import User
+
+
+class GoalPagination(PageNumberPagination):
+    page_size = 8
+    page_size_query_param = "size"
+    page_query_param = "page"
 
 
 class GoalCreateView(APIView):
@@ -65,30 +72,56 @@ class GoalCreateView(APIView):
 
     @extend_schema(
         tags=["Goals"],
-        summary="전체 목표 목록 조회",
-        description="유저의 모든 목표를 최신순으로 조회합니다.",
+        summary="전체 목표 목록 조회 (필터링 및 페이지네이션)",
+        description="유저의 목표를 최신순으로 조회합니다. 상태별 필터링 및 시작/종료일 기간 필터링이 가능합니다.",
         parameters=[
             OpenApiParameter(
-                name="status",
-                type=str,
-                description="in_progress, failed, completed 중 하나 (미입력 시 전체 조회)",
-                enum=["in_progress", "failed", "completed"],
-                required=False,
-            )
+                name="status", type=str, description="in_progress, failed, completed 중 하나", required=False
+            ),
+            OpenApiParameter(name="start", type=str, description="조회 시작일 (YYYY-MM-DD)", required=False),
+            OpenApiParameter(name="end", type=str, description="조회 종료일 (YYYY-MM-DD)", required=False),
+            OpenApiParameter(name="page", type=int, description="페이지 번호", required=False),
+            OpenApiParameter(name="size", type=int, description="페이지당 개수", required=False),
         ],
-        request=GoalReadSerializer,
-        responses={200: GoalReadSerializer(many=True), 401: ErrorDetailSerializer},
+        responses={
+            200: inline_serializer(
+                name="PaginatedGoalListResponse",
+                fields={
+                    "count": drf_serializers.IntegerField(),
+                    "next": drf_serializers.URLField(allow_null=True),
+                    "previous": drf_serializers.URLField(allow_null=True),
+                    "results": GoalReadSerializer(many=True),
+                },
+            ),
+            401: ErrorDetailSerializer,
+        },
         examples=[
             OpenApiExample(
-                "401 인증 만료",
-                value={"error_detail": {"Authorization": ["인증 토큰이 만료 되었습니다."]}},
-                status_codes=["401"],
+                "성공 응답 예시",
+                value={
+                    "count": 1,
+                    "next": None,
+                    "previous": None,
+                    "results": [
+                        {
+                            "goal_id": 1,
+                            "title": "필터링된 목표",
+                            "startDate": "2026-04-14",
+                            "endDate": "2026-05-14",
+                            "status": "IN_PROGRESS",
+                            "created_at": "2026-04-14T19:00:00",
+                            "progressRate": 10,
+                            "isCheckedToday": False,
+                        }
+                    ],
+                },
+                response_only=True,
+                status_codes=["200"],
             )
         ],
     )
     def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         today = timezone.now().date()
-
         user = cast(User, request.user)
 
         expired_goals = Goal.objects.filter(user=user, status=Status.IN_PROGRESS, end_date__lt=today)
@@ -98,15 +131,24 @@ class GoalCreateView(APIView):
         queryset = Goal.objects.filter(user=user).prefetch_related("checks").order_by("-created_at")
 
         status_filter = request.query_params.get("status")
+        start_date_filter = request.query_params.get("start")
+        end_date_filter = request.query_params.get("end")
 
-        if status_filter == "in_progress":
-            queryset = queryset.filter(status=Status.IN_PROGRESS)
+        if status_filter in ["in_progress", "failed", "completed"]:
+            queryset = queryset.filter(status=Status[status_filter.upper()])
 
-        elif status_filter == "failed":
-            queryset = queryset.filter(status=Status.FAILED)
+        if start_date_filter:
+            queryset = queryset.filter(start_date__gte=start_date_filter)
 
-        elif status_filter == "completed":
-            queryset = queryset.filter(status=Status.COMPLETED)
+        if end_date_filter:
+            queryset = queryset.filter(end_date__lte=end_date_filter)
+
+        paginator = GoalPagination()
+        paginated_queryset = paginator.paginate_queryset(queryset, request, view=self)
+
+        if paginated_queryset is not None:
+            serializer = GoalReadSerializer(paginated_queryset, many=True)
+            return paginator.get_paginated_response(serializer.data)
 
         serializer = GoalReadSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
