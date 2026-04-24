@@ -58,7 +58,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "resource/docker-compose.prod.yml,resource/nginx/nginx.conf"
+          source: "resource/docker-compose.prod.yml,resource/nginx/nginx.conf,resource/nginx/nginx.http-only.conf"
           target: "~/app"
 
       - name: Deploy to server
@@ -79,23 +79,60 @@ jobs:
             mkdir -p ~/app/resource
             mkdir -p ~/app/envs
 
-            if [ ! -f ~/app/envs/.env ]; then
-              echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> ~/app/envs/.env
-              echo "DEBUG=False" >> ~/app/envs/.env
-              echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}" >> ~/app/envs/.env
-              echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" >> ~/app/envs/.env
-              echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> ~/app/envs/.env
-              echo "POSTGRES_HOST=db" >> ~/app/envs/.env
-              echo "POSTGRES_PORT=5432" >> ~/app/envs/.env
-            fi
+            {
+              echo "SECRET_KEY=${{ secrets.SECRET_KEY }}"
+              echo "DEBUG=False"
+              echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}"
+              echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}"
+              echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}"
+              echo "POSTGRES_HOST=db"
+              echo "POSTGRES_PORT=5432"
+              echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}"
+              echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+              echo "AWS_STORAGE_BUCKET_NAME=${{ secrets.AWS_STORAGE_BUCKET_NAME }}"
+              echo "AWS_REGION=${{ secrets.AWS_REGION }}"
+              echo "CORS_ALLOWED_ORIGINS=https://oz-union-16-fe-team2.vercel.app"
+              echo "EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER }}"
+              echo "EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD }}"
+              echo "GITHUB_REPOSITORY=${{ github.repository }}"
+            } > ~/app/envs/.env
 
             cd ~/app
 
             echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            docker-compose -f resource/docker-compose.prod.yml --env-file envs/.env pull web
-            docker-compose -f resource/docker-compose.prod.yml --env-file envs/.env up -d
+            COMPOSE="docker-compose -f resource/docker-compose.prod.yml --env-file envs/.env"
+            DOMAIN="jaksim.duckdns.org"
+            CERT_VOLUME="$(docker volume ls -q | grep -E 'certbot_conf$' | head -n1)"
 
-            docker-compose -f resource/docker-compose.prod.yml --env-file envs/.env exec -T web uv run python manage.py migrate --no-input
+            HAS_CERT=0
+            if [ -n "$CERT_VOLUME" ] && docker run --rm -v "$CERT_VOLUME:/etc/letsencrypt" alpine \
+                 test -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem"; then
+              HAS_CERT=1
+            fi
+
+            $COMPOSE pull web
+
+            if [ "$HAS_CERT" = "0" ]; then
+              echo "No TLS cert found — running first-time certbot bootstrap"
+              cp resource/nginx/nginx.conf resource/nginx/nginx.conf.https
+              cp resource/nginx/nginx.http-only.conf resource/nginx/nginx.conf
+
+              $COMPOSE up -d db redis web nginx
+
+              $COMPOSE run --rm certbot \
+                certonly --webroot -w /var/www/certbot \
+                -d "$DOMAIN" \
+                --email "${{ secrets.CERTBOT_EMAIL }}" --agree-tos --no-eff-email --non-interactive
+
+              cp resource/nginx/nginx.conf.https resource/nginx/nginx.conf
+            fi
+
+            $COMPOSE up -d
+
+            $COMPOSE exec -T web uv run python manage.py migrate --no-input
+            $COMPOSE exec -T web uv run python manage.py collectstatic --no-input
+
+            docker exec prod_nginx nginx -s reload || true
 
             docker image prune -f
