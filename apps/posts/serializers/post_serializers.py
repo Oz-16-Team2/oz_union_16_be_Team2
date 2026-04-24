@@ -35,7 +35,7 @@ class PostListQuerySerializer(serializers.Serializer[Any]):
         error_messages={"invalid_choice": "정렬 기준이 올바르지 않습니다."},
     )
     page = serializers.IntegerField(required=False, min_value=0, default=0)
-    size = serializers.IntegerField(required=False, min_value=1, max_value=100, default=20)
+    size = serializers.IntegerField(required=False, min_value=1, max_value=100, default=8)
 
 
 class PostSearchQuerySerializer(serializers.Serializer[Any]):
@@ -44,7 +44,7 @@ class PostSearchQuerySerializer(serializers.Serializer[Any]):
     )
     type = serializers.ChoiceField(choices=["title", "content"], required=False)
     page = serializers.IntegerField(required=False, min_value=0, default=0)
-    size = serializers.IntegerField(required=False, min_value=1, max_value=100, default=20)
+    size = serializers.IntegerField(required=False, min_value=1, max_value=100, default=8)
 
 
 class PostFeedItemSerializer(serializers.Serializer[Any]):
@@ -80,7 +80,7 @@ class PostSearchResponseSerializer(serializers.Serializer[Any]):
         required=False,
         min_value=1,
         max_value=100,
-        default=20,
+        default=8,
     )
 
 

@@ -65,7 +65,7 @@ class PostCollectionAPIView(APIView):
                 description="LATEST (기본값) 또는 POPULAR",
             ),
             OpenApiParameter(name="page", type=int, location=OpenApiParameter.QUERY, required=False),
-            OpenApiParameter(name="size", type=int, location=OpenApiParameter.QUERY, required=False),
+            OpenApiParameter(name="size", type=int, location=OpenApiParameter.QUERY, required=False, default=8),
         ],
         responses={
             200: PostFeedResponseSerializer,
@@ -92,7 +92,7 @@ class PostCollectionAPIView(APIView):
                         }
                     ],
                     "page": 0,
-                    "size": 20,
+                    "size": 8,
                     "total_count": 150,
                 },
                 response_only=True,
@@ -434,7 +434,7 @@ class PostSearchAPIView(APIView):
                 name="type", type=str, location=OpenApiParameter.QUERY, required=False, description="title 또는 content"
             ),
             OpenApiParameter(name="page", type=int, location=OpenApiParameter.QUERY, default=0),
-            OpenApiParameter(name="size", type=int, location=OpenApiParameter.QUERY, default=20),
+            OpenApiParameter(name="size", type=int, location=OpenApiParameter.QUERY, default=8),
         ],
         responses={200: PostSearchResponseSerializer, 400: ErrorDetailSerializer, 404: ErrorDetailSerializer},
     )
@@ -463,6 +463,17 @@ class MyPostsAPIView(APIView):
         tags=[TAG_POSTS],
         summary="나의 포스트 목록 조회",
         description="로그인한 사용자의 게시글 목록을 조회합니다.",
+        parameters=[
+            OpenApiParameter(
+                name="sort_by",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="LATEST (기본값) 또는 POPULAR",
+            ),
+            OpenApiParameter(name="page", type=int, location=OpenApiParameter.QUERY, required=False, default=0),
+            OpenApiParameter(name="size", type=int, location=OpenApiParameter.QUERY, required=False, default=20),
+        ],
         responses={200: PostFeedResponseSerializer},
         examples=[
             OpenApiExample(
@@ -487,7 +498,7 @@ class MyPostsAPIView(APIView):
                         }
                     ],
                     "page": 0,
-                    "size": 20,
+                    "size": 8,
                     "total_count": 150,
                 },
                 response_only=True,
