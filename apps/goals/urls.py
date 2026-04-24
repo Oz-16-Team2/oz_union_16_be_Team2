@@ -11,5 +11,5 @@ urlpatterns = [
     path("ranking/weekly", WeeklyRankingView.as_view(), name="weekly-ranking"),
     path("ranking/monthly", MonthlyRankingView.as_view(), name="monthly-ranking"),
     path("ranking/total", TotalRankingView.as_view(), name="total-ranking"),
-    path("heatmap/", AchievementView.as_view(), name="heatmap"),
+    path("achievement/", AchievementView.as_view(), name="achievement"),
 ]

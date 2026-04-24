@@ -44,7 +44,7 @@ class TestAchievement:
             CheckGoal.objects.create(user=user, goal=goal)
 
         client.force_authenticate(user=user)
-        response = client.get(reverse("heatmap"), {"start": "2026-01-01", "end": "2026-12-31"})
+        response = client.get(reverse("achievement"), {"start": "2026-01-01", "end": "2026-12-31"})
 
         assert response.status_code == status.HTTP_200_OK
         days = response.data["detail"]["days"]
@@ -55,7 +55,7 @@ class TestAchievement:
 
     def test_no_check_returns_zero(self, client: APIClient, user: User) -> None:
         client.force_authenticate(user=user)
-        response = client.get(reverse("heatmap"), {"start": "2026-01-01", "end": "2026-12-31"})
+        response = client.get(reverse("achievement"), {"start": "2026-01-01", "end": "2026-12-31"})
 
         assert response.status_code == status.HTTP_200_OK
         days = response.data["detail"]["days"]
@@ -63,19 +63,19 @@ class TestAchievement:
 
     def test_missing_params(self, client: APIClient, user: User) -> None:
         client.force_authenticate(user=user)
-        response = client.get(reverse("heatmap"))
+        response = client.get(reverse("achievement"))
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "error_detail" in response.data
 
     def test_start_after_end(self, client: APIClient, user: User) -> None:
         client.force_authenticate(user=user)
-        response = client.get(reverse("heatmap"), {"start": "2026-12-31", "end": "2026-01-01"})
+        response = client.get(reverse("achievement"), {"start": "2026-12-31", "end": "2026-01-01"})
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_unauthenticated(self, client: APIClient) -> None:
-        response = client.get(reverse("heatmap"), {"start": "2026-01-01", "end": "2026-12-31"})
+        response = client.get(reverse("achievement"), {"start": "2026-01-01", "end": "2026-12-31"})
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
@@ -95,7 +95,7 @@ class TestAchievement:
             CheckGoal.objects.create(user=other_user, goal=other_goal)
 
         client.force_authenticate(user=user)
-        response = client.get(reverse("heatmap"), {"start": "2026-01-01", "end": "2026-12-31"})
+        response = client.get(reverse("achievement"), {"start": "2026-01-01", "end": "2026-12-31"})
 
         days = response.data["detail"]["days"]
         assert all(d["check_count"] == 0 for d in days)
@@ -105,7 +105,7 @@ class TestAchievement:
             CheckGoal.objects.create(user=user, goal=goal)
 
         client.force_authenticate(user=user)
-        response = client.get(reverse("heatmap"), {"start": "2026-04-01", "end": "2026-04-30"})
+        response = client.get(reverse("achievement"), {"start": "2026-04-01", "end": "2026-04-30"})
 
         assert response.status_code == status.HTTP_200_OK
         days = response.data["detail"]["days"]
@@ -116,7 +116,7 @@ class TestAchievement:
 
     def test_leap_year(self, client: APIClient, user: User) -> None:
         client.force_authenticate(user=user)
-        response = client.get(reverse("heatmap"), {"start": "2024-01-01", "end": "2024-12-31"})
+        response = client.get(reverse("achievement"), {"start": "2024-01-01", "end": "2024-12-31"})
 
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data["detail"]["days"]) == 366
