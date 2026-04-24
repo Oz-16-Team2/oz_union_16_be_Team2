@@ -1,3 +1,4 @@
+import re
 from typing import Any
 
 from rest_framework import serializers
@@ -47,6 +48,11 @@ class SignupSerializer(serializers.Serializer[Any]):
         default=ProfileImageCode.AVATAR_01,
     )
     email_token = serializers.CharField(required=True, max_length=1024)
+
+    def validate_password(self, value: str) -> str:
+        if not re.search(r"[A-Za-z]", value) or not re.search(r"\d", value):
+            raise serializers.ValidationError("비밀번호 형식이 올바르지 않습니다.")
+        return value
 
 
 class EmailVerificationSendSerializer(serializers.Serializer[Any]):
@@ -105,6 +111,11 @@ class ChangePasswordSerializer(serializers.Serializer[Any]):
             "required": "이 필드는 필수 항목입니다.",
         },
     )
+
+    def validate_new_password(self, value: str) -> str:
+        if not re.search(r"[A-Za-z]", value) or not re.search(r"\d", value):
+            raise serializers.ValidationError("비밀번호 형식이 올바르지 않습니다.")
+        return value
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         if attrs["new_password"] != attrs["new_password_confirm"]:
