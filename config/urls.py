@@ -9,6 +9,7 @@ urlpatterns = [
     path("api/v1/goals/", include("apps.goals.urls"), name="goals"),
     path("api/v1/accounts/", include("apps.users.urls")),
     path("api/v1/posts/", include("apps.posts.urls")),
+    path("api/v1/tags/", include("apps.posts.tag_urls")),
     path("api/v1/admin/", include("apps.posts.admin_urls")),
     path("api/v1/admin/", include("apps.reports.admin_urls")),
     path("api/v1/admin/", include("apps.users.admin_urls")),
