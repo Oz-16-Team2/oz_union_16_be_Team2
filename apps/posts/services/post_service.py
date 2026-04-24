@@ -103,14 +103,17 @@ def search_posts(*, keyword: str, type: str | None, page: int, size: int, user: 
 
     total = qs.count()
     chunk = qs[page * size : page * size + size]
+    ids = [p.id for p in chunk]
+    tags_map = get_tags_by_post_id(ids)
 
     posts_out = [
-        {
-            "post_id": p.id,
-            "title": p.title,
-            "nickname": p.user.nickname,
-            "created_at": p.created_at,
-        }
+        build_feed_item(
+            p,
+            tags=tags_map.get(p.id, []),
+            like_count=0,  # 검색 결과에서는 0으로 우선 설정하거나 계산 로직 추가 가능
+            comment_count=0,
+            is_scrapped=False,
+        )
         for p in chunk
     ]
 

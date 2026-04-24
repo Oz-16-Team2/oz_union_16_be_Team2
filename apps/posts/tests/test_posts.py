@@ -73,7 +73,7 @@ class TestPosts:
 
         assert res.status_code == 201
 
-        body = res.data["detail"]
+        body = res.data
         assert body["detail"] == "게시글 작성이 완료되었습니다."
         assert "post_id" in body
 
@@ -82,7 +82,7 @@ class TestPosts:
 
         assert res.status_code == 200
 
-        body = res.data["detail"]
+        body = res.data
         assert body["post_id"] == post.id
         assert "content" in body
 

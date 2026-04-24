@@ -132,7 +132,7 @@ class PostCollectionAPIView(APIView):
             )
         except serializers.ValidationError as exc:
             return error_response(exc.detail, status.HTTP_400_BAD_REQUEST)
-        
+
         response_serializer = PostFeedResponseSerializer(instance=body)
         return Response(response_serializer.data, status=200)
 
@@ -261,7 +261,7 @@ class PostDetailAPIView(APIView):
             if "postId" in exc.detail:
                 status_code = status.HTTP_404_NOT_FOUND
             return error_response(exc.detail, status_code)
-        
+
         response_serializer = PostDetailSerializer(instance=body)
         return Response(response_serializer.data, status=200)
 
@@ -318,7 +318,7 @@ class PostDetailAPIView(APIView):
             elif "Authorization" in exc.detail:
                 status_code = status.HTTP_401_UNAUTHORIZED
             return error_response(exc.detail, status_code)
-        
+
         data = {"detail": "게시글 수정이 완료되었습니다."}
         response_serializer = MessageDetailSerializer(instance=data)
         return Response(response_serializer.data, status=200)
@@ -364,7 +364,7 @@ class PostDetailAPIView(APIView):
             elif "Authorization" in exc.detail:
                 status_code = status.HTTP_401_UNAUTHORIZED
             return error_response(exc.detail, status_code)
-            
+
         data = {"detail": "게시글 삭제가 완료되었습니다."}
         response_serializer = MessageDetailSerializer(instance=data)
         return Response(response_serializer.data, status=200)
@@ -465,7 +465,7 @@ class PostSearchAPIView(APIView):
             )
         except serializers.ValidationError as exc:
             return error_response(exc.detail, 400)
-        
+
         response_serializer = PostSearchResponseSerializer(instance=body)
         return Response(response_serializer.data, status=200)
 
@@ -540,6 +540,6 @@ class MyPostsAPIView(APIView):
             )
         except serializers.ValidationError as exc:
             return error_response(exc.detail, 400)
-        
+
         response_serializer = PostFeedResponseSerializer(instance=body)
         return Response(response_serializer.data, 200)

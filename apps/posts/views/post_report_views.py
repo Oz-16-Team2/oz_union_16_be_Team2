@@ -7,7 +7,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.core.response import detail_response, error_response
+from apps.core.response import error_response
 from apps.goals.serializers.goal_create import ErrorDetailSerializer
 from apps.posts.serializers.post_report_serializers import (
     PostReportCreateResponseSerializer,
