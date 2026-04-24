@@ -6,7 +6,7 @@ DEBUG = False
 
 ALLOWED_HOSTS = ["jaksim.duckdns.org", "localhost", "127.0.0.1", "54.180.232.189"]
 
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "static"
