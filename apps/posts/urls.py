@@ -9,6 +9,7 @@ from apps.posts.views.post_public_views import (
 )
 from apps.posts.views.post_report_views import PostReportView
 from apps.posts.views.post_suggestion_views import PostSuggestionAPIView
+from apps.posts.views.post_trending_views import PostTrendingAPIView
 from apps.posts.views.scrap_views import PostScrapView, UserScrapListView
 from apps.posts.views.tag_views import TagListView
 
@@ -31,4 +32,6 @@ urlpatterns = [
     path("tags", TagListView.as_view(), name="tag-list"),
     # [REQ-TAG-003] 추천 게시글 조회
     path("suggestions", PostSuggestionAPIView.as_view(), name="post-suggestions"),
+    # 인기 게시글 조회 (요즘 뜨는 글 / 지금 핫한 글)
+    path("trending", PostTrendingAPIView.as_view(), name="post-trending"),
 ]
