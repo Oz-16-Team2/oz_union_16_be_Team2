@@ -4,7 +4,7 @@ from config.settings.base import *
 
 DEBUG = False
 
-ALLOWED_HOSTS = ["jaksim.duckdns.org/api/docsoz-union-16-fe-team2.vercel.applocalhost", "127.0.0.1", "54.180.232.189"]
+ALLOWED_HOSTS = ["jaksim.duckdns.org", "localhost", "127.0.0.1", "54.180.232.189"]
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
