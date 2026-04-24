@@ -55,3 +55,20 @@ ignore_missing_imports = true
 
 [tool.django-stubs]
 django_settings_module = "config.settings.dev"
+
+[tool.coverage.run]
+omit = [
+    "apps/*/management/commands/*.py",
+    "apps/*/tests/suggestion/bot_factory.py",
+    "apps/*/tests/suggestion/scenarios.py",
+    "apps/*/tests/suggestion/engagement_profiles.py",
+    "apps/*/tests/suggestion/personas.py",
+    "apps/*/migrations/*.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+]
+show_missing = true

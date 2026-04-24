@@ -10,6 +10,7 @@ from __future__ import annotations
 import random
 from datetime import datetime, timedelta
 
+from django.contrib.auth.hashers import make_password
 from django.db import transaction
 from django.utils import timezone
 
@@ -50,7 +51,7 @@ class BotFactory:
         for i in range(self.persona.count):
             user, _ = User.objects.get_or_create(
                 email=f"{self.persona.prefix}_{i}@test.com",
-                defaults={"nickname": f"{self.persona.prefix}_{i}", "password": "dummy_hash!"},
+                defaults={"nickname": f"{self.persona.prefix}_{i}", "password": make_password("dummy_hash!")},
             )
             users.append(user)
         return users
