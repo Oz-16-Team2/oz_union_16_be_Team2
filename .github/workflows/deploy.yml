@@ -68,7 +68,8 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            export GITHUB_REPOSITORY=${{ github.repository }}
+            REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+            export GITHUB_REPOSITORY="$REPO_LOWER"
             if ! command -v docker &> /dev/null; then
               sudo apt update
               sudo apt install -y docker.io docker-compose
@@ -94,7 +95,7 @@ jobs:
               echo "CORS_ALLOWED_ORIGINS=https://oz-union-16-fe-team2.vercel.app"
               echo "EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER }}"
               echo "EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD }}"
-              echo "GITHUB_REPOSITORY=${{ github.repository }}"
+              echo "GITHUB_REPOSITORY=$REPO_LOWER"
             } > ~/app/envs/.env
 
             cd ~/app
@@ -120,12 +121,15 @@ jobs:
 
               $COMPOSE up -d db redis web nginx
 
-              $COMPOSE run --rm certbot \
-                certonly --webroot -w /var/www/certbot \
-                -d "$DOMAIN" \
-                --email "${{ secrets.CERTBOT_EMAIL }}" --agree-tos --no-eff-email --non-interactive
-
-              cp resource/nginx/nginx.conf.https resource/nginx/nginx.conf
+              if $COMPOSE run --rm certbot \
+                   certonly --webroot -w /var/www/certbot \
+                   -d "$DOMAIN" \
+                   --email "${{ secrets.CERTBOT_EMAIL }}" --agree-tos --no-eff-email --non-interactive; then
+                echo "Cert issued — restoring HTTPS nginx conf"
+                cp resource/nginx/nginx.conf.https resource/nginx/nginx.conf
+              else
+                echo "WARNING: certbot failed — keeping http-only conf so nginx stays up. Next deploy will retry."
+              fi
             fi
 
             $COMPOSE up -d
