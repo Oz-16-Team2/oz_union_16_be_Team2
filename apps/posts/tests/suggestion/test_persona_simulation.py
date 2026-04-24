@@ -14,6 +14,7 @@ import datetime
 import random
 
 import pytest
+from django.contrib.auth.hashers import make_password
 from django.utils import timezone
 from freezegun import freeze_time
 
@@ -84,10 +85,10 @@ class TestMethodA_UpdateBypass:
 
         PostLikeFactory_create(user=real_user, post=bot_posts[0])
 
-        posts, total = get_recommended_posts(real_user, page=1, size=8)
+        posts, _ = get_recommended_posts(real_user, page=1, size=8)
 
         assert len(posts) > 0, "건강 태그 관심 후 추천 결과가 비어있습니다"
-        recommended_tags = {pt.tag.name for p in posts for pt in p.post_tags.all()}
+        recommended_tags = {pt.tag.name for p in posts for pt in PostTag.objects.filter(post=p).select_related("tag")}
         assert "건강/운동_A" in recommended_tags, "관심 태그(건강/운동)가 추천 결과에 포함되어야 합니다"
 
     @freeze_time("2026-03-15 12:00:00")
@@ -199,7 +200,7 @@ class TestMethodB_BulkCreate:
         posts, _ = get_recommended_posts(real_user, page=1, size=8)
 
         assert len(posts) > 0, "추천 결과가 비어있습니다"
-        recommended_tags = {pt.tag.name for p in posts for pt in p.post_tags.all()}
+        recommended_tags = {pt.tag.name for p in posts for pt in PostTag.objects.filter(post=p).select_related("tag")}
         assert "건강/운동_B" in recommended_tags
 
     @freeze_time("2026-03-15 12:00:00")
@@ -257,7 +258,7 @@ def _create_persona_posts(persona: BotPersona, tag_map: dict[str, Tag]) -> tuple
     for i in range(persona.count):
         user, _ = User.objects.get_or_create(
             email=f"{persona.prefix}_{i}@test.com",
-            defaults={"nickname": f"{persona.prefix}_{i}"},
+            defaults={"nickname": f"{persona.prefix}_{i}", "password": make_password("dummy_hash!")},
         )
         bots.append(user)
 
@@ -333,7 +334,7 @@ class TestPersonaSimulation:
         posts, _ = get_recommended_posts(real_user, page=1, size=8)
 
         assert len(posts) > 0, "건강 페르소나 시뮬레이션 후 추천 결과가 없습니다"
-        all_tags_in_result = {pt.tag.name for p in posts for pt in p.post_tags.all()}
+        all_tags_in_result = {pt.tag.name for p in posts for pt in PostTag.objects.filter(post=p).select_related("tag")}
         assert "건강 / 운동" in all_tags_in_result, "건강 관심 유저에게 건강 태그 게시글이 추천되어야 합니다"
 
     @freeze_time("2026-03-15 12:00:00")
@@ -358,7 +359,7 @@ class TestPersonaSimulation:
         _create_persona_posts(HEALTH_ENTHUSIAST, self.tag_map)
 
         cold_user = UserFactory_create()
-        posts, total = get_recommended_posts(cold_user, page=1, size=8)
+        posts, _ = get_recommended_posts(cold_user, page=1, size=8)
 
         assert len(posts) == 8, "Cold Start 유저에게 8개 Fallback 게시글이 제공되어야 합니다"
         created_ats = [p.created_at for p in posts]
