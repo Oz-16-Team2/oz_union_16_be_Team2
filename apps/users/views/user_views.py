@@ -332,6 +332,7 @@ class LogoutAPIView(APIView):
 
     @extend_schema(
         summary="로그아웃 API",
+        request=None,
         responses={200: MessageResponseSerializer},
         examples=[
             OpenApiExample(
