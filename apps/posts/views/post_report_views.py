@@ -86,4 +86,6 @@ class PostReportView(APIView):
         except ValidationError as e:
             return error_response(e.detail, 400)
 
-        return detail_response({"detail": "신고가 정상적으로 접수되었습니다", "report_id": report.id}, 201)
+        data = {"detail": "신고가 정상적으로 접수되었습니다", "report_id": report.id}
+        response_serializer = PostReportCreateResponseSerializer(instance=data)
+        return Response(response_serializer.data, status=201)

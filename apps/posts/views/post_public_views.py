@@ -132,7 +132,9 @@ class PostCollectionAPIView(APIView):
             )
         except serializers.ValidationError as exc:
             return error_response(exc.detail, status.HTTP_400_BAD_REQUEST)
-        return Response(body, status=200)
+        
+        response_serializer = PostFeedResponseSerializer(instance=body)
+        return Response(response_serializer.data, status=200)
 
     @extend_schema(
         tags=[TAG_POSTS],
@@ -182,7 +184,9 @@ class PostCollectionAPIView(APIView):
         except serializers.ValidationError as exc:
             return error_response(exc.detail, 400)
 
-        return detail_response({"detail": "게시글 작성이 완료되었습니다.", "post_id": post.id}, 201)
+        data = {"detail": "게시글 작성이 완료되었습니다.", "post_id": post.id}
+        response_serializer = PostCreateResponseSerializer(instance=data)
+        return Response(response_serializer.data, status=201)
 
 
 class PostDetailAPIView(APIView):
@@ -257,7 +261,9 @@ class PostDetailAPIView(APIView):
             if "postId" in exc.detail:
                 status_code = status.HTTP_404_NOT_FOUND
             return error_response(exc.detail, status_code)
-        return detail_response(body, 200)
+        
+        response_serializer = PostDetailSerializer(instance=body)
+        return Response(response_serializer.data, status=200)
 
     @extend_schema(
         tags=[TAG_POSTS],
@@ -312,7 +318,10 @@ class PostDetailAPIView(APIView):
             elif "Authorization" in exc.detail:
                 status_code = status.HTTP_401_UNAUTHORIZED
             return error_response(exc.detail, status_code)
-        return detail_response("게시글 수정이 완료되었습니다.", 200)
+        
+        data = {"detail": "게시글 수정이 완료되었습니다."}
+        response_serializer = MessageDetailSerializer(instance=data)
+        return Response(response_serializer.data, status=200)
 
     @extend_schema(
         tags=[TAG_POSTS],
@@ -355,7 +364,10 @@ class PostDetailAPIView(APIView):
             elif "Authorization" in exc.detail:
                 status_code = status.HTTP_401_UNAUTHORIZED
             return error_response(exc.detail, status_code)
-        return detail_response("게시글 삭제가 완료되었습니다.", 200)
+            
+        data = {"detail": "게시글 삭제가 완료되었습니다."}
+        response_serializer = MessageDetailSerializer(instance=data)
+        return Response(response_serializer.data, status=200)
 
 
 class PresignedUrlAPIView(APIView):
@@ -453,7 +465,9 @@ class PostSearchAPIView(APIView):
             )
         except serializers.ValidationError as exc:
             return error_response(exc.detail, 400)
-        return Response(body, status=200)
+        
+        response_serializer = PostSearchResponseSerializer(instance=body)
+        return Response(response_serializer.data, status=200)
 
 
 class MyPostsAPIView(APIView):
@@ -526,4 +540,6 @@ class MyPostsAPIView(APIView):
             )
         except serializers.ValidationError as exc:
             return error_response(exc.detail, 400)
-        return Response(body, 200)
+        
+        response_serializer = PostFeedResponseSerializer(instance=body)
+        return Response(response_serializer.data, 200)

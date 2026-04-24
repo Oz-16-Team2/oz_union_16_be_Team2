@@ -52,7 +52,7 @@ class PostFeedItemSerializer(serializers.Serializer[Any]):
     images = serializers.ListField(child=serializers.CharField(), allow_empty=True)
     profile_image_url = serializers.CharField(max_length=255, allow_null=True, required=False, allow_blank=True)
     nickname = serializers.CharField()
-    created_at = serializers.DateTimeField()
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S")
     title = serializers.CharField()
     tags = serializers.ListField(child=serializers.CharField())
     content_preview = serializers.CharField()
@@ -215,8 +215,8 @@ class VoteOptionDetailSerializer(serializers.Serializer[Any]):
 class VoteInfoSerializer(serializers.Serializer[Any]):
     vote_id = serializers.IntegerField()
     question = serializers.CharField(max_length=255)
-    start_at = serializers.DateTimeField()
-    end_at = serializers.DateTimeField()
+    start_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S")
+    end_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S")
     status = serializers.CharField()
     options = VoteOptionDetailSerializer(many=True)
 
@@ -224,8 +224,8 @@ class VoteInfoSerializer(serializers.Serializer[Any]):
 class GoalInfoSerializer(serializers.Serializer[Any]):
     goal_id = serializers.IntegerField()
     goal_title = serializers.CharField()
-    goal_start_date = serializers.DateTimeField(allow_null=True)
-    goal_end_date = serializers.DateTimeField(allow_null=True)
+    goal_start_date = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", allow_null=True)
+    goal_end_date = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", allow_null=True)
     goal_progress = serializers.IntegerField(allow_null=True)
 
 
@@ -262,7 +262,7 @@ class PostDetailSerializer(serializers.Serializer[Any]):
     images = serializers.ListField(child=serializers.CharField(), allow_empty=True)
     profile_image_url = serializers.CharField(allow_null=True, required=False, allow_blank=True)
     nickname = serializers.CharField()
-    created_at = serializers.DateTimeField()
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S")
     title = serializers.CharField()
     content = serializers.CharField()
     tags = serializers.ListField(child=serializers.CharField())
