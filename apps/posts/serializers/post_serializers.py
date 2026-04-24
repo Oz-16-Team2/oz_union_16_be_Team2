@@ -212,6 +212,27 @@ class PostFeedResponseSerializer(serializers.Serializer[Any]):
     total_count = serializers.IntegerField()
 
 
+class PostSuggestionItemSerializer(serializers.Serializer[Any]):
+    post_id = serializers.IntegerField()
+    images = serializers.ListField(child=serializers.CharField(), allow_empty=True)
+    profile_image_url = serializers.CharField(allow_null=True, required=False, allow_blank=True)
+    nickname = serializers.CharField()
+    created_at = serializers.DateTimeField()
+    title = serializers.CharField()
+    tags = serializers.ListField(child=serializers.CharField())
+    content_preview = serializers.CharField()
+    like_count = serializers.IntegerField()
+    comment_count = serializers.IntegerField()
+    is_scrapped = serializers.BooleanField()
+
+
+class PostSuggestionResponseSerializer(serializers.Serializer[Any]):
+    posts = PostSuggestionItemSerializer(many=True)
+    page = serializers.IntegerField()
+    size = serializers.IntegerField()
+    total_count = serializers.IntegerField()
+
+
 class PostDetailSerializer(serializers.Serializer[Any]):
     post_id = serializers.IntegerField()
     images = serializers.ListField(child=serializers.CharField(), allow_empty=True)

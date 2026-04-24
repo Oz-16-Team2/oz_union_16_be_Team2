@@ -43,7 +43,16 @@ class PostSuggestionService:
         test_posts: QuerySet[Post] = Post.objects.filter(user__email__endswith="@test.com")
         return self._apply_recommendation_algorithm(user, test_posts)
 
-    def analyze_by_persona(self) -> dict[str, dict[int, dict[str, Any]]]:
+    def analyze_by_persona(
+        self,
+        persona_interested_tags: dict[str, list[str]] | None = None,
+    ) -> dict[str, dict[int, dict[str, Any]]]:
+        """
+        페르소나별 추천 지표 분석.
+
+        persona_interested_tags: persona 이름 → 관심 태그 목록 매핑.
+          제공하면 tag_precision(추천 중 관심 태그 포함 비율)이 함께 집계된다.
+        """
         results: dict[str, dict[int, dict[str, Any]]] = defaultdict(dict)
 
         # 봇 유저 이메일 형식: {persona_prefix}_{i}@test.com
@@ -55,9 +64,12 @@ class PostSuggestionService:
             persona_groups[persona].append(user)
 
         for persona, users in persona_groups.items():
+            interested = (persona_interested_tags or {}).get(persona)
             for user in users:
                 recommendations = self.get_recommendations(user)
-                results[persona][user.pk] = self._calculate_metrics(user, recommendations)
+                metrics = self._calculate_metrics(user, recommendations)
+                metrics["tag_precision"] = self._tag_precision(recommendations, interested)
+                results[persona][user.pk] = metrics
 
         return results
 
@@ -101,12 +113,31 @@ class PostSuggestionService:
 
     def _calculate_metrics(self, user: User, recommendations: list[Post]) -> dict[str, Any]:
         if not recommendations:
-            return {"precision": 0.0, "count": 0, "hits": 0}
+            return {"precision": 0.0, "count": 0, "hits": 0, "random_baseline": 0.0, "lift": 0.0}
 
         liked_ids = set(PostLike.objects.filter(user=user).values_list("post_id", flat=True))
         hits = sum(1 for post in recommendations if post.pk in liked_ids)
+        precision = round(hits / len(recommendations), 4)
+
+        total_candidates = Post.objects.exclude(user=user).count()
+        random_baseline = round(len(liked_ids) / total_candidates, 4) if total_candidates > 0 else 0.0
+        lift = round(precision / random_baseline, 2) if random_baseline > 0 else 0.0
+
         return {
-            "precision": round(hits / len(recommendations), 4),
+            "precision": precision,
             "count": len(recommendations),
             "hits": hits,
+            "random_baseline": random_baseline,
+            "lift": lift,
         }
+
+    def _tag_precision(self, recommendations: list[Post], interested_tags: list[str] | None) -> float | None:
+        """추천 중 관심 태그가 포함된 게시글 비율. interested_tags가 없거나 'all'이면 None."""
+        if not recommendations or not interested_tags or "all" in interested_tags:
+            return None
+        tag_set = set(interested_tags)
+        rec_ids = [post.pk for post in recommendations]
+        matched_ids = set(
+            PostTag.objects.filter(post_id__in=rec_ids, tag__name__in=tag_set).values_list("post_id", flat=True)
+        )
+        return round(len(matched_ids) / len(recommendations), 4)
