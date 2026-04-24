@@ -121,7 +121,7 @@ jobs:
 
               $COMPOSE up -d db redis web nginx
 
-              if $COMPOSE run --rm certbot \
+              if $COMPOSE run --rm --entrypoint certbot certbot \
                    certonly --webroot -w /var/www/certbot \
                    -d "$DOMAIN" \
                    --email "${{ secrets.CERTBOT_EMAIL }}" --agree-tos --no-eff-email --non-interactive; then
