@@ -7,10 +7,12 @@ from django.contrib import admin, messages
 from django.contrib.admin.helpers import ActionForm
 from django.contrib.admin.widgets import AdminSplitDateTime
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
+from django.contrib.auth.models import Group
 from django.db.models import Count, QuerySet
 from django.http import HttpRequest
 from django.utils import timezone
 from django.utils.html import format_html
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 
 from apps.core.choices import TargetType, UserStatus
 from apps.posts.models import Comment, Post
@@ -229,3 +231,8 @@ class UserAdmin(DjangoUserAdmin[User]):
         )
 
         self.message_user(request, f"{updated_count}명 사용자를 정지 처리했습니다.", messages.SUCCESS)
+
+
+for model in (Group, BlacklistedToken, OutstandingToken):
+    if model in admin.site._registry:
+        admin.site.unregister(model)
