@@ -6,6 +6,7 @@ from django.contrib import admin, messages
 from django.contrib.admin import SimpleListFilter
 from django.db.models import Count, Exists, IntegerField, OuterRef, QuerySet, Subquery
 from django.http import HttpRequest
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html
 from django_stubs_ext import monkeypatch
@@ -278,8 +279,9 @@ class CommentAdmin(admin.ModelAdmin[Comment]):
 
     list_display = (
         "id",
-        "post",
-        "user",
+        "post_id_display",
+        "user_id_display",
+        "nickname",
         "content_preview",
         "status_upper",
         "like_count",
@@ -306,6 +308,19 @@ class CommentAdmin(admin.ModelAdmin[Comment]):
     ordering = ("-created_at",)
     actions = ("mark_active", "mark_reported", "soft_delete_comments")
     list_per_page = 10
+
+    @admin.display(description="post_id")
+    def post_id_display(self, obj: Comment) -> str:
+        url = reverse("admin:posts_post_change", args=[obj.post_id])
+        return format_html('<a href="{}">{}</a>', url, obj.post_id)
+
+    @admin.display(description="user_id")
+    def user_id_display(self, obj: Comment) -> int:
+        return obj.user_id
+
+    @admin.display(description="닉네임")
+    def nickname(self, obj: Comment) -> str:
+        return obj.user.nickname
 
     def changelist_view(self, request: HttpRequest, extra_context: dict[str, Any] | None = None) -> Any:
         self.comment_filter_type = request.GET.get("filter_type")
