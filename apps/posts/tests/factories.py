@@ -34,7 +34,7 @@ class UserFactory(DjangoModelFactory[User]):
 
     email = LazyAttribute(lambda obj: f"{obj.nickname}@example.com")  # type: ignore[no-untyped-call]
     nickname = Sequence(lambda n: f"user_{n}")  # type: ignore[no-untyped-call]
-    password = LazyFunction(lambda: make_password("dummy_hash_for_tests!")) # type: ignore[no-untyped-call]
+    password = LazyFunction(lambda: make_password("dummy_hash_for_tests!"))  # type: ignore[no-untyped-call]
     is_active = True
 
 
@@ -46,7 +46,7 @@ class BotUserFactory(DjangoModelFactory[User]):
 
     email = LazyAttribute(lambda obj: f"{obj.nickname}@test.com")  # type: ignore[no-untyped-call]
     nickname = Sequence(lambda n: f"bot_{n}")  # type: ignore[no-untyped-call]
-    password = LazyFunction(lambda: make_password("dummy_hash_for_tests!")) # type: ignore[no-untyped-call]
+    password = LazyFunction(lambda: make_password("dummy_hash_for_tests!"))  # type: ignore[no-untyped-call]
     is_active = True
 
 
