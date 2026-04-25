@@ -353,7 +353,7 @@ class LogoutAPIView(APIView):
             {"detail": "로그아웃 되었습니다."},
             status=status.HTTP_200_OK,
         )
-        response.delete_cookie("refresh_token")
+        response.delete_cookie("refresh_token", samesite="Lax")
         return response
 
 
