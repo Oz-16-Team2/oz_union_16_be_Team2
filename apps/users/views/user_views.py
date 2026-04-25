@@ -1,5 +1,6 @@
-from typing import Any
+from typing import Any, Literal, cast
 
+from django.conf import settings
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import parsers, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -316,11 +317,15 @@ class LoginAPIView(APIView):
         refresh_token = result.pop("refresh_token")
 
         response = Response(result, status=status.HTTP_200_OK)
+
+        samesite = cast(Literal["Lax", "Strict", "None", False], settings.COOKIE_SAME_SITE)
         response.set_cookie(
             key="refresh_token",
             value=refresh_token,
             httponly=True,
-            samesite="Lax",
+            secure=settings.COOKIE_SECURE,
+            samesite=samesite,
+            path="/",
         )
         return response
 
@@ -353,7 +358,12 @@ class LogoutAPIView(APIView):
             {"detail": "로그아웃 되었습니다."},
             status=status.HTTP_200_OK,
         )
-        response.delete_cookie("refresh_token", samesite="Lax")
+        samesite = cast(Literal["Lax", "Strict", "None", False], settings.COOKIE_SAME_SITE)
+        response.delete_cookie(
+            "refresh_token",
+            path="/",
+            samesite=samesite,
+        )
         return response
 
 

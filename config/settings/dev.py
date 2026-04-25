@@ -30,3 +30,6 @@ CORS_ALLOWED_ORIGINS = [
     "http://jaksim.duckdns.org",
 ]
 CORS_ALLOW_CREDENTIALS = True
+
+COOKIE_SECURE = False
+COOKIE_SAME_SITE = "Lax"
