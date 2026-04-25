@@ -4,6 +4,7 @@ from typing import Any
 import pytest
 from django.urls import reverse
 from django.utils import timezone
+from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -12,6 +13,7 @@ from apps.goals.models import Goal
 from apps.users.models import User
 
 
+@freeze_time("2026-04-20 12:00:00")
 @pytest.mark.django_db
 class TestGoalCheckAPI:
     @pytest.fixture(scope="class", autouse=True)
