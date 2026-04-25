@@ -332,6 +332,7 @@ class LogoutAPIView(APIView):
 
     @extend_schema(
         summary="로그아웃 API",
+        request=None,
         responses={200: MessageResponseSerializer},
         examples=[
             OpenApiExample(
@@ -352,7 +353,7 @@ class LogoutAPIView(APIView):
             {"detail": "로그아웃 되었습니다."},
             status=status.HTTP_200_OK,
         )
-        response.delete_cookie("refresh_token")
+        response.delete_cookie("refresh_token", samesite="Lax")
         return response
 
 
