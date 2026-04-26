@@ -1,6 +1,5 @@
-from typing import Any, Literal, cast
+from typing import Any
 
-from django.conf import settings
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import parsers, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -21,6 +20,7 @@ from apps.users.serializers.user_serializers import (
     MessageResponseSerializer,
     NicknameCheckSerializer,
     SignupSerializer,
+    SocialLoginSerializer,
     TokenRefreshSerializer,
     TokenResponseSerializer,
 )
@@ -231,30 +231,110 @@ class EmailVerificationVerifyAPIView(APIView):
 
 @extend_schema(tags=["Accounts"])
 class KakaoSocialLoginAPIView(APIView):
-    serializer_class = TokenResponseSerializer
+    serializer_class = SocialLoginSerializer
     permission_classes = [AllowAny]
+    parser_classes = [parsers.JSONParser]
 
-    @extend_schema(summary="소셜 카카오 회원가입,로그인")
+    @extend_schema(
+        summary="소셜 카카오 회원가입,로그인",
+        request=SocialLoginSerializer,
+        responses={200: TokenResponseSerializer},
+        examples=[
+            OpenApiExample(
+                "소셜 로그인 성공",
+                value={"access_token": "JWT Token Value"},
+                response_only=True,
+                status_codes=["200"],
+            ),
+        ],
+    )
     def post(self, request: Request) -> Response:
-        return Response(kakao_social_login(), status=status.HTTP_200_OK)
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        result = kakao_social_login(**serializer.validated_data)
+        refresh_token_value = result.pop("refresh_token")
+
+        response = Response(result, status=status.HTTP_200_OK)
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token_value,
+            httponly=True,
+            samesite="Lax",
+        )
+        return response
 
 
 @extend_schema(tags=["Accounts"])
 class NaverSocialLoginAPIView(APIView):
+    serializer_class = SocialLoginSerializer
     permission_classes = [AllowAny]
+    parser_classes = [parsers.JSONParser]
 
-    @extend_schema(summary="소셜 네이버 회원가입,로그인")
+    @extend_schema(
+        summary="소셜 네이버 회원가입,로그인",
+        request=SocialLoginSerializer,
+        responses={200: TokenResponseSerializer},
+        examples=[
+            OpenApiExample(
+                "소셜 로그인 성공",
+                value={"access_token": "JWT Token Value"},
+                response_only=True,
+                status_codes=["200"],
+            ),
+        ],
+    )
     def post(self, request: Request) -> Response:
-        return Response(naver_social_login(), status=status.HTTP_200_OK)
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        result = naver_social_login(**serializer.validated_data)
+        refresh_token_value = result.pop("refresh_token")
+
+        response = Response(result, status=status.HTTP_200_OK)
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token_value,
+            httponly=True,
+            samesite="Lax",
+        )
+        return response
 
 
 @extend_schema(tags=["Accounts"])
 class GoogleSocialLoginAPIView(APIView):
+    serializer_class = SocialLoginSerializer
     permission_classes = [AllowAny]
+    parser_classes = [parsers.JSONParser]
 
-    @extend_schema(summary="소셜 구글 회원가입,로그인")
+    @extend_schema(
+        summary="소셜 구글 회원가입,로그인",
+        request=SocialLoginSerializer,
+        responses={200: TokenResponseSerializer},
+        examples=[
+            OpenApiExample(
+                "소셜 로그인 성공",
+                value={"access_token": "JWT Token Value"},
+                response_only=True,
+                status_codes=["200"],
+            ),
+        ],
+    )
     def post(self, request: Request) -> Response:
-        return Response(google_social_login(), status=status.HTTP_200_OK)
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        result = google_social_login(**serializer.validated_data)
+        refresh_token_value = result.pop("refresh_token")
+
+        response = Response(result, status=status.HTTP_200_OK)
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token_value,
+            httponly=True,
+            samesite="Lax",
+        )
+        return response
 
 
 @extend_schema(tags=["Accounts"])
@@ -314,18 +394,14 @@ class LoginAPIView(APIView):
         serializer.is_valid(raise_exception=True)
 
         result = login_user(**serializer.validated_data)
-        refresh_token = result.pop("refresh_token")
+        refresh_token_value = result.pop("refresh_token")
 
         response = Response(result, status=status.HTTP_200_OK)
-
-        samesite = cast(Literal["Lax", "Strict", "None", False], settings.COOKIE_SAME_SITE)
         response.set_cookie(
             key="refresh_token",
-            value=refresh_token,
+            value=refresh_token_value,
             httponly=True,
-            secure=settings.COOKIE_SECURE,
-            samesite=samesite,
-            path="/",
+            samesite="Lax",
         )
         return response
 
@@ -349,21 +425,16 @@ class LogoutAPIView(APIView):
         ],
     )
     def post(self, request: Request) -> Response:
-        refresh_token = request.COOKIES.get("refresh_token")
+        refresh_token_value = request.COOKIES.get("refresh_token")
 
-        if refresh_token:
-            logout_user(refresh_token=refresh_token)
+        if refresh_token_value:
+            logout_user(refresh_token=refresh_token_value)
 
         response = Response(
             {"detail": "로그아웃 되었습니다."},
             status=status.HTTP_200_OK,
         )
-        samesite = cast(Literal["Lax", "Strict", "None", False], settings.COOKIE_SAME_SITE)
-        response.delete_cookie(
-            "refresh_token",
-            path="/",
-            samesite=samesite,
-        )
+        response.delete_cookie("refresh_token")
         return response
 
 

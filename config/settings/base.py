@@ -4,6 +4,8 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+env = os.environ.get
+
 SECRET_KEY = os.environ.get(
     "SECRET_KEY",
 )
@@ -56,7 +58,6 @@ TEMPLATES = [
         },
     },
 ]
-
 
 WSGI_APPLICATION = "config.wsgi.application"
 
@@ -142,3 +143,12 @@ EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = "no-reply@jaksim.com"
 
 EMAIL_VERIFICATION_TIMEOUT = 900
+
+GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID", default="")
+GOOGLE_CLIENT_SECRET = env("GOOGLE_CLIENT_SECRET", default="")
+
+NAVER_CLIENT_ID = env("NAVER_CLIENT_ID", default="")
+NAVER_CLIENT_SECRET = env("NAVER_CLIENT_SECRET", default="")
+
+KAKAO_REST_API_KEY = env("KAKAO_REST_API_KEY", default="")
+KAKAO_CLIENT_SECRET = env("KAKAO_CLIENT_SECRET", default="")
