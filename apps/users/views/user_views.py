@@ -1,16 +1,15 @@
 from typing import Any, cast
 
-from apps.users.models import User
-from rest_framework.exceptions import NotAuthenticated
-
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import parsers, status
+from rest_framework.exceptions import NotAuthenticated
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.exceptions import ConflictException
+from apps.users.models import User
 from apps.users.serializers.user_serializers import (
     ChangePasswordSerializer,
     EmailVerificationSendSerializer,
