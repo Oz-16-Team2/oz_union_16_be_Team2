@@ -1,4 +1,4 @@
-from typing import Any, cast
+from typing import Any
 
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import parsers, status
@@ -9,7 +9,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.exceptions import ConflictException
-from apps.users.models import User
 from apps.users.serializers.user_serializers import (
     ChangePasswordSerializer,
     EmailVerificationSendSerializer,
@@ -433,7 +432,7 @@ class MeAPIView(APIView):
     def get(self, request: Request) -> Response:
         if not request.user.is_authenticated:
             raise NotAuthenticated()
-        return Response(get_my_profile(cast(User, request.user)), status=status.HTTP_200_OK)
+        return Response(get_my_profile(request.user), status=status.HTTP_200_OK)
 
 
 @extend_schema(tags=["Accounts"])
