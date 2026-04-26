@@ -23,10 +23,12 @@ from apps.users.serializers.user_serializers import (
     SocialLoginSerializer,
     TokenRefreshSerializer,
     TokenResponseSerializer,
+    UserProfileSerializer,
 )
 from apps.users.services.user_services import (
     change_password,
     check_nickname,
+    get_my_profile,
     google_social_login,
     kakao_social_login,
     login_user,
@@ -404,6 +406,30 @@ class LoginAPIView(APIView):
             samesite="Lax",
         )
         return response
+
+
+@extend_schema(tags=["Accounts"])
+class MeAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="내 프로필 조회",
+        responses={200: UserProfileSerializer},
+        examples=[
+            OpenApiExample(
+                "내 프로필 조회 성공",
+                value={
+                    "id": 1,
+                    "nickname": "testnick",
+                    "profile_image_url": "https://example.com/profile.png",
+                },
+                response_only=True,
+                status_codes=["200"],
+            ),
+        ],
+    )
+    def get(self, request: Request) -> Response:
+        return Response(get_my_profile(request.user), status=status.HTTP_200_OK)
 
 
 @extend_schema(tags=["Accounts"])
