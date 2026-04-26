@@ -1,4 +1,7 @@
-from typing import Any
+from typing import Any, cast
+
+from apps.users.models import User
+from rest_framework.exceptions import NotAuthenticated
 
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import parsers, status
@@ -429,7 +432,9 @@ class MeAPIView(APIView):
         ],
     )
     def get(self, request: Request) -> Response:
-        return Response(get_my_profile(request.user), status=status.HTTP_200_OK)
+        if not request.user.is_authenticated:
+            raise NotAuthenticated()
+        return Response(get_my_profile(cast(User, request.user)), status=status.HTTP_200_OK)
 
 
 @extend_schema(tags=["Accounts"])
