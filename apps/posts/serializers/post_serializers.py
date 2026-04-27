@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, time
 from typing import Any
 
+from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone
 from rest_framework import serializers
@@ -33,6 +34,43 @@ class PostListQuerySerializer(serializers.Serializer[Any]):
         default=SORT_LATEST,
         error_messages={"invalid_choice": "정렬 기준이 올바르지 않습니다."},
     )
+    page = serializers.IntegerField(required=False, min_value=0, default=0)
+    size = serializers.IntegerField(required=False, min_value=1, max_value=100, default=8)
+
+
+class PostSearchQuerySerializer(serializers.Serializer[Any]):
+    keyword = serializers.CharField(
+        min_length=2, error_messages={"min_length": "검색어는 최소 2글자 이상 입력해야 합니다."}
+    )
+    type = serializers.ChoiceField(choices=["title", "content"], required=False)
+    page = serializers.IntegerField(required=False, min_value=0, default=0)
+    size = serializers.IntegerField(required=False, min_value=1, max_value=100, default=8)
+
+
+class PostFeedItemSerializer(serializers.Serializer[Any]):
+    post_id = serializers.IntegerField()
+    images = serializers.ListField(child=serializers.CharField(), allow_empty=True)
+    profile_image_url = serializers.CharField(max_length=255, allow_null=True, required=False, allow_blank=True)
+    nickname = serializers.CharField()
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S")
+    title = serializers.CharField()
+    tags = serializers.ListField(child=serializers.CharField())
+    content_preview = serializers.CharField()
+    like_count = serializers.IntegerField()
+    comment_count = serializers.IntegerField()
+    is_scrapped = serializers.BooleanField()
+
+
+class PostSearchResponseSerializer(serializers.Serializer[Any]):
+    search_results = PostFeedItemSerializer(many=True)
+    keyword = serializers.CharField()
+    total_count = serializers.IntegerField()
+    sort_by = serializers.ChoiceField(
+        choices=[SORT_LATEST, SORT_POPULAR],
+        required=False,
+        default=SORT_LATEST,
+        error_messages={"invalid_choice": "정렬 기준이 올바르지 않습니다."},
+    )
     page = serializers.IntegerField(
         required=False,
         min_value=0,
@@ -42,7 +80,7 @@ class PostListQuerySerializer(serializers.Serializer[Any]):
         required=False,
         min_value=1,
         max_value=100,
-        default=20,
+        default=8,
     )
 
 
@@ -177,8 +215,8 @@ class VoteOptionDetailSerializer(serializers.Serializer[Any]):
 class VoteInfoSerializer(serializers.Serializer[Any]):
     vote_id = serializers.IntegerField()
     question = serializers.CharField(max_length=255)
-    start_at = serializers.DateTimeField()
-    end_at = serializers.DateTimeField()
+    start_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S")
+    end_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S")
     status = serializers.CharField()
     options = VoteOptionDetailSerializer(many=True)
 
@@ -186,23 +224,9 @@ class VoteInfoSerializer(serializers.Serializer[Any]):
 class GoalInfoSerializer(serializers.Serializer[Any]):
     goal_id = serializers.IntegerField()
     goal_title = serializers.CharField()
-    goal_start_date = serializers.DateTimeField(allow_null=True)
-    goal_end_date = serializers.DateTimeField(allow_null=True)
+    goal_start_date = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", allow_null=True)
+    goal_end_date = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", allow_null=True)
     goal_progress = serializers.IntegerField(allow_null=True)
-
-
-class PostFeedItemSerializer(serializers.Serializer[Any]):
-    post_id = serializers.IntegerField()
-    images = serializers.ListField(child=serializers.CharField(), allow_empty=True)
-    profile_image = serializers.CharField(max_length=255, allow_null=True, required=False, allow_blank=True)
-    nickname = serializers.CharField()
-    created_at = serializers.DateTimeField()
-    title = serializers.CharField()
-    tags = serializers.ListField(child=serializers.CharField())
-    content_preview = serializers.CharField()
-    like_count = serializers.IntegerField()
-    comment_count = serializers.IntegerField()
-    is_scrapped = serializers.BooleanField()
 
 
 class PostFeedResponseSerializer(serializers.Serializer[Any]):
@@ -236,9 +260,9 @@ class PostSuggestionResponseSerializer(serializers.Serializer[Any]):
 class PostDetailSerializer(serializers.Serializer[Any]):
     post_id = serializers.IntegerField()
     images = serializers.ListField(child=serializers.CharField(), allow_empty=True)
-    profile_image = serializers.CharField(allow_null=True, required=False, allow_blank=True)
+    profile_image_url = serializers.CharField(allow_null=True, required=False, allow_blank=True)
     nickname = serializers.CharField()
-    created_at = serializers.DateTimeField()
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S")
     title = serializers.CharField()
     content = serializers.CharField()
     tags = serializers.ListField(child=serializers.CharField())
@@ -263,7 +287,11 @@ def build_feed_item(
     return {
         "post_id": post.id,
         "images": post.images or [],
-        "profile_image": post.user.profile_image,
+        "profile_image_url": (
+            f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.{settings.AWS_REGION}.amazonaws.com/{post.user.profile_image}"
+            if post.user.profile_image
+            else None
+        ),
         "nickname": post.user.nickname,
         "created_at": post.created_at,
         "title": post.title,
@@ -298,7 +326,11 @@ def build_post_detail(
     return {
         "post_id": post.id,
         "images": post.images or [],
-        "profile_image": post.user.profile_image,
+        "profile_image_url": (
+            f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.{settings.AWS_REGION}.amazonaws.com/{post.user.profile_image}"
+            if post.user.profile_image
+            else None
+        ),
         "nickname": post.user.nickname,
         "created_at": post.created_at,
         "title": post.title,
