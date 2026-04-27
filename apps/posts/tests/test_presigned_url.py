@@ -10,7 +10,7 @@ User = get_user_model()
 
 @pytest.mark.django_db
 class TestPresignedUrlAPI:
-    @patch("apps.posts.views.post_public_views.boto3.client")
+    @patch("apps.posts.views.s3_presigned_url.boto3.client")
     def test_get_presigned_url_success(self, mock_boto_client: MagicMock) -> None:
         user = User.objects.create_user(
             email="testuser@example.com",
@@ -27,7 +27,7 @@ class TestPresignedUrlAPI:
         fake_url = "https://jaksim-fake-url.com/test.png"
         mock_s3.generate_presigned_url.return_value = fake_url
 
-        data = {"filename": "my_cat.png"}
+        data = {"filename": "my_cat.png", "content_type": "image/png"}
         response = client.post(url, data, format="json")
 
         assert response.status_code == 200

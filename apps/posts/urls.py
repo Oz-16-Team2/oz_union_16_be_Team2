@@ -9,11 +9,11 @@ from apps.posts.views.post_public_views import (
     PostCollectionAPIView,
     PostDetailAPIView,
     PostSearchAPIView,
-    PresignedUrlAPIView,
 )
 from apps.posts.views.post_report_views import PostReportView
 from apps.posts.views.post_suggestion_views import PostSuggestionAPIView
 from apps.posts.views.post_trending_views import PostTrendingAPIView
+from apps.posts.views.s3_presigned_url import PresignedUrlAPIView
 from apps.posts.views.scrap_views import PostScrapView, UserScrapListView
 from apps.posts.views.tag_views import TagListView
 

@@ -1,19 +1,13 @@
 from __future__ import annotations
 
-import uuid
-
-import boto3
-from botocore.config import Config
-from django.conf import settings
-from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema, inline_serializer
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import parsers, serializers, status
-from rest_framework import serializers as drf_serializers
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.core import detail_response, error_response
+from apps.core import error_response
 from apps.goals.serializers.goal_create import ErrorDetailSerializer
 from apps.posts.serializers.post_serializers import (
     SCOPE_MY,
@@ -369,83 +363,6 @@ class PostDetailAPIView(APIView):
         data = {"detail": "게시글 삭제가 완료되었습니다."}
         response_serializer = MessageDetailSerializer(instance=data)
         return Response(response_serializer.data, status=200)
-
-
-class PresignedUrlAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-    parser_classes = [parsers.JSONParser]
-
-    @extend_schema(
-        tags=[TAG_POSTS],
-        summary="이미지 업로드용 URL 발급",
-        description="AWS S3에 이미지를 직접 업로드 하기 위한 Presigned URL을 발급합니다.\n\n"
-        "1. 이 API로 presigned_url 발급\n"
-        "2. 발급받은 presigned_url로 PUT 요청하여 S3에 직접 업로드\n"
-        "3. 반환된 image_url을 게시글 작성 시 사용",
-        request=inline_serializer(
-            name="PresignedUrlRequest",
-            fields={"filename": drf_serializers.CharField(help_text="업로드할 파일명 (예: image.jpg)")},
-        ),
-        responses={
-            200: dict,
-            401: ErrorDetailSerializer,
-            500: ErrorDetailSerializer,
-        },
-        examples=[
-            OpenApiExample(
-                "요청 예시",
-                value={"filename": "image.jpg"},
-                request_only=True,
-            ),
-            OpenApiExample(
-                "200 OK",
-                value={
-                    "presigned_url": "https://jaksim-image-bucket-1.s3.amazonaws.com/...",
-                    "image_url": "https://jaksim-image-bucket-1.s3.amazonaws.com/post_images/image.jpg",
-                },
-                response_only=True,
-                status_codes=["200"],
-            ),
-            OpenApiExample(
-                "401 인증 오류",
-                value={"error_detail": "인증 정보가 없습니다."},
-                response_only=True,
-                status_codes=["401"],
-            ),
-        ],
-    )
-    def post(self, request: Request) -> Response:
-        original_filename = request.data.get("filename", "default.jpg")
-        ext = original_filename.split(".")[-1]
-
-        unique_filename = f"{uuid.uuid4()}.{ext}"
-        file_path = f"post_images/{unique_filename}"
-
-        s3_client = boto3.client(
-            "s3",
-            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-            region_name=settings.AWS_REGION,
-            config=Config(signature_version="s3v4", s3={"addressing_style": "virtual"}),
-        )
-
-        try:
-            presigned_url = s3_client.generate_presigned_url(
-                ClientMethod="put_object",
-                Params={
-                    "Bucket": settings.AWS_STORAGE_BUCKET_NAME,
-                    "Key": file_path,
-                    "ContentType": "image/*",
-                },
-                ExpiresIn=300,
-            )
-
-            image_url = f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.{settings.AWS_REGION}.amazonaws.com/{file_path}"
-
-            return detail_response({"presigned_url": presigned_url, "image_url": image_url}, status.HTTP_200_OK)
-
-        except Exception as e:
-            return error_response({"server_error": [str(e)]}, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class PostSearchAPIView(APIView):
