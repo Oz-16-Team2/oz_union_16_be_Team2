@@ -190,3 +190,8 @@ JAZZMIN_SETTINGS = {
     ],
     "changeform_format": "horizontal_tabs",
 }
+CSRF_TRUSTED_ORIGINS = [
+    "https://jaksim.duckdns.org",
+]
+
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
