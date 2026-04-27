@@ -7,7 +7,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.core.response import detail_response, error_response
+from apps.core.response import error_response
 from apps.goals.serializers.goal_create import ErrorDetailSerializer
 from apps.posts.serializers.post_report_serializers import (
     PostReportCreateResponseSerializer,
@@ -86,4 +86,6 @@ class PostReportView(APIView):
         except ValidationError as e:
             return error_response(e.detail, 400)
 
-        return detail_response({"detail": "신고가 정상적으로 접수되었습니다", "report_id": report.id}, 201)
+        data = {"detail": "신고가 정상적으로 접수되었습니다", "report_id": report.id}
+        response_serializer = PostReportCreateResponseSerializer(instance=data)
+        return Response(response_serializer.data, status=201)
