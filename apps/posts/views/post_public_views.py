@@ -435,7 +435,7 @@ class PresignedUrlAPIView(APIView):
                 Params={
                     "Bucket": settings.AWS_STORAGE_BUCKET_NAME,
                     "Key": file_path,
-                    "ContentType": f"image/{ext}",
+                    "ContentType": "image/*",
                 },
                 ExpiresIn=300,
             )
