@@ -1,0 +1,107 @@
+{% extends "admin/change_form.html" %}
+
+{% block content %}
+
+    {% if original %}
+        <div style="
+            display:grid;
+            grid-template-columns: minmax(620px, 760px) 700px;
+            gap:32px;
+            align-items:start;
+            margin:0 auto 32px;
+            max-width:1580px;
+        ">
+
+            <!-- ✅ 게시글 (왼쪽) -->
+            <div style="background:#fff; border:1px solid #ddd; border-radius:18px; padding:28px;">
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+                    <strong>{{ original.user.nickname }}</strong>
+                    <span style="color:#888; font-size:13px;">{{ original.created_at }}</span>
+                </div>
+
+                {% if original.images %}
+                    <div style="display:flex; gap:14px; margin-bottom:24px;">
+                        {% for image in original.images %}
+                            <img src="{{ image }}" style="width:31%; height:170px; object-fit:cover; border-radius:10px;">
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <h2 style="margin:0 0 18px;">{{ original.title }}</h2>
+
+                <p style="white-space:pre-line; color:#555; line-height:1.7;">
+                    {{ original.content }}
+                </p>
+
+                {% if original.post_tags.all %}
+                    <div style="margin-top:24px;">
+                        {% for post_tag in original.post_tags.all %}
+                            <span style="font-size:13px; margin-right:8px;">#{{ post_tag.tag.name }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {% if original.goal %}
+                    <div style="margin-top:24px; padding:18px; background:#f7f7f7; border-radius:14px;">
+                        <strong>목표</strong>
+                        <p>목표명: {{ original.goal_title }}</p>
+                        <p>기간: {{ original.goal_start_date }} ~ {{ original.goal_end_date }}</p>
+                        <p>달성률: {{ original.goal_progress }}%</p>
+                    </div>
+                {% endif %}
+
+                {% with vote=original.vote_set.first %}
+                    {% if vote %}
+                        <div style="margin-top:24px; padding:18px; background:#f7f7f7; border-radius:14px;">
+                            <strong>투표</strong>
+                            <p>{{ vote.question }}</p>
+
+                            {% for option in vote.options.all %}
+                                <div style="margin-top:8px;">
+                                    {{ option.content }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                <div style="margin-top:24px; padding:18px; background:#f7f7f7; border-radius:14px;">
+                    <strong>댓글</strong>
+
+                    {% for comment in original.comments.all|slice:":3" %}
+                        <div style="margin-top:12px; border-top:1px solid #ddd; padding-top:12px;">
+                            <strong>{{ comment.user.nickname }}</strong>
+                            <p>{{ comment.content }}</p>
+                        </div>
+                    {% empty %}
+                        <p>댓글이 없습니다.</p>
+                    {% endfor %}
+
+                    {% if original.comments.count > 3 %}
+                        <p style="margin-top:12px; color:#777; font-size:13px;">
+                            댓글 {{ original.comments.count }}개 중 최근 3개만 표시됩니다.
+                        </p>
+                    {% endif %}
+
+                    <a href="{% url 'admin:posts_comment_changelist' %}?post__id__exact={{ original.id }}"
+                       style="display:inline-block; margin-top:12px; color:#4f7cff;">
+                        댓글 전체 보기
+                    </a>
+                </div>
+
+                <div style="margin-top:24px; color:#777; font-size:13px;">
+                    좋아요 {{ original.likes.count }} · 스크랩 {{ original.scraps.count }}
+                </div>
+            </div>
+
+            <!-- ✅ 관리자 패널 (오른쪽 + 고정) -->
+            <div style="width:700px; position:sticky; top:24px;">
+                {{ block.super }}
+            </div>
+
+        </div>
+    {% else %}
+        {{ block.super }}
+    {% endif %}
+
+{% endblock %}

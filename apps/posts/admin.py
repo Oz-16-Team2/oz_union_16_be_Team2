@@ -87,6 +87,7 @@ class CommentInline(admin.TabularInline[Comment, Post]):
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin[Post]):
     change_list_template = "admin/posts/post/change_list.html"
+    change_form_template = "admin/posts/post/change_form.html"
     list_display = (
         "id",
         "users_id",
@@ -106,7 +107,7 @@ class PostAdmin(admin.ModelAdmin[Post]):
         "deleted_at",
     )
     list_display_links = ("id", "title")
-    list_filter = ("status", HasGoalFilter, HasVoteFilter, "is_private", "created_at", "deleted_at")
+    list_filter = ()
     search_fields = ("id", "title", "content", "user__id", "user__email", "user__nickname")
     readonly_fields = (
         "user",
@@ -131,7 +132,7 @@ class PostAdmin(admin.ModelAdmin[Post]):
         "deleted_at",
     )
     raw_id_fields = ("user", "goal")
-    inlines = (PostTagInline, CommentInline)
+    inlines = ()
     ordering = ("-created_at",)
     actions = ("mark_active", "mark_reported", "soft_delete_posts")
     list_per_page = 10
@@ -139,9 +140,7 @@ class PostAdmin(admin.ModelAdmin[Post]):
     fieldsets = (
         ("작성자", {"fields": ("user", "profile_image_preview")}),
         ("게시글 상태 관리", {"fields": ("status",)}),
-        ("게시글 정보", {"fields": ("title", "content", "images", "image_url", "is_private")}),
-        ("목표 스냅샷", {"fields": ("goal", "goal_title", "goal_start_date", "goal_end_date", "goal_progress")}),
-        ("집계 정보", {"fields": ("tag_names", "has_vote", "like_count", "scrap_count", "report_count")}),
+        ("집계 정보", {"fields": ("tag_names", "has_vote", "report_count", "goal", "goal_progress")}),
         ("일시", {"fields": ("created_at", "updated_at", "deleted_at")}),
     )
 
@@ -150,14 +149,8 @@ class PostAdmin(admin.ModelAdmin[Post]):
         self.opts.verbose_name_plural = "게시글"
         return super().get_model_perms(request)
 
-    def changelist_view(self, request: HttpRequest, extra_context: dict[str, Any] | None = None) -> Any:
+    def changelist_view(self, request, extra_context=None):
         self.post_filter_type = request.GET.get("filter_type")
-
-        mutable_get = request.GET.copy()
-        mutable_get.pop("filter_type", None)
-
-        request.GET = cast(Any, mutable_get)
-        request.META["QUERY_STRING"] = mutable_get.urlencode()
 
         extra_context = extra_context or {}
         extra_context["post_filter_type"] = self.post_filter_type
@@ -205,6 +198,11 @@ class PostAdmin(admin.ModelAdmin[Post]):
                 report_count_value=Subquery(report_count_subquery, output_field=IntegerField()),
             )
         )
+
+        status_value = request.GET.get("status")
+        if status_value:
+            queryset = queryset.filter(status=status_value)
+
         return cast(QuerySet[Post], queryset)
 
     @admin.display(description="users_id")
@@ -260,12 +258,29 @@ class PostAdmin(admin.ModelAdmin[Post]):
 
     @admin.action(description="선택한 게시글 활성 처리")
     def mark_active(self, request: HttpRequest, queryset: QuerySet[Post]) -> None:
-        updated_count = queryset.update(status=PostStatus.ACTIVE, deleted_at=None, updated_at=timezone.now())
+        deleted_count = queryset.filter(status=PostStatus.DELETED).count()
+        updated_count = queryset.exclude(status=PostStatus.DELETED).update(
+            status=PostStatus.ACTIVE,
+            deleted_at=None,
+            updated_at=timezone.now(),
+        )
+
+        if deleted_count:
+            self.message_user(request, f"삭제된 게시글 {deleted_count}개는 활성 처리할 수 없습니다.", messages.WARNING)
         self.message_user(request, f"{updated_count}개 게시글을 활성 처리했습니다.", messages.SUCCESS)
 
     @admin.action(description="선택한 게시글 신고됨 처리")
     def mark_reported(self, request: HttpRequest, queryset: QuerySet[Post]) -> None:
-        updated_count = queryset.update(status=PostStatus.REPORTED, updated_at=timezone.now())
+        deleted_count = queryset.filter(status=PostStatus.DELETED).count()
+        updated_count = queryset.exclude(status=PostStatus.DELETED).update(
+            status=PostStatus.REPORTED,
+            updated_at=timezone.now(),
+        )
+
+        if deleted_count:
+            self.message_user(
+                request, f"삭제된 게시글 {deleted_count}개는 신고됨 처리할 수 없습니다.", messages.WARNING
+            )
         self.message_user(request, f"{updated_count}개 게시글을 신고됨 처리했습니다.", messages.SUCCESS)
 
     @admin.action(description="선택한 게시글 삭제 처리")
@@ -280,7 +295,7 @@ class PostAdmin(admin.ModelAdmin[Post]):
 
 @admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin[Comment]):
-    change_list_template = "admin/fixed_change_list.html"
+    change_list_template = "admin/posts/comment/change_list.html"
 
     list_display = (
         "id",
@@ -296,7 +311,7 @@ class CommentAdmin(admin.ModelAdmin[Comment]):
         "deleted_at",
     )
     list_display_links = ("id", "content_preview")
-    list_filter = ("status", "created_at", "deleted_at")
+    list_filter = ()
     search_fields = ("=id", "content", "=post__id", "post__title", "=user__id", "user__email", "user__nickname")
     readonly_fields = (
         "post",
@@ -332,14 +347,8 @@ class CommentAdmin(admin.ModelAdmin[Comment]):
     def nickname(self, obj: Comment) -> str:
         return obj.user.nickname
 
-    def changelist_view(self, request: HttpRequest, extra_context: dict[str, Any] | None = None) -> Any:
+    def changelist_view(self, request, extra_context=None):
         self.comment_filter_type = request.GET.get("filter_type")
-
-        mutable_get = request.GET.copy()
-        mutable_get.pop("filter_type", None)
-
-        request.GET = cast(Any, mutable_get)
-        request.META["QUERY_STRING"] = mutable_get.urlencode()
 
         extra_context = extra_context or {}
         extra_context["comment_filter_type"] = self.comment_filter_type
@@ -386,6 +395,11 @@ class CommentAdmin(admin.ModelAdmin[Comment]):
                 report_count_value=Subquery(report_count_subquery, output_field=IntegerField()),
             )
         )
+
+        status_value = request.GET.get("status")
+        if status_value:
+            queryset = queryset.filter(status=status_value)
+
         return cast(QuerySet[Comment], queryset)
 
     @admin.display(description="댓글 내용")
@@ -406,12 +420,27 @@ class CommentAdmin(admin.ModelAdmin[Comment]):
 
     @admin.action(description="선택한 댓글 활성 처리")
     def mark_active(self, request: HttpRequest, queryset: QuerySet[Comment]) -> None:
-        updated_count = queryset.update(status=CommentStatus.ACTIVE, deleted_at=None, updated_at=timezone.now())
+        deleted_count = queryset.filter(status=CommentStatus.DELETED).count()
+        updated_count = queryset.exclude(status=CommentStatus.DELETED).update(
+            status=CommentStatus.ACTIVE,
+            deleted_at=None,
+            updated_at=timezone.now(),
+        )
+
+        if deleted_count:
+            self.message_user(request, f"삭제된 댓글 {deleted_count}개는 활성 처리할 수 없습니다.", messages.WARNING)
         self.message_user(request, f"{updated_count}개 댓글을 활성 처리했습니다.", messages.SUCCESS)
 
     @admin.action(description="선택한 댓글 신고됨 처리")
     def mark_reported(self, request: HttpRequest, queryset: QuerySet[Comment]) -> None:
-        updated_count = queryset.update(status=CommentStatus.REPORTED, updated_at=timezone.now())
+        deleted_count = queryset.filter(status=CommentStatus.DELETED).count()
+        updated_count = queryset.exclude(status=CommentStatus.DELETED).update(
+            status=CommentStatus.REPORTED,
+            updated_at=timezone.now(),
+        )
+
+        if deleted_count:
+            self.message_user(request, f"삭제된 댓글 {deleted_count}개는 신고됨 처리할 수 없습니다.", messages.WARNING)
         self.message_user(request, f"{updated_count}개 댓글을 신고됨 처리했습니다.", messages.SUCCESS)
 
     @admin.action(description="선택한 댓글 삭제 처리")
@@ -426,10 +455,10 @@ class CommentAdmin(admin.ModelAdmin[Comment]):
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin[Tag]):
-    change_list_template = "admin/fixed_change_list.html"
+    change_list_template = "admin/posts/tag/change_list.html"
     list_display = ("id", "name", "is_active", "post_count", "created_at")
     list_display_links = ("id", "name")
-    list_filter = ("is_active", "created_at")
+    list_filter = ()
     search_fields = ("id", "name")
     list_editable = ("is_active",)
     readonly_fields = ("created_at", "post_count")
@@ -441,8 +470,47 @@ class TagAdmin(admin.ModelAdmin[Tag]):
         self.opts.verbose_name_plural = "태그"
         return super().get_model_perms(request)
 
+    def changelist_view(self, request: HttpRequest, extra_context: dict[str, Any] | None = None) -> Any:
+        self.tag_filter_type = request.GET.get("filter_type")
+        self.active_filter = request.GET.get("active_filter")
+
+        mutable_get = request.GET.copy()
+        mutable_get.pop("filter_type", None)
+        mutable_get.pop("active_filter", None)
+
+        request.GET = cast(Any, mutable_get)
+        request.META["QUERY_STRING"] = mutable_get.urlencode()
+
+        extra_context = extra_context or {}
+        extra_context["tag_filter_type"] = self.tag_filter_type
+        extra_context["active_filter"] = self.active_filter
+
+        return super().changelist_view(request, extra_context)
+
+    def get_search_results(
+        self,
+        request: HttpRequest,
+        queryset: QuerySet[Tag],
+        search_term: str,
+    ) -> tuple[QuerySet[Tag], bool]:
+        filter_type = getattr(self, "tag_filter_type", None)
+
+        if search_term and filter_type == "tag_id":
+            return queryset.filter(id=search_term), False
+        if search_term and filter_type == "name":
+            return queryset.filter(name__icontains=search_term), False
+
+        return super().get_search_results(request, queryset, search_term)
+
     def get_queryset(self, request: HttpRequest) -> QuerySet[Tag]:
         queryset = super().get_queryset(request).annotate(post_count_value=Count("post_tags", distinct=True))
+
+        active_filter = getattr(self, "active_filter", None)
+        if active_filter == "true":
+            queryset = queryset.filter(is_active=True)
+        elif active_filter == "false":
+            queryset = queryset.filter(is_active=False)
+
         return cast(QuerySet[Tag], queryset)
 
     @admin.display(description="사용 게시글 수")

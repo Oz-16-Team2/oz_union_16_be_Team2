@@ -1,23 +1,67 @@
 {% extends "admin/fixed_change_list.html" %}
 
 {% block search %}
-    <form method="get" id="changelist-search">
-        <div style="display:flex; gap:8px; align-items:center;">
-            {% for key, value in request.GET.items %}
-                {% if key != "q" and key != "filter_type" and key != "e" %}
-                    <input type="hidden" name="{{ key }}" value="{{ value }}">
-                {% endif %}
-            {% endfor %}
 
-            <select name="filter_type">
-                <option value="" {% if not comment_filter_type %}selected{% endif %}>전체</option>
-                <option value="comment_id" {% if comment_filter_type == "comment_id" %}selected{% endif %}>댓글 ID</option>
-                <option value="post_id" {% if comment_filter_type == "post_id" %}selected{% endif %}>게시글 ID</option>
-                <option value="user_id" {% if comment_filter_type == "user_id" %}selected{% endif %}>유저 ID</option>
-            </select>
+<!-- 검색 영역 -->
+<form method="get" id="changelist-search" style="margin:0 0 12px 0;">
+    <div style="display:flex; gap:8px; margin:0 0 12px 0;">
+        {% for key, value in request.GET.items %}
+            {% if key != "q" and key != "filter_type" and key != "status" and key != "e" %}
+                <input type="hidden" name="{{ key }}" value="{{ value }}">
+            {% endif %}
+        {% endfor %}
 
-            <input type="text" name="q" value="{{ request.GET.q|default:'' }}" placeholder="검색어 입력">
-            <button type="submit">검색</button>
-        </div>
-    </form>
+        <select name="filter_type"
+                style="width:145px; height:38px; border:1px solid #ced4da; border-radius:4px; padding:0 8px;">
+            <option value="" {% if not comment_filter_type %}selected{% endif %}>전체 검색</option>
+            <option value="comment_id" {% if comment_filter_type == "comment_id" %}selected{% endif %}>댓글 ID</option>
+            <option value="post_id" {% if comment_filter_type == "post_id" %}selected{% endif %}>게시글 ID</option>
+            <option value="user_id" {% if comment_filter_type == "user_id" %}selected{% endif %}>유저 ID</option>
+        </select>
+
+        <input type="text"
+               name="q"
+               value="{{ request.GET.q|default:'' }}"
+               placeholder="검색어 입력"
+               style="width:260px; height:38px; border:1px solid #ced4da; border-radius:4px; padding:0 10px;">
+
+        <button type="submit"
+                class="btn btn-primary"
+                style="height:38px; padding:0 16px;">
+            검색
+        </button>
+    </div>
+</form>
+
+<!--상태 버튼 -->
+<div style="display:flex; gap:8px; margin:0 0 12px;">
+    <a href="?"
+       style="padding:8px 14px; border-radius:8px; text-decoration:none;
+       background:{% if not request.GET.status %}#4f7cff{% else %}#eee{% endif %};
+       color:{% if not request.GET.status %}#fff{% else %}#333{% endif %};">
+        전체
+    </a>
+
+    <a href="?status=active"
+       style="padding:8px 14px; border-radius:8px; text-decoration:none;
+       background:{% if request.GET.status == 'active' %}#4f7cff{% else %}#eee{% endif %};
+       color:{% if request.GET.status == 'active' %}#fff{% else %}#333{% endif %};">
+        활성
+    </a>
+
+    <a href="?status=reported"
+       style="padding:8px 14px; border-radius:8px; text-decoration:none;
+       background:{% if request.GET.status == 'reported' %}#4f7cff{% else %}#eee{% endif %};
+       color:{% if request.GET.status == 'reported' %}#fff{% else %}#333{% endif %};">
+        신고
+    </a>
+
+    <a href="?status=deleted"
+       style="padding:8px 14px; border-radius:8px; text-decoration:none;
+       background:{% if request.GET.status == 'deleted' %}#4f7cff{% else %}#eee{% endif %};
+       color:{% if request.GET.status == 'deleted' %}#fff{% else %}#333{% endif %};">
+        삭제
+    </a>
+</div>
+
 {% endblock %}
