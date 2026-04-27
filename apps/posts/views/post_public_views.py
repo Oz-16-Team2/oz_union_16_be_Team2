@@ -388,6 +388,7 @@ class PresignedUrlAPIView(APIView):
         ),
         responses={
             200: dict,
+            401: ErrorDetailSerializer,
             500: ErrorDetailSerializer,
         },
         examples=[
@@ -404,6 +405,12 @@ class PresignedUrlAPIView(APIView):
                 },
                 response_only=True,
                 status_codes=["200"],
+            ),
+            OpenApiExample(
+                "401 인증 오류",
+                value={"error_detail": "인증 정보가 없습니다."},
+                response_only=True,
+                status_codes=["401"],
             ),
         ],
     )
