@@ -33,6 +33,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -41,7 +42,6 @@ MIDDLEWARE = [
     "apps.core.middleware.BlockSuspendedUserMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -190,6 +190,9 @@ JAZZMIN_SETTINGS = {
     ],
     "changeform_format": "horizontal_tabs",
 }
+
+ALLOWED_HOSTS = ["jaksim.duckdns.org"]
+
 CSRF_TRUSTED_ORIGINS = [
     "https://jaksim.duckdns.org",
 ]
@@ -198,3 +201,6 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
+
+CSRF_COOKIE_SAMESITE = "None"
+SESSION_COOKIE_SAMESITE = "None"
