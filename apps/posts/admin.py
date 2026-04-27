@@ -149,8 +149,18 @@ class PostAdmin(admin.ModelAdmin[Post]):
         self.opts.verbose_name_plural = "게시글"
         return super().get_model_perms(request)
 
-    def changelist_view(self, request, extra_context=None):
+    def changelist_view(
+        self,
+        request: HttpRequest,
+        extra_context: dict[str, Any] | None = None,
+    ) -> Any:
         self.post_filter_type = request.GET.get("filter_type")
+
+        mutable_get = request.GET.copy()
+        mutable_get.pop("filter_type", None)
+
+        request.GET = cast(Any, mutable_get)
+        request.META["QUERY_STRING"] = mutable_get.urlencode()
 
         extra_context = extra_context or {}
         extra_context["post_filter_type"] = self.post_filter_type
@@ -347,8 +357,18 @@ class CommentAdmin(admin.ModelAdmin[Comment]):
     def nickname(self, obj: Comment) -> str:
         return obj.user.nickname
 
-    def changelist_view(self, request, extra_context=None):
+    def changelist_view(
+        self,
+        request: HttpRequest,
+        extra_context: dict[str, Any] | None = None,
+    ) -> Any:
         self.comment_filter_type = request.GET.get("filter_type")
+
+        mutable_get = request.GET.copy()
+        mutable_get.pop("filter_type", None)
+
+        request.GET = cast(Any, mutable_get)
+        request.META["QUERY_STRING"] = mutable_get.urlencode()
 
         extra_context = extra_context or {}
         extra_context["comment_filter_type"] = self.comment_filter_type

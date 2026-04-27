@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from django import forms
 from django.contrib import admin, messages
@@ -81,7 +81,11 @@ class ReportAdmin(admin.ModelAdmin[Report]):
     ordering = ("-created_at",)
     actions = ("delete_target_and_handle", "keep_target_and_dismiss")
 
-    def changelist_view(self, request: HttpRequest, extra_context=None):
+    def changelist_view(
+        self,
+        request: HttpRequest,
+        extra_context: dict[str, Any] | None = None,
+    ) -> Any:
         self.status_filter = request.GET.get("status_filter")
         self.target_type_filter = request.GET.get("target_type_filter")
 
@@ -89,7 +93,7 @@ class ReportAdmin(admin.ModelAdmin[Report]):
         mutable_get.pop("status_filter", None)
         mutable_get.pop("target_type_filter", None)
 
-        request.GET = mutable_get
+        request.GET = cast(Any, mutable_get)
         request.META["QUERY_STRING"] = mutable_get.urlencode()
 
         extra_context = extra_context or {}
