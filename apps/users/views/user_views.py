@@ -18,6 +18,9 @@ from apps.users.serializers.user_serializers import (
     ErrorDetailStringSerializer,
     ErrorDetailWithdrawnSerializer,
     LoginSerializer,
+    MeActivitySummaryAchievementRateResponseSerializer,
+    MeActivitySummaryCompletedGoalsResponseSerializer,
+    MeActivitySummaryDaysResponseSerializer,
     MessageResponseSerializer,
     NicknameCheckSerializer,
     SignupSerializer,
@@ -29,6 +32,9 @@ from apps.users.serializers.user_serializers import (
 from apps.users.services.user_services import (
     change_password,
     check_nickname,
+    get_me_activity_summary_achievement_rate,
+    get_me_activity_summary_completed_goals,
+    get_me_activity_summary_days,
     get_my_profile,
     google_social_login,
     kakao_social_login,
@@ -94,10 +100,7 @@ class SignupAPIView(APIView):
         try:
             result = signup_user(**serializer.validated_data)
         except ConflictException as exc:
-            return Response(
-                {"error_detail": exc.detail},
-                status=status.HTTP_409_CONFLICT,
-            )
+            return Response({"error_detail": exc.detail}, status=status.HTTP_409_CONFLICT)
 
         return Response(result, status=status.HTTP_201_CREATED)
 
@@ -143,10 +146,7 @@ class NicknameCheckAPIView(APIView):
         try:
             result = check_nickname(**serializer.validated_data)
         except ConflictException as exc:
-            return Response(
-                {"error_detail": exc.detail},
-                status=status.HTTP_409_CONFLICT,
-            )
+            return Response({"error_detail": exc.detail}, status=status.HTTP_409_CONFLICT)
 
         return Response(result, status=status.HTTP_200_OK)
 
@@ -182,10 +182,7 @@ class EmailVerificationSendAPIView(APIView):
     def post(self, request: Request) -> Response:
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        return Response(
-            send_email_verification_code(**serializer.validated_data),
-            status=status.HTTP_200_OK,
-        )
+        return Response(send_email_verification_code(**serializer.validated_data), status=status.HTTP_200_OK)
 
 
 @extend_schema(tags=["Accounts"])
@@ -206,10 +203,7 @@ class EmailVerificationVerifyAPIView(APIView):
         examples=[
             OpenApiExample(
                 "이메일 인증 성공",
-                value={
-                    "detail": "이메일 인증에 성공하였습니다.",
-                    "email_token": "daechungbase32",
-                },
+                value={"detail": "이메일 인증에 성공하였습니다.", "email_token": "daechungbase32"},
                 response_only=True,
                 status_codes=["200"],
             ),
@@ -221,7 +215,7 @@ class EmailVerificationVerifyAPIView(APIView):
             ),
         ],
     )
-    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         email = request.GET.get("email")
         code = request.GET.get("code")
 
@@ -419,11 +413,7 @@ class MeAPIView(APIView):
         examples=[
             OpenApiExample(
                 "내 프로필 조회 성공",
-                value={
-                    "id": 1,
-                    "nickname": "testnick",
-                    "profile_image_url": "https://example.com/profile.png",
-                },
+                value={"id": 1, "nickname": "testnick", "profile_image_url": "https://example.com/profile.png"},
                 response_only=True,
                 status_codes=["200"],
             ),
@@ -433,6 +423,90 @@ class MeAPIView(APIView):
         if not request.user.is_authenticated:
             raise NotAuthenticated()
         return Response(get_my_profile(request.user), status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Accounts"])
+class MeActivitySummaryDaysAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="함께한 기간",
+        responses={200: MeActivitySummaryDaysResponseSerializer, 401: ErrorDetailStringSerializer},
+        examples=[
+            OpenApiExample(
+                "함께한 기간 성공",
+                value={"detail": {"days_together": 120}},
+                response_only=True,
+                status_codes=["200"],
+            ),
+            OpenApiExample(
+                "인증 실패",
+                value={"error_detail": "인증 정보가 없습니다."},
+                response_only=True,
+                status_codes=["401"],
+            ),
+        ],
+    )
+    def get(self, request: Request) -> Response:
+        return Response(get_me_activity_summary_days(request.user), status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Accounts"])
+class MeActivitySummaryAchievementRateAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="전체 달성률",
+        responses={200: MeActivitySummaryAchievementRateResponseSerializer, 401: ErrorDetailStringSerializer},
+        examples=[
+            OpenApiExample(
+                "전체 달성률 성공",
+                value={
+                    "detail": {
+                        "total_goals_count": 24,
+                        "completed_goals_count": 18,
+                        "total_achievement_rate": 75.0,
+                    }
+                },
+                response_only=True,
+                status_codes=["200"],
+            ),
+            OpenApiExample(
+                "인증 실패",
+                value={"error_detail": "인증 정보가 없습니다."},
+                response_only=True,
+                status_codes=["401"],
+            ),
+        ],
+    )
+    def get(self, request: Request) -> Response:
+        return Response(get_me_activity_summary_achievement_rate(request.user), status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Accounts"])
+class MeActivitySummaryCompletedGoalsAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="완료한 일정",
+        responses={200: MeActivitySummaryCompletedGoalsResponseSerializer, 401: ErrorDetailStringSerializer},
+        examples=[
+            OpenApiExample(
+                "완료한 일정 성공",
+                value={"detail": {"completed_goals_count": 18}},
+                response_only=True,
+                status_codes=["200"],
+            ),
+            OpenApiExample(
+                "인증 실패",
+                value={"error_detail": "인증 정보가 없습니다."},
+                response_only=True,
+                status_codes=["401"],
+            ),
+        ],
+    )
+    def get(self, request: Request) -> Response:
+        return Response(get_me_activity_summary_completed_goals(request.user), status=status.HTTP_200_OK)
 
 
 @extend_schema(tags=["Accounts"])
@@ -459,10 +533,7 @@ class LogoutAPIView(APIView):
         if refresh_token_value:
             logout_user(refresh_token=refresh_token_value)
 
-        response = Response(
-            {"detail": "로그아웃 되었습니다."},
-            status=status.HTTP_200_OK,
-        )
+        response = Response({"detail": "로그아웃 되었습니다."}, status=status.HTTP_200_OK)
         response.delete_cookie("refresh_token")
         return response
 
@@ -507,7 +578,6 @@ class TokenRefreshAPIView(APIView):
         serializer.is_valid(raise_exception=True)
 
         result = refresh_token(**serializer.validated_data)
-
         return Response(result, status=status.HTTP_200_OK)
 
 
@@ -567,5 +637,4 @@ class ChangePasswordAPIView(APIView):
             password=serializer.validated_data["password"],
             new_password=serializer.validated_data["new_password"],
         )
-
         return Response(result, status=status.HTTP_200_OK)

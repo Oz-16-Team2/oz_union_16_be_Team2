@@ -362,8 +362,112 @@ def kakao_social_login(*, code: str, redirect_uri: str, state: str = "") -> dict
     return _build_login_payload(user)
 
 
-def get_my_profile(user: User) -> dict[str, Any]:
-    return _build_user_profile(user)
+def get_my_profile(user: Any) -> dict[str, Any]:
+    return _build_user_profile(cast(User, user))
+
+
+def get_me_activity_summary_days(user: Any) -> dict[str, Any]:
+    created_at = getattr(user, "created_at", None)
+    if created_at is None:
+        days_together = 0
+    else:
+        days_together = max((timezone.now().date() - created_at.date()).days, 0)
+
+    return {"detail": {"days_together": days_together}}
+
+
+def get_me_activity_summary_completed_goals(user: Any) -> dict[str, Any]:
+    return {"detail": {"completed_goals_count": _count_completed_goals(user)}}
+
+
+def get_me_activity_summary_achievement_rate(user: Any) -> dict[str, Any]:
+    total_goals_count = int(getattr(user, "total_goals_count", 0) or 0)
+    completed_goals_count = _count_completed_goals(user)
+    total_achievement_rate = round((completed_goals_count / total_goals_count) * 100, 1) if total_goals_count else 0.0
+
+    return {
+        "detail": {
+            "total_goals_count": total_goals_count,
+            "completed_goals_count": completed_goals_count,
+            "total_achievement_rate": total_achievement_rate,
+        }
+    }
+
+
+def _get_goals_manager(user: Any) -> Any | None:
+    meta = getattr(user, "_meta", None)
+    related_objects = getattr(meta, "related_objects", ())
+
+    for related in related_objects:
+        related_model = getattr(related, "related_model", None)
+        if related_model is None:
+            continue
+
+        accessor_name = related.get_accessor_name()
+        model_name = getattr(related_model, "__name__", "").lower()
+        if "goal" not in accessor_name.lower() and "goal" not in model_name:
+            continue
+
+        manager = getattr(user, accessor_name, None)
+        if manager is not None and hasattr(manager, "all"):
+            return manager
+
+    for accessor_name in ("goals", "goal_set", "created_goals", "user_goals"):
+        manager = getattr(user, accessor_name, None)
+        if manager is not None and hasattr(manager, "all"):
+            return manager
+
+    return None
+
+
+def _count_completed_goals(user: Any) -> int:
+    manager = _get_goals_manager(user)
+    if manager is None:
+        return 0
+
+    queryset = manager.all()
+    model = getattr(queryset, "model", None)
+    if model is None:
+        try:
+            return int(queryset.count())
+        except Exception:
+            return 0
+
+    field_names = {field.name for field in model._meta.get_fields() if getattr(field, "concrete", False)}
+
+    if "completed_at" in field_names:
+        return int(queryset.filter(completed_at__isnull=False).count())
+
+    if "is_completed" in field_names:
+        return int(queryset.filter(is_completed=True).count())
+
+    if "status" in field_names:
+        try:
+            status_field = model._meta.get_field("status")
+            completed_values: list[Any] = []
+
+            for choice in getattr(status_field, "choices", ()):
+                if isinstance(choice, (tuple, list)) and len(choice) == 2:
+                    value, label = choice
+                else:
+                    value = choice
+                    label = choice
+
+                choice_text = f"{value} {label}".upper()
+                if (
+                    "COMPLETE" in choice_text
+                    or "DONE" in choice_text
+                    or "FINISH" in choice_text
+                    or "완료" in str(label)
+                ):
+                    completed_values.append(value)
+
+            if completed_values:
+                return int(queryset.filter(status__in=completed_values).count())
+        except Exception:
+            pass
+
+    return 0
 
 
 def refresh_user_status(user: User) -> User:
