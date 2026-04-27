@@ -322,3 +322,82 @@ class GoalCheckView(APIView):
 
         except ValueError as e:
             return Response({"error_detail": {"detail": [str(e)]}}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class GoalCheckedHistoryListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        tags=["Goals"],
+        summary="특정 날짜 인증 목표 목록 조회 (잔디 클릭)",
+        description="잔디 그래프에서 특정 날짜를 클릭했을 때, 해당 날짜에 인증 기록이 있는 목표들의 목록을 조회합니다.",
+        parameters=[
+            OpenApiParameter(name="date", type=str, description="조회할 날짜 (YYYY-MM-DD 형식, 필수)", required=True),
+            OpenApiParameter(name="page", type=int, description="페이지 번호", required=False),
+            OpenApiParameter(name="size", type=int, description="페이지당 개수", required=False),
+        ],
+        responses={
+            200: inline_serializer(
+                name="PaginatedGoalHistoryResponse",
+                fields={
+                    "count": drf_serializers.IntegerField(),
+                    "next": drf_serializers.URLField(allow_null=True),
+                    "previous": drf_serializers.URLField(allow_null=True),
+                    "results": GoalReadSerializer(many=True),
+                },
+            ),
+            400: ErrorDetailSerializer,
+            401: ErrorDetailSerializer,
+        },
+        examples=[
+            OpenApiExample(
+                "성공 응답 (200)",
+                value={
+                    "count": 2,
+                    "next": None,
+                    "previous": None,
+                    "results": [
+                        {
+                            "goal_id": 1,
+                            "title": "물 2L 마시기",
+                            "status": "COMPLETED",
+                        }
+                    ],
+                },
+                response_only=True,
+                status_codes=["200"],
+            ),
+            OpenApiExample(
+                "날짜 누락 에러 (400)",
+                value={"error_detail": {"date": ["날짜(date) 파라미터가 필요합니다."]}},
+                response_only=True,
+                status_codes=["400"],
+            ),
+        ],
+    )
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        user = cast(User, request.user)
+        target_date = request.query_params.get("date")
+
+        if not target_date:
+            return Response(
+                {"error_detail": {"date": ["날짜(date) 쿼리 파라미터가 필요합니다. (예: ?date=2026-04-17)"]}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        queryset = (
+            Goal.objects.filter(user=user, checks__created_at__date=target_date)
+            .prefetch_related("checks")
+            .distinct()
+            .order_by("-created_at")
+        )
+
+        paginator = GoalPagination()
+        paginated_queryset = paginator.paginate_queryset(queryset, request, view=self)
+
+        if paginated_queryset is not None:
+            serializer = GoalReadSerializer(paginated_queryset, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        serializer = GoalReadSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
