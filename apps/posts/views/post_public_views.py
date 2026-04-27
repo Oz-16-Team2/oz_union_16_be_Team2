@@ -180,6 +180,8 @@ class PostCollectionAPIView(APIView):
             return error_response(exc.detail, 400)
 
         data = {"detail": "게시글 작성이 완료되었습니다.", "post_id": post.id}
+        if hasattr(post, "vote"):
+            data["vote_id"] = post.vote.id
         response_serializer = PostCreateResponseSerializer(instance=data)
         return Response(response_serializer.data, status=201)
 

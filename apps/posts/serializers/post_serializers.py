@@ -11,6 +11,7 @@ from rest_framework import serializers
 from apps.core.choices import CommentStatus
 from apps.goals.models import Goal
 from apps.posts.models import Post, PostTag, Tag
+from apps.votes.serializers import VoteCreateRequestSerializer
 
 MAX_TAGS = 3
 CONTENT_PREVIEW_LENGTH = 100
@@ -58,6 +59,7 @@ class PostFeedItemSerializer(serializers.Serializer[Any]):
     content_preview = serializers.CharField()
     like_count = serializers.IntegerField()
     comment_count = serializers.IntegerField()
+    is_liked = serializers.BooleanField()
     is_scrapped = serializers.BooleanField()
 
 
@@ -84,14 +86,20 @@ class PostSearchResponseSerializer(serializers.Serializer[Any]):
     )
 
 
-class VoteOptionWriteSerializer(serializers.Serializer[Any]):
-    content = serializers.CharField(max_length=255)
-    sort_order = serializers.IntegerField(min_value=0)
+def validate_vote_requirement(attrs: dict[str, Any]) -> dict[str, Any]:
+    if attrs.get("has_vote"):
+        vote = attrs.get("vote")
+        if not vote or not vote.get("question"):
+            raise serializers.ValidationError(
+                {"vote": ["투표의 질문과 선택지가 필요합니다."]},
+            )
+        options = vote.get("options") or []
+        if len(options) != 2:
+            raise serializers.ValidationError({"vote": ["2개의 선택지가 필요합니다."]})
+    elif attrs.get("has_vote") is False:
+        attrs["vote"] = None
 
-
-class VoteWriteSerializer(serializers.Serializer[Any]):
-    question = serializers.CharField(max_length=255)
-    options = VoteOptionWriteSerializer(many=True)
+    return attrs
 
 
 class PostCreateSerializer(serializers.Serializer[Any]):
@@ -108,7 +116,7 @@ class PostCreateSerializer(serializers.Serializer[Any]):
         allow_null=True,
     )
     has_vote = serializers.BooleanField()
-    vote = VoteWriteSerializer(required=False, allow_null=True)
+    vote = VoteCreateRequestSerializer(required=False, allow_null=True)
     tag_ids = serializers.ListField(
         child=serializers.IntegerField(min_value=1),
         required=False,
@@ -139,24 +147,13 @@ class PostCreateSerializer(serializers.Serializer[Any]):
         if attrs.get("has_goal") and not attrs.get("goal_id"):
             raise serializers.ValidationError({"goal_id": ["목표가 있을 경우 goal_id가 필요합니다."]})
 
-        if attrs.get("has_vote"):
-            vote = attrs.get("vote")
-            if not vote or not vote.get("question"):
-                raise serializers.ValidationError(
-                    {"vote": ["투표의 질문과 선택지가 필요합니다."]},
-                )
-            options = vote.get("options") or []
-            if len(options) < 2:
-                raise serializers.ValidationError({"vote": ["2개 이상의 선택지가 필요합니다."]})
-        else:
-            attrs["vote"] = None
-
-        return attrs
+        return validate_vote_requirement(attrs)
 
 
 class PostCreateResponseSerializer(serializers.Serializer[Any]):
     detail = serializers.CharField()
     post_id = serializers.IntegerField()
+    vote_id = serializers.IntegerField(required=False, allow_null=True)
 
 
 class PostPatchSerializer(serializers.Serializer[Any]):
@@ -167,7 +164,7 @@ class PostPatchSerializer(serializers.Serializer[Any]):
     has_goal = serializers.BooleanField(required=False)
     goal_id = serializers.IntegerField(required=False, allow_null=True)
     has_vote = serializers.BooleanField(required=False)
-    vote = VoteWriteSerializer(required=False, allow_null=True)
+    vote = VoteCreateRequestSerializer(required=False, allow_null=True)
     is_vote_closed = serializers.BooleanField(required=False, default=False)
     tag_ids = serializers.ListField(
         child=serializers.IntegerField(min_value=1),
@@ -185,21 +182,10 @@ class PostPatchSerializer(serializers.Serializer[Any]):
         return value
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
-
         if attrs.get("has_goal") and not attrs.get("goal_id"):
             raise serializers.ValidationError({"goal_id": ["목표가 있을 경우 goal_id가 필요합니다."]})
 
-        if attrs.get("has_vote"):
-            vote = attrs.get("vote")
-            if not vote or not vote.get("question"):
-                raise serializers.ValidationError(
-                    {"vote": ["투표의 질문과 선택지가 필요합니다."]},
-                )
-            options = vote.get("options") or []
-            if len(options) < 2:
-                raise serializers.ValidationError({"vote": ["2개 이상의 선택지가 필요합니다."]})
-
-        return attrs
+        return validate_vote_requirement(attrs)
 
 
 class MessageDetailSerializer(serializers.Serializer[Any]):
@@ -268,6 +254,7 @@ class PostDetailSerializer(serializers.Serializer[Any]):
     tags = serializers.ListField(child=serializers.CharField())
     like_count = serializers.IntegerField()
     comment_count = serializers.IntegerField()
+    is_liked = serializers.BooleanField()
     is_scrapped = serializers.BooleanField()
     has_goal = serializers.BooleanField()
     goal_info = GoalInfoSerializer(allow_null=True, required=False)
@@ -281,6 +268,7 @@ def build_feed_item(
     tags: list[str],
     like_count: int,
     comment_count: int,
+    is_liked: bool,
     is_scrapped: bool,
 ) -> dict[str, Any]:
     preview = post.content[:CONTENT_PREVIEW_LENGTH] if post.content else ""
@@ -299,6 +287,7 @@ def build_feed_item(
         "content_preview": preview,
         "like_count": like_count,
         "comment_count": comment_count,
+        "is_liked": is_liked,
         "is_scrapped": is_scrapped,
     }
 
@@ -309,6 +298,7 @@ def build_post_detail(
     tags: list[str],
     like_count: int,
     comment_count: int,
+    is_liked: bool,
     is_scrapped: bool,
     vote_payload: dict[str, Any] | None,
 ) -> dict[str, Any]:
@@ -338,6 +328,7 @@ def build_post_detail(
         "tags": tags,
         "like_count": like_count,
         "comment_count": comment_count,
+        "is_liked": is_liked,
         "is_scrapped": is_scrapped,
         "has_goal": has_goal,
         "goal_info": goal_info,
@@ -382,3 +373,7 @@ def replace_post_tags(post: Post, tag_ids: list[int] | None) -> None:
 def active_comment_q() -> Any:
 
     return Q(comments__deleted_at__isnull=True) & ~Q(comments__status=CommentStatus.DELETED)
+
+
+class PostLikeResponseSerializer(serializers.Serializer[Any]):
+    is_liked = serializers.BooleanField()
