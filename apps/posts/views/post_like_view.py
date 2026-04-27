@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 
 from apps.goals.serializers.goal_create import ErrorDetailSerializer
 from apps.posts.models import Post
+from apps.posts.serializers.post_serializers import PostLikeResponseSerializer
 from apps.posts.services.post_like_service import PostLikeService
 
 
@@ -18,15 +19,15 @@ class PostLikeView(APIView):
         summary="게시글 좋아요 토글",
         description="로그인한 유저가 게시글에 좋아요를 남기거나 취소합니다.",
         responses={
-            201: None,
-            204: None,
+            201: PostLikeResponseSerializer,
+            204: PostLikeResponseSerializer,
             401: ErrorDetailSerializer,
             404: ErrorDetailSerializer,
         },
         examples=[
             OpenApiExample(
                 "좋아요 성공 예시",
-                value={True},
+                value=True,
                 response_only=True,
                 status_codes=["201"],
             ),

@@ -1,11 +1,14 @@
+from datetime import timedelta
 from typing import TYPE_CHECKING
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.test import APIClient
 
 from apps.posts.models import Post
+from apps.votes.models import Vote
 
 User = get_user_model()
 
@@ -76,6 +79,34 @@ class TestPosts:
         body = res.data
         assert body["detail"] == "게시글 작성이 완료되었습니다."
         assert "post_id" in body
+
+    def test_post_create_with_vote_uses_string_options(self, client: APIClient, user: UserType) -> None:
+        client.force_authenticate(user)
+        start_at = timezone.now()
+        end_at = start_at + timedelta(days=3)
+
+        res: Response = client.post(
+            BASE_URL,
+            {
+                "title": "투표 생성",
+                "content": "내용",
+                "has_goal": False,
+                "has_vote": True,
+                "vote": {
+                    "question": "운동하셨나요?",
+                    "options": ["예", "아니오"],
+                    "start_at": start_at.isoformat(),
+                    "end_at": end_at.isoformat(),
+                },
+            },
+            format="json",
+        )
+
+        assert res.status_code == 201
+
+        vote = Vote.objects.get(post_id=res.data["post_id"])
+        assert vote.question == "운동하셨나요?"
+        assert list(vote.options.order_by("sort_order").values_list("content", flat=True)) == ["예", "아니오"]
 
     def test_post_detail(self, client: APIClient, post: Post) -> None:
         res: Response = client.get(f"{BASE_URL}{post.id}/")

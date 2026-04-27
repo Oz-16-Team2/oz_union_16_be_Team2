@@ -185,12 +185,12 @@ def _create_vote_for_post(post: Post, vote_data: dict[str, Any]) -> None:
         end_at=now + timedelta(days=7),
         status=VoteStatus.IN_PROGRESS,
     )
-    for opt in vote_data["options"]:
-        VoteOption.objects.create(
-            vote=vote,
-            content=opt["content"],
-            sort_order=opt["sort_order"],
-        )
+    VoteOption.objects.bulk_create(
+        [
+            VoteOption(vote=vote, content=option, sort_order=index)
+            for index, option in enumerate(vote_data["options"], start=1)
+        ]
+    )
 
 
 def _clear_goal_fields(post: Post) -> None:
