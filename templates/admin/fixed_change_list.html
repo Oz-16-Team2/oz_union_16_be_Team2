@@ -1,0 +1,36 @@
+{% extends "admin/change_list.html" %}
+
+{% block extrahead %}
+{{ block.super }}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const params = new URLSearchParams(window.location.search);
+
+    document.querySelectorAll("select[name]").forEach(function (select) {
+        const paramName = select.name;
+        const paramValue = params.get(paramName);
+
+        if (!paramValue) return;
+
+        // 🔥 option을 직접 찾아서 selected 처리
+        const option = select.querySelector(`option[value="${paramValue}"]`);
+        if (option) {
+            option.selected = true;
+        }
+
+        // 🔥 change 이벤트까지 강제 (Django admin 필터 대응)
+        select.dispatchEvent(new Event("change"));
+    });
+});
+</script>
+
+<style>
+    #changelist .card-body {
+        min-height: 680px !important;
+    }
+
+    #changelist .card-footer {
+        margin-top: 0 !important;
+    }
+</style>
+{% endblock %}

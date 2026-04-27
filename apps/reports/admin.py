@@ -19,7 +19,11 @@ from apps.reports.services.admin.admin_report_services import AdminReportService
 
 
 class ReportActionMemoForm(ActionForm):
-    memo = forms.CharField(required=False, label="메모")
+    memo = forms.CharField(
+        required=False,
+        label="메모",
+        widget=forms.TextInput(attrs={"placeholder": "처리 메모 입력"}),
+    )
 
 
 class ReportActionInline(admin.TabularInline[ReportAction, Report]):
@@ -35,6 +39,7 @@ class ReportActionInline(admin.TabularInline[ReportAction, Report]):
 
 @admin.register(Report)
 class ReportAdmin(admin.ModelAdmin[Report]):
+    change_list_template = "admin/fixed_change_list.html"
     action_form = ReportActionMemoForm
 
     list_display = (
@@ -54,6 +59,7 @@ class ReportAdmin(admin.ModelAdmin[Report]):
         "updated_at",
     )
     list_filter = ("status", "target_type", "reason_type", "created_at", "handled_at")
+    list_per_page = 16
     search_fields = ("id", "user__email", "user__nickname", "admin__email", "admin__nickname", "reason_detail")
     readonly_fields = (
         "user",
@@ -74,6 +80,11 @@ class ReportAdmin(admin.ModelAdmin[Report]):
     inlines = (ReportActionInline,)
     ordering = ("-created_at",)
     actions = ("delete_target_and_handle", "keep_target_and_dismiss")
+
+    def get_model_perms(self, request: HttpRequest) -> dict[str, bool]:
+        self.opts.verbose_name = "신고"
+        self.opts.verbose_name_plural = "신고"
+        return super().get_model_perms(request)
 
     @admin.display(description="대상 ID")
     def target_display_id(self, obj: Report) -> str:

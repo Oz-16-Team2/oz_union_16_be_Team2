@@ -47,6 +47,7 @@ class SocialLoginInline(admin.TabularInline[SocialLogin, User]):
 
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin[User]):
+    change_list_template = "admin/fixed_change_list.html"
     model = User
     action_form = UserStatusActionForm
 
@@ -73,6 +74,7 @@ class UserAdmin(DjangoUserAdmin[User]):
     search_fields = ("id", "email", "nickname")
     ordering = ("-created_at",)
     list_editable = ("is_active",)
+    list_per_page = 10
     readonly_fields = (
         "profile_image_url",
         "last_login",
@@ -123,6 +125,11 @@ class UserAdmin(DjangoUserAdmin[User]):
             },
         ),
     )
+
+    def get_model_perms(self, request: HttpRequest) -> dict[str, bool]:
+        self.opts.verbose_name = "유저"
+        self.opts.verbose_name_plural = "유저"
+        return super().get_model_perms(request)
 
     def has_delete_permission(self, request: HttpRequest, obj: User | None = None) -> bool:
         return False
