@@ -61,13 +61,11 @@ class GoalReadSerializer(serializers.ModelSerializer[Any]):
 
 
 class GoalUpdateSerializer(serializers.ModelSerializer[Any]):
-    start_date = serializers.DateField(required=False)
-    end_date = serializers.DateField(required=False)
     title = serializers.CharField(required=False)
 
     class Meta:
         model = Goal
-        fields = ["title", "start_date", "end_date"]
+        fields = ["title"]
 
     def validate(self, data: dict[str, Any]) -> dict[str, Any]:
         start = data.get("start_date") or (self.instance.start_date if self.instance else None)
