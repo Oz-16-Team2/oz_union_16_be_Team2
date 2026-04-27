@@ -48,7 +48,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -161,7 +161,7 @@ JAZZMIN_SETTINGS = {
     "welcome_sign": "작심 관리자 페이지입니다.",
     "copyright": "작심몇일",
     "show_sidebar": True,
-    "navigation_expanded": False,
+    "navigation_expanded": True,
     "theme": "flatly",
     "order_with_respect_to": [
         "posts",
@@ -177,4 +177,5 @@ JAZZMIN_SETTINGS = {
         "auth",
         "token_blacklist",
     ],
+    "changeform_format": "horizontal_tabs",
 }

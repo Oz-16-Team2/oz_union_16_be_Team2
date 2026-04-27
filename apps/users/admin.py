@@ -168,6 +168,9 @@ class UserAdmin(DjangoUserAdmin[User]):
             image_url,
         )
 
+    def has_add_permission(self, request: HttpRequest) -> bool:
+        return False
+
     @admin.display(description="상태")
     def status_upper(self, obj: User) -> str:
         return str(obj.status).upper()
