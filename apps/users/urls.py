@@ -16,6 +16,19 @@ urlpatterns = [
     path("login", user_views.LoginAPIView.as_view(), name="login"),
     path("logout", user_views.LogoutAPIView.as_view(), name="logout"),
     path("me/", user_views.MeAPIView.as_view(), name="me"),
+    path(
+        "me/activity-summary/days/", user_views.MeActivitySummaryDaysAPIView.as_view(), name="me-activity-summary-days"
+    ),
+    path(
+        "me/activity-summary/achievement-rate/",
+        user_views.MeActivitySummaryAchievementRateAPIView.as_view(),
+        name="me-activity-summary-achievement-rate",
+    ),
+    path(
+        "me/activity-summary/completed-goals/",
+        user_views.MeActivitySummaryCompletedGoalsAPIView.as_view(),
+        name="me-activity-summary-completed-goals",
+    ),
     path("token/refresh", user_views.TokenRefreshAPIView.as_view(), name="token-refresh"),
     path("check-nickname", user_views.NicknameCheckAPIView.as_view(), name="check-nickname"),
     path("change-password", user_views.ChangePasswordAPIView.as_view(), name="change-password"),
