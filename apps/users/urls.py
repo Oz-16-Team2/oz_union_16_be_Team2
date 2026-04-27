@@ -15,6 +15,7 @@ urlpatterns = [
     path("social-login/google/callback", user_views.GoogleSocialLoginAPIView.as_view(), name="social-login-google"),
     path("login", user_views.LoginAPIView.as_view(), name="login"),
     path("logout", user_views.LogoutAPIView.as_view(), name="logout"),
+    path("me/", user_views.MeAPIView.as_view(), name="me"),
     path("token/refresh", user_views.TokenRefreshAPIView.as_view(), name="token-refresh"),
     path("check-nickname", user_views.NicknameCheckAPIView.as_view(), name="check-nickname"),
     path("change-password", user_views.ChangePasswordAPIView.as_view(), name="change-password"),
