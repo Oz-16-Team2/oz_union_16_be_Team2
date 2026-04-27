@@ -145,6 +145,11 @@ class PostAdmin(admin.ModelAdmin[Post]):
         ("일시", {"fields": ("created_at", "updated_at", "deleted_at")}),
     )
 
+    def get_model_perms(self, request: HttpRequest) -> dict[str, bool]:
+        self.opts.verbose_name = "게시글"
+        self.opts.verbose_name_plural = "게시글"
+        return super().get_model_perms(request)
+
     def changelist_view(self, request: HttpRequest, extra_context: dict[str, Any] | None = None) -> Any:
         self.post_filter_type = request.GET.get("filter_type")
 
@@ -275,7 +280,7 @@ class PostAdmin(admin.ModelAdmin[Post]):
 
 @admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin[Comment]):
-    change_list_template = "admin/posts/comment/change_list.html"
+    change_list_template = "admin/fixed_change_list.html"
 
     list_display = (
         "id",
@@ -307,7 +312,12 @@ class CommentAdmin(admin.ModelAdmin[Comment]):
     raw_id_fields = ("post", "user")
     ordering = ("-created_at",)
     actions = ("mark_active", "mark_reported", "soft_delete_comments")
-    list_per_page = 10
+    list_per_page = 16
+
+    def get_model_perms(self, request: HttpRequest) -> dict[str, bool]:
+        self.opts.verbose_name = "댓글"
+        self.opts.verbose_name_plural = "댓글"
+        return super().get_model_perms(request)
 
     @admin.display(description="post_id")
     def post_id_display(self, obj: Comment) -> str:
@@ -416,6 +426,7 @@ class CommentAdmin(admin.ModelAdmin[Comment]):
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin[Tag]):
+    change_list_template = "admin/fixed_change_list.html"
     list_display = ("id", "name", "is_active", "post_count", "created_at")
     list_display_links = ("id", "name")
     list_filter = ("is_active", "created_at")
@@ -423,7 +434,12 @@ class TagAdmin(admin.ModelAdmin[Tag]):
     list_editable = ("is_active",)
     readonly_fields = ("created_at", "post_count")
     ordering = ("-created_at",)
-    list_per_page = 10
+    list_per_page = 16
+
+    def get_model_perms(self, request: HttpRequest) -> dict[str, bool]:
+        self.opts.verbose_name = "태그"
+        self.opts.verbose_name_plural = "태그"
+        return super().get_model_perms(request)
 
     def get_queryset(self, request: HttpRequest) -> QuerySet[Tag]:
         queryset = super().get_queryset(request).annotate(post_count_value=Count("post_tags", distinct=True))

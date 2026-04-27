@@ -7,10 +7,12 @@ from django.contrib import admin, messages
 from django.contrib.admin.helpers import ActionForm
 from django.contrib.admin.widgets import AdminSplitDateTime
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
+from django.contrib.auth.models import Group
 from django.db.models import Count, QuerySet
 from django.http import HttpRequest
 from django.utils import timezone
 from django.utils.html import format_html
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 
 from apps.core.choices import TargetType, UserStatus
 from apps.posts.models import Comment, Post
@@ -45,6 +47,7 @@ class SocialLoginInline(admin.TabularInline[SocialLogin, User]):
 
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin[User]):
+    change_list_template = "admin/fixed_change_list.html"
     model = User
     action_form = UserStatusActionForm
 
@@ -71,6 +74,7 @@ class UserAdmin(DjangoUserAdmin[User]):
     search_fields = ("id", "email", "nickname")
     ordering = ("-created_at",)
     list_editable = ("is_active",)
+    list_per_page = 10
     readonly_fields = (
         "profile_image_url",
         "last_login",
@@ -122,6 +126,11 @@ class UserAdmin(DjangoUserAdmin[User]):
         ),
     )
 
+    def get_model_perms(self, request: HttpRequest) -> dict[str, bool]:
+        self.opts.verbose_name = "유저"
+        self.opts.verbose_name_plural = "유저"
+        return super().get_model_perms(request)
+
     def has_delete_permission(self, request: HttpRequest, obj: User | None = None) -> bool:
         return False
 
@@ -165,6 +174,9 @@ class UserAdmin(DjangoUserAdmin[User]):
             '<img src="{}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;" />',
             image_url,
         )
+
+    def has_add_permission(self, request: HttpRequest) -> bool:
+        return False
 
     @admin.display(description="상태")
     def status_upper(self, obj: User) -> str:
@@ -229,3 +241,8 @@ class UserAdmin(DjangoUserAdmin[User]):
         )
 
         self.message_user(request, f"{updated_count}명 사용자를 정지 처리했습니다.", messages.SUCCESS)
+
+
+for model in (Group, BlacklistedToken, OutstandingToken):
+    if model in admin.site._registry:
+        admin.site.unregister(model)

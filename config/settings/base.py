@@ -13,6 +13,7 @@ SECRET_KEY = os.environ.get(
 AUTH_USER_MODEL = "users.User"
 
 INSTALLED_APPS = [
+    "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -32,6 +33,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -47,7 +49,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -89,7 +91,17 @@ TIME_ZONE = "Asia/Seoul"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+    },
+}
 
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
@@ -152,3 +164,29 @@ NAVER_CLIENT_SECRET = env("NAVER_CLIENT_SECRET", default="")
 
 KAKAO_REST_API_KEY = env("KAKAO_REST_API_KEY", default="")
 KAKAO_CLIENT_SECRET = env("KAKAO_CLIENT_SECRET", default="")
+
+JAZZMIN_SETTINGS = {
+    "site_title": "작심 관리자",
+    "site_header": "작심 관리자",
+    "site_brand": "작심 관리자",
+    "welcome_sign": "작심 관리자 페이지입니다.",
+    "copyright": "작심몇일",
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    "theme": "flatly",
+    "order_with_respect_to": [
+        "posts",
+        "reports",
+        "users",
+    ],
+    "icons": {
+        "posts": "fas fa-pen",
+        "reports": "fas fa-flag",
+        "users": "fas fa-users",
+    },
+    "hide_apps": [
+        "auth",
+        "token_blacklist",
+    ],
+    "changeform_format": "horizontal_tabs",
+}
