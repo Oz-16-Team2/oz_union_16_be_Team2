@@ -70,3 +70,5 @@ mediafiles/
 
 #AWS
 .pem
+
+static/
