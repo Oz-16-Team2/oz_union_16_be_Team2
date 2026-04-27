@@ -191,7 +191,7 @@ JAZZMIN_SETTINGS = {
     "changeform_format": "horizontal_tabs",
 }
 
-ALLOWED_HOSTS = ["jaksim.duckdns.org"]
+ALLOWED_HOSTS = ["jaksim.duckdns.org", "localhost", "127.0.0.1"]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://jaksim.duckdns.org",
