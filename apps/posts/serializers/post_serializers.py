@@ -59,6 +59,7 @@ class PostFeedItemSerializer(serializers.Serializer[Any]):
     content_preview = serializers.CharField()
     like_count = serializers.IntegerField()
     comment_count = serializers.IntegerField()
+    is_liked = serializers.BooleanField()
     is_scrapped = serializers.BooleanField()
 
 
@@ -253,6 +254,7 @@ class PostDetailSerializer(serializers.Serializer[Any]):
     tags = serializers.ListField(child=serializers.CharField())
     like_count = serializers.IntegerField()
     comment_count = serializers.IntegerField()
+    is_liked = serializers.BooleanField()
     is_scrapped = serializers.BooleanField()
     has_goal = serializers.BooleanField()
     goal_info = GoalInfoSerializer(allow_null=True, required=False)
@@ -266,6 +268,7 @@ def build_feed_item(
     tags: list[str],
     like_count: int,
     comment_count: int,
+    is_liked: bool,
     is_scrapped: bool,
 ) -> dict[str, Any]:
     preview = post.content[:CONTENT_PREVIEW_LENGTH] if post.content else ""
@@ -284,6 +287,7 @@ def build_feed_item(
         "content_preview": preview,
         "like_count": like_count,
         "comment_count": comment_count,
+        "is_liked": is_liked,
         "is_scrapped": is_scrapped,
     }
 
@@ -294,6 +298,7 @@ def build_post_detail(
     tags: list[str],
     like_count: int,
     comment_count: int,
+    is_liked: bool,
     is_scrapped: bool,
     vote_payload: dict[str, Any] | None,
 ) -> dict[str, Any]:
@@ -323,6 +328,7 @@ def build_post_detail(
         "tags": tags,
         "like_count": like_count,
         "comment_count": comment_count,
+        "is_liked": is_liked,
         "is_scrapped": is_scrapped,
         "has_goal": has_goal,
         "goal_info": goal_info,

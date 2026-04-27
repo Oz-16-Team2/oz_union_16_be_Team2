@@ -10,7 +10,7 @@ from rest_framework import serializers
 
 from apps.core.choices import PostStatus, Status, VoteStatus
 from apps.goals.models import Goal
-from apps.posts.models import Post, PostTag, Scrap
+from apps.posts.models import Post, PostLike, PostTag, Scrap
 from apps.posts.serializers.post_serializers import (
     SCOPE_FEED,
     SCOPE_MY,
@@ -53,10 +53,14 @@ def feed_queryset(*, scope: str, sort_by: str, user: Any) -> Any:
     )
     if user.is_authenticated:
         qs = qs.annotate(
+            is_liked=Exists(PostLike.objects.filter(post_id=OuterRef("pk"), user_id=user.id)),
             is_scrapped=Exists(Scrap.objects.filter(post_id=OuterRef("pk"), user_id=user.id)),
         )
     else:
-        qs = qs.annotate(is_scrapped=Value(False, output_field=BooleanField()))
+        qs = qs.annotate(
+            is_liked=Value(False, output_field=BooleanField()),
+            is_scrapped=Value(False, output_field=BooleanField()),
+        )
     if sort_by == SORT_LATEST:
         qs = qs.order_by("-created_at")
     elif sort_by == SORT_POPULAR:
@@ -75,6 +79,7 @@ def _build_feed_from_qs(qs: Any, page: int, size: int, user: Any) -> tuple[list[
             tags=tags_map.get(p.id, []),
             like_count=p.like_count,
             comment_count=p.comment_count,
+            is_liked=bool(p.is_liked),
             is_scrapped=bool(p.is_scrapped),
         )
         for p in chunk
@@ -99,6 +104,23 @@ def search_posts(*, keyword: str, type: str | None, page: int, size: int, user: 
     else:
         qs = qs.filter(Q(title__icontains=keyword) | Q(content__icontains=keyword))
 
+    cq = active_comment_q()
+    qs = qs.annotate(
+        like_count=Count("likes", distinct=True),
+        comment_count=Count("comments", filter=cq, distinct=True),
+    )
+
+    if user.is_authenticated:
+        qs = qs.annotate(
+            is_liked=Exists(PostLike.objects.filter(post_id=OuterRef("pk"), user_id=user.id)),
+            is_scrapped=Exists(Scrap.objects.filter(post_id=OuterRef("pk"), user_id=user.id)),
+        )
+    else:
+        qs = qs.annotate(
+            is_liked=Value(False, output_field=BooleanField()),
+            is_scrapped=Value(False, output_field=BooleanField()),
+        )
+
     qs = qs.order_by("-created_at")
 
     total = qs.count()
@@ -110,9 +132,10 @@ def search_posts(*, keyword: str, type: str | None, page: int, size: int, user: 
         build_feed_item(
             p,
             tags=tags_map.get(p.id, []),
-            like_count=0,  # 검색 결과에서는 0으로 우선 설정하거나 계산 로직 추가 가능
-            comment_count=0,
-            is_scrapped=False,
+            like_count=p.like_count,
+            comment_count=p.comment_count,
+            is_liked=bool(p.is_liked),
+            is_scrapped=bool(p.is_scrapped),
         )
         for p in chunk
     ]
@@ -151,8 +174,10 @@ def get_post_detail(*, post_id: int, user: Any) -> dict[str, Any]:
         like_count=Count("likes", distinct=True),
         comment_count=Count("comments", filter=cq, distinct=True),
     )
+    is_liked = False
     is_scrapped = False
     if user.is_authenticated:
+        is_liked = PostLike.objects.filter(post_id=post.id, user_id=user.id).exists()
         is_scrapped = Scrap.objects.filter(post_id=post.id, user_id=user.id).exists()
     tags = [pt.tag.name for pt in post.post_tags.all()]
     vote_payload = None
@@ -171,6 +196,7 @@ def get_post_detail(*, post_id: int, user: Any) -> dict[str, Any]:
         tags=tags,
         like_count=int(agg["like_count"] or 0),
         comment_count=int(agg["comment_count"] or 0),
+        is_liked=is_liked,
         is_scrapped=is_scrapped,
         vote_payload=vote_payload,
     )
