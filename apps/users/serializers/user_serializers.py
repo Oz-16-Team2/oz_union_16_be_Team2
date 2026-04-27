@@ -69,6 +69,12 @@ class LoginSerializer(serializers.Serializer[Any]):
     password = serializers.CharField(write_only=True)
 
 
+class SocialLoginSerializer(serializers.Serializer[Any]):
+    code = serializers.CharField()
+    redirect_uri = serializers.URLField()
+    state = serializers.CharField(required=False, allow_blank=True, default="")
+
+
 class LogoutSerializer(serializers.Serializer[Any]):
     refresh_token = serializers.CharField(required=False)
 
@@ -124,11 +130,11 @@ class ChangePasswordSerializer(serializers.Serializer[Any]):
 
 
 class UserProfileSerializer(serializers.ModelSerializer[Any]):
-    profile_img_url = serializers.SerializerMethodField()
+    profile_image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ["id", "nickname", "profile_img_url"]
+        fields = ["id", "nickname", "profile_image_url"]
 
-    def get_profile_img_url(self, obj: User) -> str:
+    def get_profile_image_url(self, obj: User) -> str:
         return PROFILE_IMAGE_URL_MAP.get(obj.profile_image, "")
