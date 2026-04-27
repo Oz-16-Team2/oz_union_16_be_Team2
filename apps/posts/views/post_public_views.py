@@ -5,8 +5,9 @@ import uuid
 import boto3
 from botocore.config import Config
 from django.conf import settings
-from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema, inline_serializer
 from rest_framework import parsers, serializers, status
+from rest_framework import serializers as drf_serializers
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -376,21 +377,40 @@ class PresignedUrlAPIView(APIView):
 
     @extend_schema(
         tags=[TAG_POSTS],
-        summary="이미지 업로드용 URL 발급 ",
-        description="AWS S3에 이미지를 직접 업로드 하기 위한 url을 발급합니다.",
+        summary="이미지 업로드용 URL 발급",
+        description="AWS S3에 이미지를 직접 업로드 하기 위한 Presigned URL을 발급합니다.\n\n"
+        "1. 이 API로 presigned_url 발급\n"
+        "2. 발급받은 presigned_url로 PUT 요청하여 S3에 직접 업로드\n"
+        "3. 반환된 image_url을 게시글 작성 시 사용",
+        request=inline_serializer(
+            name="PresignedUrlRequest",
+            fields={"filename": drf_serializers.CharField(help_text="업로드할 파일명 (예: image.jpg)")},
+        ),
         responses={
             200: dict,
+            401: ErrorDetailSerializer,
             500: ErrorDetailSerializer,
         },
         examples=[
             OpenApiExample(
+                "요청 예시",
+                value={"filename": "image.jpg"},
+                request_only=True,
+            ),
+            OpenApiExample(
                 "200 OK",
                 value={
                     "presigned_url": "https://jaksim-image-bucket-1.s3.amazonaws.com/...",
-                    "image_url": "https://jaksim-image-bucket-1.s3.amazonaws.com/post_images/하기싫다.png",
+                    "image_url": "https://jaksim-image-bucket-1.s3.amazonaws.com/post_images/image.jpg",
                 },
                 response_only=True,
                 status_codes=["200"],
+            ),
+            OpenApiExample(
+                "401 인증 오류",
+                value={"error_detail": "인증 정보가 없습니다."},
+                response_only=True,
+                status_codes=["401"],
             ),
         ],
     )

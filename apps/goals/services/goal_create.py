@@ -26,6 +26,9 @@ class GoalCreateService:
         if goal.status != Status.IN_PROGRESS:
             raise PermissionError("진행 중인 목표만 수정할 수 있습니다.")
 
+        update_data.pop("start_date", None)
+        update_data.pop("end_date", None)
+
         for attr, value in update_data.items():
             setattr(goal, attr, value)
 

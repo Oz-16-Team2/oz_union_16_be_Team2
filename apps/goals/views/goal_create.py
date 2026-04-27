@@ -198,7 +198,7 @@ class GoalDetailView(APIView):
         examples=[
             OpenApiExample(
                 "목표 수정 데이터 예시",
-                value={"title": "수정된 제목", "start_date": "2026-04-15", "end_date": "2026-05-15"},
+                value={"title": "수정된 제목"},
                 request_only=True,
             ),
             OpenApiExample(
