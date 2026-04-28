@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from django import forms
 from django.contrib import admin, messages
@@ -39,7 +39,8 @@ class ReportActionInline(admin.TabularInline[ReportAction, Report]):
 
 @admin.register(Report)
 class ReportAdmin(admin.ModelAdmin[Report]):
-    change_list_template = "admin/fixed_change_list.html"
+    change_list_template = "admin/reports/report/change_list.html"
+    list_filter = ()
     action_form = ReportActionMemoForm
 
     list_display = (
@@ -58,7 +59,6 @@ class ReportAdmin(admin.ModelAdmin[Report]):
         "created_at",
         "updated_at",
     )
-    list_filter = ("status", "target_type", "reason_type", "created_at", "handled_at")
     list_per_page = 16
     search_fields = ("id", "user__email", "user__nickname", "admin__email", "admin__nickname", "reason_detail")
     readonly_fields = (
@@ -80,6 +80,27 @@ class ReportAdmin(admin.ModelAdmin[Report]):
     inlines = (ReportActionInline,)
     ordering = ("-created_at",)
     actions = ("delete_target_and_handle", "keep_target_and_dismiss")
+
+    def changelist_view(
+        self,
+        request: HttpRequest,
+        extra_context: dict[str, Any] | None = None,
+    ) -> Any:
+        self.status_filter = request.GET.get("status_filter")
+        self.target_type_filter = request.GET.get("target_type_filter")
+
+        mutable_get = request.GET.copy()
+        mutable_get.pop("status_filter", None)
+        mutable_get.pop("target_type_filter", None)
+
+        request.GET = cast(Any, mutable_get)
+        request.META["QUERY_STRING"] = mutable_get.urlencode()
+
+        extra_context = extra_context or {}
+        extra_context["status_filter"] = self.status_filter
+        extra_context["target_type_filter"] = self.target_type_filter
+
+        return super().changelist_view(request, extra_context)
 
     def get_model_perms(self, request: HttpRequest) -> dict[str, bool]:
         self.opts.verbose_name = "신고"
@@ -103,7 +124,17 @@ class ReportAdmin(admin.ModelAdmin[Report]):
         return False
 
     def get_queryset(self, request: HttpRequest) -> QuerySet[Report]:
-        return super().get_queryset(request).select_related("user", "admin").prefetch_related("신고ID")
+        queryset = super().get_queryset(request).select_related("user", "admin").prefetch_related("신고ID")
+
+        status_filter = getattr(self, "status_filter", None)
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+
+        target_type_filter = getattr(self, "target_type_filter", None)
+        if target_type_filter:
+            queryset = queryset.filter(target_type=target_type_filter)
+
+        return queryset
 
     @admin.display(description="user_id")
     def user_id(self, obj: Report) -> int:

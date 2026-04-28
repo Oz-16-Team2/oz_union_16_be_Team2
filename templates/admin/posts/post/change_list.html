@@ -1,54 +1,51 @@
 {% extends "admin/fixed_change_list.html" %}
 
 {% block search %}
-{{ block.super }}
+<form method="get" id="changelist-search" style="margin:0 0 12px 0;">
+    <div style="display:flex; gap:8px; margin:0 0 12px 0;">
+        {% for key, value in request.GET.items %}
+            {% if key != "q" and key != "filter_type" and key != "status" and key != "e" %}
+                <input type="hidden" name="{{ key }}" value="{{ value }}">
+            {% endif %}
+        {% endfor %}
 
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    const input = document.querySelector('input[name="q"]');
-    if (!input) return;
+        <select name="filter_type"
+                style="width:145px; height:38px; border:1px solid #ced4da; border-radius:4px; padding:0 8px;">
+            <option value="" {% if not post_filter_type %}selected{% endif %}>전체 검색</option>
+            <option value="post_id" {% if post_filter_type == "post_id" %}selected{% endif %}>게시글 ID</option>
+            <option value="user_id" {% if post_filter_type == "user_id" %}selected{% endif %}>유저 ID</option>
+        </select>
 
-    const searchForm = input.closest("form");
-    if (!searchForm) return;
+        <input type="text"
+               name="q"
+               value="{{ request.GET.q|default:'' }}"
+               placeholder="검색어 입력"
+               style="width:260px; height:38px; border:1px solid #ced4da; border-radius:4px; padding:0 10px;">
 
-    if (document.querySelector("#filter-type-select")) return;
+        <button type="submit"
+                class="btn btn-primary"
+                style="height:38px; padding:0 16px;">
+            검색
+        </button>
+    </div>
+</form>
 
-    const select = document.createElement("select");
-    select.name = "filter_type";
-    select.id = "filter-type-select";
-    select.style.width = "145px";
-    select.style.height = "38px";
-    select.style.border = "1px solid #ced4da";
-    select.style.borderRadius = "4px";
-    select.style.padding = "0 8px";
-    select.style.margin = "0 8px 0 0";
-    select.style.backgroundColor = "#fff";
-    select.style.display = "inline-block";
-    select.style.boxSizing = "border-box";
-    select.style.transform = "translateY(-4px)";
-
-    const options = [
-        { value: "", label: "전체 검색" },
-        { value: "post_id", label: "게시글 ID 검색" },
-        { value: "user_id", label: "유저 ID 검색" },
-    ];
-
-    options.forEach(function (opt) {
-        const option = document.createElement("option");
-        option.value = opt.value;
-        option.textContent = opt.label;
-
-        if (opt.value === "{{ post_filter_type|default:'' }}") {
-            option.selected = true;
-        }
-
-        select.appendChild(option);
-    });
-
-    input.placeholder = "검색어 입력";
-    input.parentNode.insertBefore(select, input);
-    input.style.height = "38px";
-    input.style.verticalAlign = "middle";
-});
-</script>
+<div style="display:flex; gap:8px; margin:0 0 12px;">
+    <a href="?"
+       style="padding:8px 14px; border-radius:8px; text-decoration:none; background:{% if not request.GET.status %}#4f7cff{% else %}#eee{% endif %}; color:{% if not request.GET.status %}#fff{% else %}#333{% endif %};">
+        전체
+    </a>
+    <a href="?status=active"
+       style="padding:8px 14px; border-radius:8px; text-decoration:none; background:{% if request.GET.status == 'active' %}#4f7cff{% else %}#eee{% endif %}; color:{% if request.GET.status == 'active' %}#fff{% else %}#333{% endif %};">
+        활성
+    </a>
+    <a href="?status=reported"
+       style="padding:8px 14px; border-radius:8px; text-decoration:none; background:{% if request.GET.status == 'reported' %}#4f7cff{% else %}#eee{% endif %}; color:{% if request.GET.status == 'reported' %}#fff{% else %}#333{% endif %};">
+        신고
+    </a>
+    <a href="?status=deleted"
+       style="padding:8px 14px; border-radius:8px; text-decoration:none; background:{% if request.GET.status == 'deleted' %}#4f7cff{% else %}#eee{% endif %}; color:{% if request.GET.status == 'deleted' %}#fff{% else %}#333{% endif %};">
+        삭제
+    </a>
+</div>
 {% endblock %}

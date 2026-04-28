@@ -47,7 +47,7 @@ class SocialLoginInline(admin.TabularInline[SocialLogin, User]):
 
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin[User]):
-    change_list_template = "admin/fixed_change_list.html"
+    change_list_template = "admin/users/user/change_list.html"
     model = User
     action_form = UserStatusActionForm
 
@@ -70,13 +70,17 @@ class UserAdmin(DjangoUserAdmin[User]):
         "updated_at",
         "deleted_at",
     )
-    list_filter = ("status", "is_active", "is_staff", "is_superuser", "created_at", "deleted_at")
+    list_filter = ()
     search_fields = ("id", "email", "nickname")
     ordering = ("-created_at",)
     list_editable = ("is_active",)
     list_per_page = 10
     readonly_fields = (
+        "email",
+        "nickname",
+        "profile_image",
         "profile_image_url",
+        "total_goals_count",
         "last_login",
         "created_at",
         "updated_at",
@@ -85,6 +89,10 @@ class UserAdmin(DjangoUserAdmin[User]):
         "comment_count",
         "post_report_count",
         "comment_report_count",
+        "is_staff",
+        "is_superuser",
+        "groups",
+        "user_permissions",
     )
     actions = ("activate_users", "suspend_users")
     inlines = (SocialLoginInline,)
@@ -126,6 +134,40 @@ class UserAdmin(DjangoUserAdmin[User]):
         ),
     )
 
+    def get_search_results(
+        self,
+        request: HttpRequest,
+        queryset: QuerySet[User],
+        search_term: str,
+    ) -> tuple[QuerySet[User], bool]:
+        filter_type = getattr(self, "user_filter_type", None)
+
+        if search_term and filter_type == "user_id":
+            return queryset.filter(id=search_term), False
+        if search_term and filter_type == "nickname":
+            return queryset.filter(nickname__icontains=search_term), False
+        if search_term and filter_type == "email":
+            return queryset.filter(email__icontains=search_term), False
+
+        return super().get_search_results(request, queryset, search_term)
+
+    def changelist_view(self, request: HttpRequest, extra_context: dict[str, Any] | None = None) -> Any:
+        self.user_filter_type = request.GET.get("filter_type")
+        self.user_status_filter = request.GET.get("user_status_filter")
+
+        mutable_get = request.GET.copy()
+        mutable_get.pop("filter_type", None)
+        mutable_get.pop("user_status_filter", None)
+
+        request.GET = cast(Any, mutable_get)
+        request.META["QUERY_STRING"] = mutable_get.urlencode()
+
+        extra_context = extra_context or {}
+        extra_context["user_filter_type"] = self.user_filter_type
+        extra_context["user_status_filter"] = self.user_status_filter
+
+        return super().changelist_view(request, extra_context)
+
     def get_model_perms(self, request: HttpRequest) -> dict[str, bool]:
         self.opts.verbose_name = "유저"
         self.opts.verbose_name_plural = "유저"
@@ -160,6 +202,10 @@ class UserAdmin(DjangoUserAdmin[User]):
                 memo=None,
                 updated_at=now,
             )
+
+        user_status_filter = getattr(self, "user_status_filter", None)
+        if user_status_filter:
+            queryset = queryset.filter(status=user_status_filter)
 
         return queryset
 

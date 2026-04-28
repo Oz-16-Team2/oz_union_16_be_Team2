@@ -2,29 +2,14 @@
 
 {% block extrahead %}
 {{ block.super }}
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    const params = new URLSearchParams(window.location.search);
-
-    document.querySelectorAll("select[name]").forEach(function (select) {
-        const paramName = select.name;
-        const paramValue = params.get(paramName);
-
-        if (!paramValue) return;
-
-        // 🔥 option을 직접 찾아서 selected 처리
-        const option = select.querySelector(`option[value="${paramValue}"]`);
-        if (option) {
-            option.selected = true;
-        }
-
-        // 🔥 change 이벤트까지 강제 (Django admin 필터 대응)
-        select.dispatchEvent(new Event("change"));
-    });
-});
-</script>
-
 <style>
+    .actions .action-counter,
+    .actions span.all,
+    .actions span.clear,
+    .actions .question {
+        display: none !important;
+    }
+
     #changelist .card-body {
         min-height: 680px !important;
     }
@@ -32,5 +17,57 @@ document.addEventListener("DOMContentLoaded", function () {
     #changelist .card-footer {
         margin-top: 0 !important;
     }
+
+    .admin-search-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 14px;
+    }
+
+    .admin-search-row select,
+    .admin-search-row input {
+        height: 38px !important;
+        border: 1px solid #ced4da !important;
+        border-radius: 4px !important;
+        padding: 0 10px !important;
+        box-sizing: border-box !important;
+    }
+
+    .admin-search-row select {
+        width: 145px !important;
+    }
+
+    .admin-search-row input {
+        width: 260px !important;
+    }
+
+    .admin-filter-buttons {
+        display: flex;
+        gap: 8px;
+        margin: 0 0 14px;
+    }
+
+    .admin-filter-buttons a {
+        padding: 8px 14px;
+        border-radius: 8px;
+        text-decoration: none;
+    }
+    .actions select {
+    width: 220px !important;
+    min-width: 220px !important;
+    max-width: 220px !important;
+}
+
+.actions button {
+    height: 38px !important;
+    margin-left: 6px;
+}
+
+
 </style>
+{% endblock %}
+
+{% block search %}
+{{ block.super }}
 {% endblock %}
