@@ -93,7 +93,6 @@ class TestPosts:
                 "has_goal": False,
                 "has_vote": True,
                 "vote": {
-                    "question": "운동하셨나요?",
                     "options": ["예", "아니오"],
                     "start_at": start_at.isoformat(),
                     "end_at": end_at.isoformat(),
@@ -105,7 +104,6 @@ class TestPosts:
         assert res.status_code == 201
 
         vote = Vote.objects.get(post_id=res.data["post_id"])
-        assert vote.question == "운동하셨나요?"
         assert list(vote.options.order_by("sort_order").values_list("content", flat=True)) == ["예", "아니오"]
 
     def test_post_detail(self, client: APIClient, post: Post) -> None:

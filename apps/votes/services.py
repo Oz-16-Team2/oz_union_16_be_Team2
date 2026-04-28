@@ -17,7 +17,6 @@ from apps.votes.models import Vote, VoteOption, VoteParticipation
 def create_vote(
     *,
     post_id: int,
-    question: str,
     options: list[str],
     start_at: Any,
     end_at: Any,
@@ -31,7 +30,6 @@ def create_vote(
 
     vote = Vote.objects.create(
         post=post,
-        question=question,
         start_at=start_at,
         end_at=end_at,
         status=VoteStatus.IN_PROGRESS,
@@ -42,7 +40,12 @@ def create_vote(
     vote.refresh_from_db()
 
     options_payload = [
-        {"vote_option_id": opt.id, "content": opt.content} for opt in vote.options.all().order_by("sort_order")
+        {
+            "vote_option_id": opt.id,
+            "content": opt.content,
+            "sort_order": opt.sort_order,
+        }
+        for opt in vote.options.all().order_by("sort_order")
     ]
 
     return {
@@ -60,7 +63,6 @@ def create_default_vote_for_post(post: Post, vote_data: dict[str, Any]) -> None:
     now = timezone.now()
     vote = Vote.objects.create(
         post=post,
-        question=vote_data["question"],
         start_at=now,
         end_at=vote_data["end_at"],
         status=VoteStatus.IN_PROGRESS,
@@ -113,7 +115,6 @@ def update_vote(
     *,
     vote_id: int,
     user: Any,
-    question: str,
     options: list[str],
     start_at: Any,
     end_at: Any,
@@ -131,10 +132,9 @@ def update_vote(
     if vote.status != VoteStatus.IN_PROGRESS:
         raise ValidationError("진행 중인 투표만 수정할 수 있습니다.")
 
-    vote.question = question
     vote.start_at = start_at
     vote.end_at = end_at
-    vote.save(update_fields=["question", "start_at", "end_at", "updated_at"])
+    vote.save()
 
     vote.options.all().delete()
 
@@ -152,7 +152,8 @@ def update_vote(
     vote.refresh_from_db()
 
     options_payload = [
-        {"vote_option_id": o.id, "content": o.content} for o in vote.options.all().order_by("sort_order")
+        {"vote_option_id": o.id, "content": o.content, "sort_order": o.sort_order}
+        for o in vote.options.all().order_by("sort_order")
     ]
 
     return {
@@ -172,6 +173,9 @@ def delete_vote(*, vote_id: int, user: Any) -> None:
 
     if vote.post.user_id != user.id:
         raise ValidationError("투표를 삭제할 권한이 없습니다.")
+
+    if vote.participations.exists():
+        raise ValidationError("이미 참여자가 있는 투표는 삭제할 수 없습니다.")
 
     vote.delete()
     return None

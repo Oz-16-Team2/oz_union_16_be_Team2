@@ -45,7 +45,6 @@ class TestVoteServices:
 
         result = create_vote(
             post_id=vote_post.id,
-            question="운동하셨나요?",
             options=["예", "아니오"],
             start_at=start_at,
             end_at=end_at,
@@ -79,7 +78,6 @@ class TestVoteServices:
         result = update_vote(
             vote_id=vote.id,
             user=vote_owner,
-            question="수정된 질문",
             options=["찬성", "반대"],
             start_at=start_at,
             end_at=end_at,

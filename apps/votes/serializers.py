@@ -14,7 +14,6 @@ class VoteOptionDetailSerializer(serializers.Serializer[Any]):
 
 
 class VoteCreateRequestSerializer(serializers.Serializer[Any]):
-    question = serializers.CharField(max_length=255)
     options = serializers.ListField(child=serializers.CharField(max_length=255), min_length=2, max_length=2)
     start_at = serializers.DateTimeField()
     end_at = serializers.DateTimeField()
@@ -52,7 +51,6 @@ class VoteParticipateResponseSerializer(serializers.Serializer[Any]):
 
 
 class VoteUpdateSerializer(serializers.Serializer[Any]):
-    question = serializers.CharField(max_length=255)
     options = serializers.ListField(
         child=serializers.CharField(max_length=255),
         min_length=2,
@@ -70,7 +68,6 @@ class VoteUpdateSerializer(serializers.Serializer[Any]):
 
 class VoteUpdateResponseSerializer(serializers.Serializer[Any]):
     vote_id = serializers.IntegerField()
-    question = serializers.CharField(max_length=255)
     start_at = serializers.DateTimeField()
     end_at = serializers.DateTimeField()
     status = serializers.ChoiceField(choices=VoteStatus.choices)

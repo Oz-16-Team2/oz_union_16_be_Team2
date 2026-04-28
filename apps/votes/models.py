@@ -18,7 +18,7 @@ class Vote(models.Model):
         db_table = "votes"
 
     def __str__(self) -> str:
-        return self.question
+        return self.post.title
 
 
 class VoteOption(models.Model):
