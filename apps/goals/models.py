@@ -20,19 +20,6 @@ class Goal(models.Model):
         return self.title
 
 
-class RoundGoal(models.Model):
-    goal = models.ForeignKey(Goal, on_delete=models.CASCADE, related_name="rounds")
-    round_no = models.IntegerField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = "round_goals"
-
-    def __str__(self) -> str:
-        return f"{self.goal.title} - {self.round_no}회차"
-
-
 class CheckGoal(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="check_goals")
     goal = models.ForeignKey(Goal, on_delete=models.CASCADE, related_name="checks")

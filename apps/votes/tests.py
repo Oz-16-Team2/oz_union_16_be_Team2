@@ -62,7 +62,6 @@ class TestVoteServices:
 
         vote = Vote.objects.create(
             post=vote_post,
-            question="원래 질문",
             start_at=start_at,
             end_at=end_at,
             status=VoteStatus.IN_PROGRESS,

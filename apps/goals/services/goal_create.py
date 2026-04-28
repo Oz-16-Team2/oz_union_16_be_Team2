@@ -2,6 +2,7 @@ from datetime import date
 from typing import Any
 
 from django.db import transaction
+from django.db.models import QuerySet
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
@@ -20,6 +21,41 @@ class GoalCreateService:
     @staticmethod
     def get_goal(goal_id: int, user: Any) -> Goal:
         return get_object_or_404(Goal, id=goal_id, user=user)
+
+    @staticmethod
+    def get_goal_list(
+        user: Any,
+        status_filter: str | None = None,
+        start_date_filter: str | None = None,
+        end_date_filter: str | None = None,
+    ) -> QuerySet[Goal]:
+        today = timezone.now().date()
+
+        expired_goals = Goal.objects.filter(user=user, status=Status.IN_PROGRESS, end_date__lt=today)
+        for goal in expired_goals:
+            GoalCreateService.update_goal_status(goal)
+
+        queryset = Goal.objects.filter(user=user).prefetch_related("checks").order_by("-created_at")
+
+        if status_filter in ["in_progress", "failed", "completed"]:
+            queryset = queryset.filter(status=Status[status_filter.upper()])
+
+        if start_date_filter:
+            queryset = queryset.filter(start_date__gte=start_date_filter)
+
+        if end_date_filter:
+            queryset = queryset.filter(end_date__lte=end_date_filter)
+
+        return queryset
+
+    @staticmethod
+    def get_checked_goals_by_date(user: Any, target_date: str) -> QuerySet[Goal]:
+        return (
+            Goal.objects.filter(user=user, checks__created_at__date=target_date)
+            .prefetch_related("checks")
+            .distinct()
+            .order_by("-created_at")
+        )
 
     @staticmethod
     def update_goal(goal: Goal, **update_data: Any) -> Goal:

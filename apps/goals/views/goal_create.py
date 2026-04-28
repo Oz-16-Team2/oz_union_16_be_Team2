@@ -1,6 +1,5 @@
 from typing import Any, cast
 
-from django.utils import timezone
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema, inline_serializer
 from rest_framework import serializers as drf_serializers
 from rest_framework import status
@@ -10,8 +9,6 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.core.choices import Status
-from apps.goals.models import Goal
 from apps.goals.serializers.goal_create import (
     ErrorDetailSerializer,
     GoalCheckSerializer,
@@ -121,27 +118,14 @@ class GoalCreateView(APIView):
         ],
     )
     def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        today = timezone.now().date()
         user = cast(User, request.user)
 
-        expired_goals = Goal.objects.filter(user=user, status=Status.IN_PROGRESS, end_date__lt=today)
-        for goal in expired_goals:
-            GoalCreateService.update_goal_status(goal)
-
-        queryset = Goal.objects.filter(user=user).prefetch_related("checks").order_by("-created_at")
-
-        status_filter = request.query_params.get("status")
-        start_date_filter = request.query_params.get("start")
-        end_date_filter = request.query_params.get("end")
-
-        if status_filter in ["in_progress", "failed", "completed"]:
-            queryset = queryset.filter(status=Status[status_filter.upper()])
-
-        if start_date_filter:
-            queryset = queryset.filter(start_date__gte=start_date_filter)
-
-        if end_date_filter:
-            queryset = queryset.filter(end_date__lte=end_date_filter)
+        queryset = GoalCreateService.get_goal_list(
+            user=user,
+            status_filter=request.query_params.get("status"),
+            start_date_filter=request.query_params.get("start"),
+            end_date_filter=request.query_params.get("end"),
+        )
 
         paginator = GoalPagination()
         paginated_queryset = paginator.paginate_queryset(queryset, request, view=self)
@@ -200,12 +184,6 @@ class GoalDetailView(APIView):
                 "목표 수정 데이터 예시",
                 value={"title": "수정된 제목"},
                 request_only=True,
-            ),
-            OpenApiExample(
-                "400 날짜 오류",
-                value={"error_detail": {"start_date": ["종료일은 시작일보다 빠를 수 없습니다."]}},
-                response_only=True,
-                status_codes=["400"],
             ),
             OpenApiExample(
                 "401 인증 오류",
@@ -319,7 +297,6 @@ class GoalCheckView(APIView):
             result = GoalCheckService.check_goal_today(goal_id, request.user)
             serializer = GoalCheckSerializer(result)
             return Response(serializer.data, status=status.HTTP_200_OK)
-
         except ValueError as e:
             return Response({"error_detail": {"detail": [str(e)]}}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -385,12 +362,7 @@ class GoalCheckedHistoryListView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        queryset = (
-            Goal.objects.filter(user=user, checks__created_at__date=target_date)
-            .prefetch_related("checks")
-            .distinct()
-            .order_by("-created_at")
-        )
+        queryset = GoalCreateService.get_checked_goals_by_date(user=user, target_date=target_date)
 
         paginator = GoalPagination()
         paginated_queryset = paginator.paginate_queryset(queryset, request, view=self)
