@@ -134,7 +134,7 @@ class UserAdmin(DjangoUserAdmin[User]):
         ),
     )
 
-    @admin.action(description="유저 하드 삭제")  # 테스트용
+    @admin.action(description="유저 완전 삭제")
     def hard_delete_users(self, request: HttpRequest, queryset: QuerySet[User]) -> None:
         count = queryset.count()
         queryset.delete()
