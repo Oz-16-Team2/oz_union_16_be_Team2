@@ -163,6 +163,7 @@ class EmailVerificationSendAPIView(APIView):
         responses={
             200: MessageResponseSerializer,
             400: ErrorDetailFieldListSerializer,
+            409: ErrorDetailFieldListSerializer,
         },
         examples=[
             OpenApiExample(
@@ -172,7 +173,13 @@ class EmailVerificationSendAPIView(APIView):
                 status_codes=["200"],
             ),
             OpenApiExample(
-                "인증 메일 발송 실패",
+                "인증 메일 발송 실패 - 중복",
+                value={"error_detail": {"email": ["이미 가입된 이메일입니다."]}},
+                response_only=True,
+                status_codes=["409"],
+            ),
+            OpenApiExample(
+                "인증 메일 발송 실패 - 필수값 누락",
                 value={"error_detail": {"email": ["이 필드는 필수 항목입니다."]}},
                 response_only=True,
                 status_codes=["400"],
@@ -182,20 +189,27 @@ class EmailVerificationSendAPIView(APIView):
     def post(self, request: Request) -> Response:
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        return Response(send_email_verification_code(**serializer.validated_data), status=status.HTTP_200_OK)
+
+        try:
+            result = send_email_verification_code(**serializer.validated_data)
+        except ConflictException as exc:
+            return Response(
+                {"error_detail": exc.detail},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        return Response(result, status=status.HTTP_200_OK)
 
 
 @extend_schema(tags=["Accounts"])
 class EmailVerificationVerifyAPIView(APIView):
     serializer_class = EmailVerificationVerifySerializer
     permission_classes = [AllowAny]
+    parser_classes = [parsers.JSONParser]
 
     @extend_schema(
         summary="이메일 인증 확인",
-        parameters=[
-            OpenApiParameter(name="email", required=True, type=str),
-            OpenApiParameter(name="code", required=True, type=str),
-        ],
+        request=EmailVerificationVerifySerializer,
         responses={
             200: EmailVerificationSuccessSerializer,
             400: ErrorDetailFieldListSerializer,
@@ -203,7 +217,10 @@ class EmailVerificationVerifyAPIView(APIView):
         examples=[
             OpenApiExample(
                 "이메일 인증 성공",
-                value={"detail": "이메일 인증에 성공하였습니다.", "email_token": "daechungbase32"},
+                value={
+                    "detail": "이메일 인증에 성공하였습니다.",
+                    "email_token": "daechungbase32",
+                },
                 response_only=True,
                 status_codes=["200"],
             ),
@@ -216,14 +233,14 @@ class EmailVerificationVerifyAPIView(APIView):
         ],
     )
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        email = request.GET.get("email")
-        code = request.GET.get("code")
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        if email is None or code is None:
-            raise ValueError("email or code missing")
-
-        result = verify_email(email=email, code=code)
-        return Response(result)
+        result = verify_email(
+            email=serializer.validated_data["email"],
+            code=serializer.validated_data["code"],
+        )
+        return Response(result, status=status.HTTP_200_OK)
 
 
 @extend_schema(tags=["Accounts"])
