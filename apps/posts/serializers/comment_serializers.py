@@ -3,6 +3,7 @@ from typing import Any
 from rest_framework import serializers
 
 from apps.posts.models import Comment
+from apps.users.constants import PROFILE_IMAGE_URL_MAP
 
 
 class CommentCreateSerializer(serializers.ModelSerializer[Any]):
@@ -33,7 +34,9 @@ class CommentListSerializer(serializers.ModelSerializer[Any]):
     REQ-COMM-002: 댓글 목록 조회 API 시리얼라이저
     """
 
+    user_id = serializers.IntegerField(source="user.id", read_only=True)
     nickname = serializers.CharField(source="user.nickname", read_only=True)
+    profile_image_url = serializers.SerializerMethodField()
 
     # 뷰(View)에서 annotate로 계산해서 넘겨줄 필드들
     like_count = serializers.IntegerField(read_only=True)
@@ -41,7 +44,10 @@ class CommentListSerializer(serializers.ModelSerializer[Any]):
 
     class Meta:
         model = Comment
-        fields = ["id", "nickname", "content", "created_at", "like_count", "is_liked"]
+        fields = ["id", "user_id", "nickname", "content", "created_at", "like_count", "is_liked", "profile_image_url"]
+
+    def get_profile_image_url(self, obj: Comment) -> str | None:
+        return PROFILE_IMAGE_URL_MAP.get(obj.user.profile_image)
 
 
 class CommentReportSerializer(serializers.Serializer[Any]):
