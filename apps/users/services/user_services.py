@@ -208,9 +208,6 @@ def change_password(
     return {"detail": "비밀번호가 변경되었습니다."}
 
 
-# apps/users/services/user_services.py
-
-
 def send_email_verification_code(*, email: str) -> dict[str, str]:
     if User.objects.filter(email=email).exists():
         raise ConflictException({"email": ["이미 가입된 이메일입니다."]})
@@ -248,7 +245,7 @@ def verify_email(*, email: str, code: str) -> dict[str, str]:
     }
 
 
-def google_social_login(*, code: str, redirect_uri: str, state: str = "") -> dict[str, str]:
+def google_social_login(*, code: str, redirect_uri: str) -> dict[str, str]:
     token_data = _http_json(
         method="POST",
         url="https://oauth2.googleapis.com/token",
@@ -284,7 +281,7 @@ def google_social_login(*, code: str, redirect_uri: str, state: str = "") -> dic
     return _build_login_payload(user)
 
 
-def naver_social_login(*, code: str, redirect_uri: str, state: str = "") -> dict[str, str]:
+def naver_social_login(*, code: str, redirect_uri: str, state: str) -> dict[str, str]:
     if not state:
         raise ValidationError({"state": ["네이버 로그인에는 state가 필요합니다."]})
 
@@ -325,7 +322,7 @@ def naver_social_login(*, code: str, redirect_uri: str, state: str = "") -> dict
     return _build_login_payload(user)
 
 
-def kakao_social_login(*, code: str, redirect_uri: str, state: str = "") -> dict[str, str]:
+def kakao_social_login(*, code: str, redirect_uri: str) -> dict[str, str]:
     token_payload: dict[str, Any] = {
         "grant_type": "authorization_code",
         "client_id": getattr(settings, "KAKAO_REST_API_KEY", ""),
