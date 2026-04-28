@@ -94,7 +94,7 @@ class UserAdmin(DjangoUserAdmin[User]):
         "groups",
         "user_permissions",
     )
-    actions = ("activate_users", "suspend_users")
+    actions = ("activate_users", "suspend_users", "hard_delete_users")
     inlines = (SocialLoginInline,)
 
     fieldsets = (
@@ -133,6 +133,13 @@ class UserAdmin(DjangoUserAdmin[User]):
             },
         ),
     )
+
+    @admin.action(description="유저 하드 삭제")  # 테스트용
+    def hard_delete_users(self, request: HttpRequest, queryset: QuerySet[User]) -> None:
+        count = queryset.count()
+        queryset.delete()
+
+        self.message_user(request, f"{count}명 사용자를 완전히 삭제했습니다.", messages.WARNING)
 
     def get_search_results(
         self,
