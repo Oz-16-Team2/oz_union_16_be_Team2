@@ -2,6 +2,7 @@ from typing import Any, Literal, cast
 from urllib.parse import urlencode
 
 from django.conf import settings
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import parsers, status
 from rest_framework.exceptions import NotAuthenticated, ValidationError
@@ -109,25 +110,17 @@ def _social_login_response(result: dict[str, str]) -> Response:
     return response
 
 
-def _social_callback_response(request: Request, *, provider: str) -> Response:
+def _social_callback_response(request: Request) -> Response:
     code = request.GET.get("code")
     state = request.GET.get("state", "")
 
     if code is None:
         raise ValidationError({"code": ["이 필드는 필수 항목입니다."]})
 
-    redirect_uri = _oauth_callback_url(provider)
-
-    if provider == "google":
-        result = google_social_login(code=code, redirect_uri=redirect_uri)
-    elif provider == "naver":
-        result = naver_social_login(code=code, redirect_uri=redirect_uri, state=state)
-    elif provider == "kakao":
-        result = kakao_social_login(code=code, redirect_uri=redirect_uri)
-    else:
-        raise ValidationError({"detail": ["지원하지 않는 provider 입니다."]})
-
-    return _social_login_response(result)
+    return Response(
+        {"code": code, "state": state},
+        status=status.HTTP_200_OK,
+    )
 
 
 @extend_schema(tags=["Accounts"])
@@ -277,24 +270,24 @@ class KakaoSocialLoginAPIView(APIView):
     parser_classes = [parsers.JSONParser]
 
     @extend_schema(
-        summary="소셜 카카오 로그인",
+        summary="소셜 카카오 로그인 callback",
         description=f"**[카카오 로그인 버튼 (클릭)]({_kakao_auth_url()})**",
         parameters=[
             OpenApiParameter(name="code", required=False, type=str),
             OpenApiParameter(name="state", required=False, type=str),
         ],
-        responses={200: TokenResponseSerializer},
+        responses={200: OpenApiTypes.OBJECT},
         examples=[
             OpenApiExample(
                 "callback 코드 확인",
-                value={"access_token": "JWT Token Value"},
+                value={"code": "4/0AeoWuM-...", "state": ""},
                 response_only=True,
                 status_codes=["200"],
             ),
         ],
     )
     def get(self, request: Request) -> Response:
-        return _social_callback_response(request, provider="kakao")
+        return _social_callback_response(request)
 
     @extend_schema(
         summary="소셜 카카오 회원가입,로그인",
@@ -325,7 +318,7 @@ class NaverSocialLoginAPIView(APIView):
     parser_classes = [parsers.JSONParser]
 
     @extend_schema(
-        summary="소셜 네이버 로그인",
+        summary="소셜 네이버 로그인 callback",
         description=f"**[네이버 로그인 버튼 (클릭)]({_naver_auth_url()})**",
         parameters=[
             OpenApiParameter(name="code", required=False, type=str),
@@ -342,7 +335,7 @@ class NaverSocialLoginAPIView(APIView):
         ],
     )
     def get(self, request: Request) -> Response:
-        return _social_callback_response(request, provider="naver")
+        return _social_callback_response(request)
 
     @extend_schema(
         summary="소셜 네이버 회원가입,로그인",
@@ -373,7 +366,7 @@ class GoogleSocialLoginAPIView(APIView):
     parser_classes = [parsers.JSONParser]
 
     @extend_schema(
-        summary="소셜 구글 로그인",
+        summary="소셜 구글 로그인 callback",
         description=f"**[구글 로그인 버튼 (클릭)]({_google_auth_url()})**",
         parameters=[
             OpenApiParameter(name="code", required=False, type=str),
@@ -390,7 +383,7 @@ class GoogleSocialLoginAPIView(APIView):
         ],
     )
     def get(self, request: Request) -> Response:
-        return _social_callback_response(request, provider="google")
+        return _social_callback_response(request)
 
     @extend_schema(
         summary="소셜 구글 회원가입,로그인",
@@ -429,6 +422,14 @@ class LoginAPIView(APIView):
             401: ErrorDetailStringSerializer,
             403: ErrorDetailWithdrawnSerializer,
         },
+        examples=[
+            OpenApiExample(
+                "이메일 로그인 성공",
+                value={"access_token": "JWT Token Value"},
+                response_only=True,
+                status_codes=["200"],
+            ),
+        ],
     )
     def post(self, request: Request) -> Response:
         serializer = self.serializer_class(data=request.data)
@@ -459,7 +460,11 @@ class MeAPIView(APIView):
         examples=[
             OpenApiExample(
                 "내 프로필 조회 성공",
-                value={"id": 1, "nickname": "testnick", "profile_image_url": "https://example.com/profile.png"},
+                value={
+                    "id": 1,
+                    "nickname": "testnick",
+                    "profile_image_url": "https://example.com/profile.png",
+                },
                 response_only=True,
                 status_codes=["200"],
             ),
@@ -520,7 +525,12 @@ class LogoutAPIView(APIView):
             logout_user(refresh_token=refresh_token_value)
 
         response = Response({"detail": "로그아웃 되었습니다."}, status=status.HTTP_200_OK)
-        response.delete_cookie("refresh_token")
+        samesite = cast(Literal["Lax", "Strict", "None", False], getattr(settings, "COOKIE_SAME_SITE", "Lax"))
+        response.delete_cookie(
+            "refresh_token",
+            path="/",
+            samesite=samesite,
+        )
         return response
 
 
@@ -538,6 +548,14 @@ class TokenRefreshAPIView(APIView):
             400: ErrorDetailFieldListSerializer,
             403: ErrorDetailStringSerializer,
         },
+        examples=[
+            OpenApiExample(
+                "토큰 재발급 성공",
+                value={"access_token": "JWT Token Value"},
+                response_only=True,
+                status_codes=["200"],
+            ),
+        ],
     )
     def post(self, request: Request) -> Response:
         serializer = self.serializer_class(data=request.data)
