@@ -7,7 +7,6 @@ from apps.users.models import User
 
 class Vote(models.Model):
     post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name="vote")
-    question = models.CharField(max_length=255)
     start_at = models.DateTimeField()
     end_at = models.DateTimeField()
     status = models.CharField(max_length=20, choices=VoteStatus, default=VoteStatus.IN_PROGRESS)
