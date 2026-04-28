@@ -89,18 +89,15 @@ class TestPostCommentListCreateView:
         response = api_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
+        assert "results" in response.data
 
-        # 💡 [수정2] 누락되었던 results 변수 선언 복구
-        results = (
-            response.data["results"]
-            if isinstance(response.data, dict) and "results" in response.data
-            else response.data
-        )
+        results = response.data["results"]
 
         assert len(results) == 1
         assert results[0]["content"] == "테스트 댓글"
         assert results[0]["like_count"] == 1
         assert results[0]["is_liked"] is False
+        assert "profile_image_url" in results[0]
 
     def test_get_comments_success_authenticated_liked(self, api_client: APIClient, user: User, post: Post) -> None:
         comment = Comment.objects.create(user_id=user.id, post_id=post.id, content="내 댓글")
@@ -112,13 +109,13 @@ class TestPostCommentListCreateView:
         response = api_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        results = (
-            response.data["results"]
-            if isinstance(response.data, dict) and "results" in response.data
-            else response.data
-        )
+        assert "results" in response.data
+
+        results = response.data["results"]
+
         assert results[0]["like_count"] == 1
         assert results[0]["is_liked"] is True
+        assert results[0]["user_id"] == user.id
 
 
 # ==========================================
@@ -217,13 +214,7 @@ class TestPostCommentDetailView:
         # 2. 목록 조회 시 더 이상 안 보이는지 이중 검증
         list_url = f"/api/v1/posts/{post.id}/comments"
         list_response = api_client.get(list_url)
-        results = (
-            list_response.data["results"]
-            if isinstance(list_response.data, dict) and "results" in list_response.data
-            else list_response.data
-        )
-
-        assert len(results) == 0
+        assert len(list_response.data["results"]) == 0
 
     def test_delete_comment_forbidden(
         self, api_client: APIClient, user_other: User, post: Post, comment: Comment

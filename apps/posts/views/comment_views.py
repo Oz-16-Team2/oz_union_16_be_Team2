@@ -38,7 +38,7 @@ class PostCommentListCreateView(generics.ListCreateAPIView):  # type: ignore[typ
     def get_queryset(self) -> QuerySet[Comment]:
         post_id: int = self.kwargs.get("post_id")
 
-        if not Post.objects.filter(id=post_id).exists():
+        if not Post.objects.filter(id=post_id, deleted_at__isnull=True).exists():
             raise NotFound("게시글을 찾을 수 없습니다.")
 
         qs = Comment.objects.filter(post_id=post_id, deleted_at__isnull=True)
@@ -54,10 +54,15 @@ class PostCommentListCreateView(generics.ListCreateAPIView):  # type: ignore[typ
 
         return qs.order_by("-created_at")
 
+    def list(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({"results": serializer.data})
+
     def perform_create(self, serializer: BaseSerializer[Any]) -> None:
         post_id: Any = self.kwargs.get("post_id")
 
-        if not Post.objects.filter(id=post_id).exists():
+        if not Post.objects.filter(id=post_id, deleted_at__isnull=True).exists():
             raise NotFound("게시글을 찾을 수 없습니다.")
 
         serializer.save(user_id=self.request.user.id, post_id=post_id)
