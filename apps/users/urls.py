@@ -10,14 +10,16 @@ urlpatterns = [
         user_views.EmailVerificationVerifyAPIView.as_view(),
         name="verification-verify-email",
     ),
-    path("social-login/kakao/callback", user_views.KakaoSocialLoginAPIView.as_view(), name="social-login-kakao"),
-    path("social-login/naver/callback", user_views.NaverSocialLoginAPIView.as_view(), name="social-login-naver"),
-    path("social-login/google/callback", user_views.GoogleSocialLoginAPIView.as_view(), name="social-login-google"),
+    path("social-login/kakao/callback/", user_views.KakaoSocialLoginAPIView.as_view(), name="social-login-kakao"),
+    path("social-login/naver/callback/", user_views.NaverSocialLoginAPIView.as_view(), name="social-login-naver"),
+    path("social-login/google/callback/", user_views.GoogleSocialLoginAPIView.as_view(), name="social-login-google"),
     path("login", user_views.LoginAPIView.as_view(), name="login"),
     path("logout", user_views.LogoutAPIView.as_view(), name="logout"),
     path("me/", user_views.MeAPIView.as_view(), name="me"),
     path(
-        "me/activity-summary/days/", user_views.MeActivitySummaryDaysAPIView.as_view(), name="me-activity-summary-days"
+        "me/activity-summary/days/",
+        user_views.MeActivitySummaryDaysAPIView.as_view(),
+        name="me-activity-summary-days",
     ),
     path(
         "me/activity-summary/achievement-rate/",

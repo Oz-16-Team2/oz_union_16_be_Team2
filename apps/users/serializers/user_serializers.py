@@ -7,8 +7,6 @@ from apps.core.choices import ProfileImageCode
 from apps.users.constants import PROFILE_IMAGE_URL_MAP
 from apps.users.models import User
 
-PROFILE_IMAGE_CODE_BY_URL = {url: code for code, url in PROFILE_IMAGE_URL_MAP.items()}
-
 
 class MessageResponseSerializer(serializers.Serializer[Any]):
     detail = serializers.CharField()
@@ -44,7 +42,6 @@ class SignupSerializer(serializers.Serializer[Any]):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, min_length=8)
     nickname = serializers.CharField(max_length=30)
-    profile_image_url = serializers.URLField(required=False, allow_blank=True, allow_null=True)
     profile_image = serializers.ChoiceField(
         choices=ProfileImageCode.choices,
         required=False,
@@ -56,20 +53,6 @@ class SignupSerializer(serializers.Serializer[Any]):
         if not re.search(r"[A-Za-z]", value) or not re.search(r"\d", value):
             raise serializers.ValidationError("비밀번호 형식이 올바르지 않습니다.")
         return value
-
-    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
-        profile_image_url = (attrs.pop("profile_image_url", "") or "").strip()
-        profile_image = attrs.pop("profile_image", ProfileImageCode.AVATAR_01)
-
-        if profile_image_url:
-            mapped_profile_image = PROFILE_IMAGE_CODE_BY_URL.get(profile_image_url)
-            if mapped_profile_image is None:
-                raise serializers.ValidationError({"profile_image_url": ["지원하지 않는 프로필 이미지입니다."]})
-            attrs["profile_image"] = mapped_profile_image
-        else:
-            attrs["profile_image"] = profile_image
-
-        return attrs
 
 
 class EmailVerificationSendSerializer(serializers.Serializer[Any]):
@@ -89,7 +72,12 @@ class LoginSerializer(serializers.Serializer[Any]):
 class SocialLoginSerializer(serializers.Serializer[Any]):
     code = serializers.CharField()
     redirect_uri = serializers.URLField()
-    state = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class NaverSocialLoginSerializer(serializers.Serializer[Any]):
+    code = serializers.CharField()
+    redirect_uri = serializers.URLField()
+    state = serializers.CharField()
 
 
 class LogoutSerializer(serializers.Serializer[Any]):
