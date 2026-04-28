@@ -41,7 +41,6 @@ class VoteCreateAPIView(APIView):
                     "detail": {
                         "vote_id": 1,
                         "post_id": 10,
-                        "question": "오늘 운동하셨나요?",
                         "start_at": "2026-04-20T09:00:00+09:00",
                         "end_at": "2026-04-27T09:00:00+09:00",
                         "status": "in_progress",
@@ -67,7 +66,6 @@ class VoteCreateAPIView(APIView):
         try:
             body = create_vote(
                 post_id=post_id,
-                question=serializer.validated_data["question"],
                 options=serializer.validated_data["options"],
                 start_at=serializer.validated_data["start_at"],
                 end_at=serializer.validated_data["end_at"],
@@ -202,7 +200,6 @@ class VoteDetailAPIView(APIView):
                 value={
                     "detail": {
                         "vote_id": 1,
-                        "question": "수정된 질문입니다",
                         "start_at": "2026-04-20T09:00:00+09:00",
                         "end_at": "2026-04-27T09:00:00+09:00",
                         "status": "in_progress",
@@ -229,7 +226,6 @@ class VoteDetailAPIView(APIView):
             body = update_vote(
                 vote_id=vote_id,
                 user=request.user,
-                question=serializer.validated_data["question"],
                 options=serializer.validated_data["options"],
                 start_at=serializer.validated_data["start_at"],
                 end_at=serializer.validated_data["end_at"],
@@ -306,6 +302,9 @@ class VoteDetailAPIView(APIView):
             msg = str(e)
             if "투표를 삭제할 권한이 없습니다." in msg:
                 return error_response("투표를 삭제할 권한이 없습니다.", 403)
+            if "이미 참여자가 있는 투표는 삭제할 수 없습니다." in msg:
+                return error_response("이미 참여자가 있는 투표는 삭제할 수 없습니다.", 400)
+
             return error_response(msg, 400)
 
         return detail_response("투표가 삭제되었습니다.", 200)

@@ -89,9 +89,9 @@ class PostSearchResponseSerializer(serializers.Serializer[Any]):
 def validate_vote_requirement(attrs: dict[str, Any]) -> dict[str, Any]:
     if attrs.get("has_vote"):
         vote = attrs.get("vote")
-        if not vote or not vote.get("question"):
+        if not vote:
             raise serializers.ValidationError(
-                {"vote": ["투표의 질문과 선택지가 필요합니다."]},
+                {"vote": ["투표의 선택지가 필요합니다."]},
             )
         options = vote.get("options") or []
         if len(options) != 2:
@@ -200,7 +200,6 @@ class VoteOptionDetailSerializer(serializers.Serializer[Any]):
 
 class VoteInfoSerializer(serializers.Serializer[Any]):
     vote_id = serializers.IntegerField()
-    question = serializers.CharField(max_length=255)
     start_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S")
     end_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S")
     status = serializers.CharField()

@@ -81,7 +81,6 @@ class AdminPostDetailVoteOptionSerializer(serializers.Serializer[dict[str, Any]]
 
 class AdminPostDetailVoteSerializer(serializers.Serializer[dict[str, Any]]):
     id = serializers.IntegerField()
-    question = serializers.CharField()
     start_at = serializers.DateTimeField()
     end_at = serializers.DateTimeField()
     status = serializers.CharField()

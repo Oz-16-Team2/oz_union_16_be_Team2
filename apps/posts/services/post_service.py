@@ -186,7 +186,7 @@ def get_post_detail(*, post_id: int, user: Any) -> dict[str, Any]:
         opts = sorted(vote_obj.options.all(), key=lambda o: o.sort_order)
         vote_payload = {
             "vote_id": vote_obj.id,
-            "question": vote_obj.question,
+            "start_at": vote_obj.start_at,
             "end_at": vote_obj.end_at,
             "status": vote_obj.status,
             "options": [{"option_id": o.id, "content": o.content, "sort_order": o.sort_order} for o in opts],
@@ -206,7 +206,6 @@ def _create_vote_for_post(post: Post, vote_data: dict[str, Any]) -> None:
     now = timezone.now()
     vote = Vote.objects.create(
         post=post,
-        question=vote_data["question"],
         start_at=now,
         end_at=now + timedelta(days=7),
         status=VoteStatus.IN_PROGRESS,

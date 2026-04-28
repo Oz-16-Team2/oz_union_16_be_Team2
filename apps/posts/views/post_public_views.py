@@ -224,7 +224,6 @@ class PostDetailAPIView(APIView):
                     "has_vote": True,
                     "vote_info": {
                         "vote_id": 41,
-                        "question": "가장 힘들었던 구간은?",
                         "end_at": "2026-04-10T09:00:00Z",
                         "status": "in_progress",
                         "options": [

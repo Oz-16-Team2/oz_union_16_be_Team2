@@ -75,7 +75,6 @@ def admin_post_data(django_db_blocker: Any) -> dict[str, Any]:
 
         vote = Vote.objects.create(
             post=post_with_vote,
-            question="내일도 운동할까요?",
             start_at="2026-04-13T09:00:00Z",
             end_at="2026-04-14T09:00:00Z",
         )

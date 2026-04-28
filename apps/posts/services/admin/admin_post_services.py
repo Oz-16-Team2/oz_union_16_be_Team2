@@ -115,7 +115,6 @@ class AdminPostService:
             vote = post.vote
             vote_data = {
                 "id": vote.id,
-                "question": vote.question,
                 "start_at": vote.start_at,
                 "end_at": vote.end_at,
                 "status": str(vote.status),
