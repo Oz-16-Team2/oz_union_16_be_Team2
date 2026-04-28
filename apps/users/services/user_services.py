@@ -208,7 +208,13 @@ def change_password(
     return {"detail": "비밀번호가 변경되었습니다."}
 
 
+# apps/users/services/user_services.py
+
+
 def send_email_verification_code(*, email: str) -> dict[str, str]:
+    if User.objects.filter(email=email).exists():
+        raise ConflictException({"email": ["이미 가입된 이메일입니다."]})
+
     code = str(random.randint(100000, 999999))
 
     cache.set(f"email_code:{email}", code, timeout=settings.EMAIL_VERIFICATION_TIMEOUT)
