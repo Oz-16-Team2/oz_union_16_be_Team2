@@ -134,8 +134,16 @@ class UserAdmin(DjangoUserAdmin[User]):
         ),
     )
 
-    @admin.action(description="유저 완전 삭제")
+    @admin.action(description="⚠️ 유저 하드 삭제")
     def hard_delete_users(self, request: HttpRequest, queryset: QuerySet[User]) -> None:
+        if not request.user.is_superuser:
+            self.message_user(request, "슈퍼유저만 유저를 완전 삭제할 수 있습니다.", messages.ERROR)
+            return
+
+        if queryset.filter(id=request.user.id).exists():
+            self.message_user(request, "자기 자신은 삭제할 수 없습니다.", messages.ERROR)
+            return
+
         count = queryset.count()
         queryset.delete()
 
