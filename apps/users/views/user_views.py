@@ -27,7 +27,6 @@ from apps.users.serializers.user_serializers import (
     NicknameCheckSerializer,
     SignupSerializer,
     SocialLoginSerializer,
-    TokenRefreshSerializer,
     TokenResponseSerializer,
     UserProfileSerializer,
 )
@@ -626,16 +625,14 @@ class LogoutAPIView(APIView):
 
 @extend_schema(tags=["Accounts"])
 class TokenRefreshAPIView(APIView):
-    serializer_class = TokenRefreshSerializer
     permission_classes = [AllowAny]
-    parser_classes = [parsers.JSONParser]
 
     @extend_schema(
         summary="JWT 토큰 재발급",
-        request=TokenRefreshSerializer,
+        request=None,
         responses={
             200: TokenResponseSerializer,
-            400: ErrorDetailFieldListSerializer,
+            401: ErrorDetailStringSerializer,
             403: ErrorDetailStringSerializer,
         },
         examples=[
@@ -646,10 +643,10 @@ class TokenRefreshAPIView(APIView):
                 status_codes=["200"],
             ),
             OpenApiExample(
-                "토큰 재발급 실패 - 필수값 누락",
-                value={"error_detail": {"refresh_token": ["이 필드는 필수 항목입니다."]}},
+                "토큰 재발급 실패 - 인증 필요",
+                value={"error_detail": "로그인 인증이 필요합니다."},
                 response_only=True,
-                status_codes=["400"],
+                status_codes=["401"],
             ),
             OpenApiExample(
                 "토큰 재발급 실패 - 세션 만료",
@@ -660,10 +657,12 @@ class TokenRefreshAPIView(APIView):
         ],
     )
     def post(self, request: Request) -> Response:
-        serializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        refresh_token_value = request.COOKIES.get("refresh_token")
 
-        result = refresh_token(**serializer.validated_data)
+        if not refresh_token_value:
+            raise NotAuthenticated("로그인 인증이 필요합니다.")
+
+        result = refresh_token(refresh_token=refresh_token_value)
         return Response(result, status=status.HTTP_200_OK)
 
 
