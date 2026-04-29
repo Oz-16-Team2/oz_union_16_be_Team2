@@ -195,6 +195,7 @@ ALLOWED_HOSTS = ["jaksim.duckdns.org", "localhost", "127.0.0.1"]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://jaksim.duckdns.org",
+    "https://oz-union-16-fe-team2.vercel.app",
 ]
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
@@ -216,4 +217,5 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://oz-union-16-fe-team2.vercel.app",
+    "https://jaksim.duckdns.org",
 ]
