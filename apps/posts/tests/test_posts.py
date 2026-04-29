@@ -101,7 +101,6 @@ class TestPosts:
             format="json",
         )
 
-
         assert res.status_code == 201
 
         vote = Vote.objects.get(post_id=res.data["post_id"])
