@@ -94,12 +94,13 @@ class TestPosts:
                 "has_vote": True,
                 "vote": {
                     "options": ["예", "아니오"],
-                    "start_at": start_at.isoformat(),
-                    "end_at": end_at.isoformat(),
+                    "start_at": start_at.date().isoformat(),
+                    "end_at": end_at.date().isoformat(),
                 },
             },
             format="json",
         )
+
 
         assert res.status_code == 201
 
