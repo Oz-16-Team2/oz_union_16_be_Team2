@@ -79,3 +79,17 @@ class TestGoalCheckAPI:
 
         one_day_goal.refresh_from_db()
         assert one_day_goal.status == Status.COMPLETED
+
+    def test_check_goal_out_of_date_fail(self) -> None:
+        future_goal = Goal.objects.create(
+            user=self.data["user"],
+            title="미래의 목표",
+            start_date="2026-05-01",
+            end_date="2026-05-31",
+            status=Status.IN_PROGRESS,
+        )
+        url = reverse("goal-check", kwargs={"goal_id": future_goal.id})
+
+        response = self.client.post(url)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "목표 기간이 아닙니다" in str(response.data["error_detail"])

@@ -1,7 +1,8 @@
 from django.urls import path
 
 from apps.goals.views.achievement import AchievementView
-from apps.goals.views.goal_create import GoalCheckedHistoryListView, GoalCheckView, GoalCreateView, GoalDetailView
+from apps.goals.views.goal_check import GoalCheckedHistoryListView, GoalCheckView
+from apps.goals.views.goal_create import GoalCreateView, GoalDetailView
 from apps.goals.views.ranking import MonthlyRankingView, TotalRankingView, WeeklyRankingView
 
 urlpatterns = [
