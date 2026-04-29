@@ -93,9 +93,19 @@ jobs:
               echo "AWS_STORAGE_BUCKET_NAME=${{ secrets.AWS_STORAGE_BUCKET_NAME }}"
               echo "AWS_REGION=${{ secrets.AWS_REGION }}"
               echo "CORS_ALLOWED_ORIGINS=https://oz-union-16-fe-team2.vercel.app,http://localhost:5173,http://127.0.0.1:5173"
+              echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}"
+              echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}"
+              echo "NAVER_CLIENT_ID=${{ secrets.NAVER_CLIENT_ID }}"
+              echo "NAVER_CLIENT_SECRET=${{ secrets.NAVER_CLIENT_SECRET }}"
+              echo "KAKAO_REST_API_KEY=${{ secrets.KAKAO_REST_API_KEY }}"
+              echo "KAKAO_CLIENT_SECRET=${{ secrets.KAKAO_CLIENT_SECRET }}"
+              echo "BACKEND_BASE_URL=${{ secrets.BACKEND_BASE_URL }}"
+              echo "FRONTEND_BASE_URL=${{ secrets.FRONTEND_BASE_URL }}"
               echo "EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER }}"
               echo "EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD }}"
               echo "GITHUB_REPOSITORY=$REPO_LOWER"
+              echo "COOKIE_SECURE=True"
+              echo "COOKIE_SAME_SITE=None"
             } > ~/app/envs/.env
 
             cd ~/app

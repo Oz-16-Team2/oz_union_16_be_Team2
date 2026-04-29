@@ -207,6 +207,7 @@ CSRF_COOKIE_SAMESITE = "None"
 SESSION_COOKIE_SAMESITE = "None"
 
 BACKEND_BASE_URL = env("BACKEND_BASE_URL", "http://127.0.0.1:8000")
+FRONTEND_BASE_URL = env("FRONTEND_BASE_URL", "https://oz-union-16-fe-team2.vercel.app")
 
 COOKIE_SECURE = env("COOKIE_SECURE", "False") == "True"
 COOKIE_SAME_SITE = env("COOKIE_SAME_SITE", "Lax")
@@ -219,3 +220,4 @@ CORS_ALLOWED_ORIGINS = [
     "https://oz-union-16-fe-team2.vercel.app",
     "https://jaksim.duckdns.org",
 ]
+

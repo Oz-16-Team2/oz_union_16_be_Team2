@@ -1,6 +1,8 @@
 from typing import Any
 
 from django.conf import settings
+from django.shortcuts import redirect
+from django.http import HttpResponseRedirect
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import parsers, status
 from rest_framework.exceptions import ValidationError
@@ -23,11 +25,8 @@ from apps.users.serializers.user_serializers import (
     MeActivitySummaryCompletedGoalsResponseSerializer,
     MeActivitySummaryDaysResponseSerializer,
     MessageResponseSerializer,
-    NaverSocialLoginSerializer,
     NicknameCheckSerializer,
     SignupSerializer,
-    SocialLoginSerializer,
-    TokenRefreshSerializer,
     TokenResponseSerializer,
     UserProfileSerializer,
 )
@@ -50,27 +49,12 @@ from apps.users.services.user_services import (
 )
 
 
-def _social_login_response(result: dict[str, str]) -> Response:
-    refresh_token_value = result.pop("refresh_token")
-
-    response = Response(result, status=status.HTTP_200_OK)
-    response.set_cookie(
-        key="refresh_token",
-        value=refresh_token_value,
-        httponly=True,
-        secure=getattr(settings, "COOKIE_SECURE", False),
-        samesite=getattr(settings, "COOKIE_SAME_SITE", "Lax"),
-        path="/",
-    )
-    return response
-
-
 def _oauth_callback_url(provider: str) -> str:
     base = getattr(settings, "BACKEND_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
     return f"{base}/api/v1/accounts/social-login/{provider}/callback/"
 
 
-def _social_callback_login(request: Request, *, provider: str) -> Response:
+def _social_callback_login(request: Request, *, provider: str) -> Response | HttpResponseRedirect:
     code = request.GET.get("code")
     state = request.GET.get("state", "")
 
@@ -90,7 +74,25 @@ def _social_callback_login(request: Request, *, provider: str) -> Response:
     else:
         raise ValidationError({"detail": ["지원하지 않는 provider 입니다."]})
 
-    return _social_login_response(result)
+    refresh_token_value = result["refresh_token"]
+
+    frontend_url = getattr(
+        settings,
+        "FRONTEND_BASE_URL",
+        "https://oz-union-16-fe-team2.vercel.app",
+    )
+    response = redirect(frontend_url)
+
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token_value,
+        httponly=True,
+        secure=getattr(settings, "COOKIE_SECURE", False),
+        samesite=getattr(settings, "COOKIE_SAME_SITE", "Lax"),
+        path="/",
+    )
+
+    return response
 
 
 @extend_schema(tags=["Accounts"])
@@ -287,131 +289,53 @@ class EmailVerificationVerifyAPIView(APIView):
 
 @extend_schema(tags=["Accounts"])
 class KakaoSocialLoginAPIView(APIView):
-    serializer_class = SocialLoginSerializer
     permission_classes = [AllowAny]
-    parser_classes = [parsers.JSONParser]
 
     @extend_schema(
-        summary="소셜 카카오 로그인",
-        request=SocialLoginSerializer,
-        responses={200: TokenResponseSerializer},
-        examples=[
-            OpenApiExample(
-                "소셜 로그인 성공",
-                value={"access_token": "JWT Token Value"},
-                response_only=True,
-                status_codes=["200"],
-            ),
-        ],
+        summary="소셜 카카오 로그인 콜백",
+        request=None,
+        responses={
+            200: TokenResponseSerializer,
+            400: ErrorDetailFieldListSerializer,
+            403: ErrorDetailStringSerializer,
+        },
     )
-    def get(self, request: Request) -> Response:
+    def get(self, request: Request) -> Response | HttpResponseRedirect:
         return _social_callback_login(request, provider="kakao")
-
-    @extend_schema(
-        summary="소셜 카카오 로그인",
-        request=SocialLoginSerializer,
-        responses={200: TokenResponseSerializer},
-        examples=[
-            OpenApiExample(
-                "소셜 로그인 성공",
-                value={"access_token": "JWT Token Value"},
-                response_only=True,
-                status_codes=["200"],
-            ),
-        ],
-    )
-    def post(self, request: Request) -> Response:
-        serializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        result = kakao_social_login(**serializer.validated_data)
-        return _social_login_response(result)
 
 
 @extend_schema(tags=["Accounts"])
 class NaverSocialLoginAPIView(APIView):
-    serializer_class = NaverSocialLoginSerializer
     permission_classes = [AllowAny]
-    parser_classes = [parsers.JSONParser]
 
     @extend_schema(
-        summary="소셜 네이버 로그인",
-        request=NaverSocialLoginSerializer,
-        responses={200: TokenResponseSerializer},
-        examples=[
-            OpenApiExample(
-                "소셜 로그인 성공",
-                value={"access_token": "JWT Token Value"},
-                response_only=True,
-                status_codes=["200"],
-            ),
-        ],
+        summary="소셜 네이버 로그인 콜백",
+        request=None,
+        responses={
+            200: TokenResponseSerializer,
+            400: ErrorDetailFieldListSerializer,
+            403: ErrorDetailStringSerializer,
+        },
     )
-    def get(self, request: Request) -> Response:
+    def get(self, request: Request) -> Response | HttpResponseRedirect:
         return _social_callback_login(request, provider="naver")
-
-    @extend_schema(
-        summary="소셜 네이버 로그인",
-        request=NaverSocialLoginSerializer,
-        responses={200: TokenResponseSerializer},
-        examples=[
-            OpenApiExample(
-                "소셜 로그인 성공",
-                value={"access_token": "JWT Token Value"},
-                response_only=True,
-                status_codes=["200"],
-            ),
-        ],
-    )
-    def post(self, request: Request) -> Response:
-        serializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        result = naver_social_login(**serializer.validated_data)
-        return _social_login_response(result)
 
 
 @extend_schema(tags=["Accounts"])
 class GoogleSocialLoginAPIView(APIView):
-    serializer_class = SocialLoginSerializer
     permission_classes = [AllowAny]
-    parser_classes = [parsers.JSONParser]
 
     @extend_schema(
-        summary="소셜 구글 로그인",
-        request=SocialLoginSerializer,
-        responses={200: TokenResponseSerializer},
-        examples=[
-            OpenApiExample(
-                "소셜 로그인 성공",
-                value={"access_token": "JWT Token Value"},
-                response_only=True,
-                status_codes=["200"],
-            ),
-        ],
+        summary="소셜 구글 로그인 콜백",
+        request=None,
+        responses={
+            200: TokenResponseSerializer,
+            400: ErrorDetailFieldListSerializer,
+            403: ErrorDetailStringSerializer,
+        },
     )
-    def get(self, request: Request) -> Response:
+    def get(self, request: Request) -> Response | HttpResponseRedirect:
         return _social_callback_login(request, provider="google")
-
-    @extend_schema(
-        summary="소셜 구글 로그인",
-        request=SocialLoginSerializer,
-        responses={200: TokenResponseSerializer},
-        examples=[
-            OpenApiExample(
-                "소셜 로그인 성공",
-                value={"access_token": "JWT Token Value"},
-                response_only=True,
-                status_codes=["200"],
-            ),
-        ],
-    )
-    def post(self, request: Request) -> Response:
-        serializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        result = google_social_login(**serializer.validated_data)
-        return _social_login_response(result)
 
 
 @extend_schema(tags=["Accounts"])
@@ -628,38 +552,21 @@ class TokenRefreshAPIView(APIView):
 
     @extend_schema(
         summary="JWT 토큰 재발급",
-        request=TokenRefreshSerializer,
+        request=None,
         responses={
             200: TokenResponseSerializer,
             401: ErrorDetailStringSerializer,
             403: ErrorDetailStringSerializer,
         },
-        examples=[
-            OpenApiExample(
-                "토큰 재발급 성공",
-                value={"access_token": "JWT Token Value"},
-                response_only=True,
-                status_codes=["200"],
-            ),
-            OpenApiExample(
-                "토큰 재발급 실패 - 인증 필요",
-                value={"error_detail": "로그인 인증이 필요합니다."},
-                response_only=True,
-                status_codes=["401"],
-            ),
-            OpenApiExample(
-                "토큰 재발급 실패 - 세션 만료",
-                value={"error_detail": {"detail": "로그인 세션이 만료되었습니다."}},
-                response_only=True,
-                status_codes=["403"],
-            ),
-        ],
     )
     def post(self, request: Request) -> Response:
-        serializer = TokenRefreshSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        refresh_token_value = request.COOKIES.get("refresh_token")
 
-        refresh_token_value = serializer.validated_data["refresh_token"]
+        if not refresh_token_value:
+            return Response(
+                {"error_detail": "로그인 인증이 필요합니다."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
 
         result = refresh_token(refresh_token=refresh_token_value)
         return Response(result, status=status.HTTP_200_OK)
