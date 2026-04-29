@@ -85,52 +85,6 @@ class SignupAPIView(APIView):
 
 
 @extend_schema(tags=["Accounts"])
-class NicknameCheckAPIView(APIView):
-    serializer_class = NicknameCheckSerializer
-    permission_classes = [AllowAny]
-
-    @extend_schema(
-        summary="닉네임 중복 확인 API",
-        parameters=[OpenApiParameter(name="nickname", required=True, type=str)],
-        responses={
-            200: MessageResponseSerializer,
-            400: ErrorDetailFieldListSerializer,
-            409: ErrorDetailFieldListSerializer,
-        },
-        examples=[
-            OpenApiExample(
-                "닉네임 사용 가능",
-                value={"detail": "사용가능한 닉네임입니다."},
-                response_only=True,
-                status_codes=["200"],
-            ),
-            OpenApiExample(
-                "닉네임 실패 - 필수값 누락",
-                value={"error_detail": {"nickname": ["이 필드는 필수 항목입니다."]}},
-                response_only=True,
-                status_codes=["400"],
-            ),
-            OpenApiExample(
-                "닉네임 실패 - 중복",
-                value={"error_detail": {"nickname": ["이미 사용 중인 닉네임입니다."]}},
-                response_only=True,
-                status_codes=["409"],
-            ),
-        ],
-    )
-    def get(self, request: Request) -> Response:
-        serializer = self.serializer_class(data=request.query_params)
-        serializer.is_valid(raise_exception=True)
-
-        try:
-            result = check_nickname(**serializer.validated_data)
-        except ConflictException as exc:
-            return Response({"error_detail": exc.detail}, status=status.HTTP_409_CONFLICT)
-
-        return Response(result, status=status.HTTP_200_OK)
-
-
-@extend_schema(tags=["Accounts"])
 class EmailVerificationSendAPIView(APIView):
     serializer_class = EmailVerificationSendSerializer
     permission_classes = [AllowAny]
@@ -216,4 +170,50 @@ class EmailVerificationVerifyAPIView(APIView):
             email=serializer.validated_data["email"],
             code=serializer.validated_data["code"],
         )
+        return Response(result, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Accounts"])
+class NicknameCheckAPIView(APIView):
+    serializer_class = NicknameCheckSerializer
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary="닉네임 중복 확인 API",
+        parameters=[OpenApiParameter(name="nickname", required=True, type=str)],
+        responses={
+            200: MessageResponseSerializer,
+            400: ErrorDetailFieldListSerializer,
+            409: ErrorDetailFieldListSerializer,
+        },
+        examples=[
+            OpenApiExample(
+                "닉네임 사용 가능",
+                value={"detail": "사용가능한 닉네임입니다."},
+                response_only=True,
+                status_codes=["200"],
+            ),
+            OpenApiExample(
+                "닉네임 실패 - 필수값 누락",
+                value={"error_detail": {"nickname": ["이 필드는 필수 항목입니다."]}},
+                response_only=True,
+                status_codes=["400"],
+            ),
+            OpenApiExample(
+                "닉네임 실패 - 중복",
+                value={"error_detail": {"nickname": ["이미 사용 중인 닉네임입니다."]}},
+                response_only=True,
+                status_codes=["409"],
+            ),
+        ],
+    )
+    def get(self, request: Request) -> Response:
+        serializer = self.serializer_class(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            result = check_nickname(**serializer.validated_data)
+        except ConflictException as exc:
+            return Response({"error_detail": exc.detail}, status=status.HTTP_409_CONFLICT)
+
         return Response(result, status=status.HTTP_200_OK)

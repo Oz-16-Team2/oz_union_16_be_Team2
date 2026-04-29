@@ -1,3 +1,5 @@
+from typing import cast
+
 from drf_spectacular.utils import OpenApiExample, extend_schema
 from rest_framework import parsers, status
 from rest_framework.exceptions import NotAuthenticated
@@ -6,6 +8,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.users.models import User
 from apps.users.serializers.auth_serializers import ChangePasswordSerializer
 from apps.users.serializers.common_serializers import (
     ErrorDetailFieldListSerializer,
@@ -189,7 +192,7 @@ class ChangePasswordAPIView(APIView):
         serializer.is_valid(raise_exception=True)
 
         result = change_password(
-            user=request.user,
+            user=cast(User, request.user),
             password=serializer.validated_data["password"],
             new_password=serializer.validated_data["new_password"],
         )

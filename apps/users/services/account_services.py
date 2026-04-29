@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import random
 from datetime import timedelta
+from typing import cast
 
 from django.conf import settings
 from django.core.cache import cache
 from django.core.mail import send_mail
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.exceptions import TokenError
-from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework_simplejwt.tokens import AccessToken, Token
 
 from apps.core.exceptions import ConflictException
 from apps.users.models import User
@@ -121,7 +122,7 @@ def generate_email_token(email: str) -> str:
 
 def verify_email_token(token: str) -> str:
     try:
-        decoded = AccessToken(token)
+        decoded = AccessToken(cast(Token, token))
 
         if decoded.get("type") != "email_verification":
             raise ValueError("invalid type")

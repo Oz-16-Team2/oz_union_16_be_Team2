@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
-from drf_spectacular.utils import OpenApiParameter, extend_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
@@ -13,13 +13,12 @@ from apps.users.serializers.common_serializers import (
     ErrorDetailStringSerializer,
     TokenResponseSerializer,
 )
-from apps.users.serializers.social_serializers import SocialLoginSerializer
 from apps.users.services.social_services import google_social_login, kakao_social_login, naver_social_login
 
 
 def _oauth_callback_url(provider: str) -> str:
     base = getattr(settings, "BACKEND_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
-    return f"{base}/api/v1/accounts/social-login/{provider}/callback"
+    return f"{base}/api/v1/accounts/social-login/{provider}/callback/"
 
 
 def _social_callback_login(request: Request, *, provider: str) -> Response | HttpResponseRedirect:
@@ -69,7 +68,6 @@ class KakaoSocialLoginAPIView(APIView):
 
     @extend_schema(
         summary="소셜 카카오 로그인 콜백",
-        parameters=[OpenApiParameter(name="code", required=True, type=str)],
         request=None,
         responses={
             200: TokenResponseSerializer,
@@ -78,8 +76,6 @@ class KakaoSocialLoginAPIView(APIView):
         },
     )
     def get(self, request: Request) -> Response | HttpResponseRedirect:
-        serializer = SocialLoginSerializer(data=request.query_params)
-        serializer.is_valid(raise_exception=True)
         return _social_callback_login(request, provider="kakao")
 
 
@@ -89,10 +85,6 @@ class NaverSocialLoginAPIView(APIView):
 
     @extend_schema(
         summary="소셜 네이버 로그인 콜백",
-        parameters=[
-            OpenApiParameter(name="code", required=True, type=str),
-            OpenApiParameter(name="state", required=True, type=str),
-        ],
         request=None,
         responses={
             200: TokenResponseSerializer,
@@ -101,8 +93,6 @@ class NaverSocialLoginAPIView(APIView):
         },
     )
     def get(self, request: Request) -> Response | HttpResponseRedirect:
-        serializer = SocialLoginSerializer(data=request.query_params)
-        serializer.is_valid(raise_exception=True)
         return _social_callback_login(request, provider="naver")
 
 
@@ -112,7 +102,6 @@ class GoogleSocialLoginAPIView(APIView):
 
     @extend_schema(
         summary="소셜 구글 로그인 콜백",
-        parameters=[OpenApiParameter(name="code", required=True, type=str)],
         request=None,
         responses={
             200: TokenResponseSerializer,
@@ -121,6 +110,4 @@ class GoogleSocialLoginAPIView(APIView):
         },
     )
     def get(self, request: Request) -> Response | HttpResponseRedirect:
-        serializer = SocialLoginSerializer(data=request.query_params)
-        serializer.is_valid(raise_exception=True)
         return _social_callback_login(request, provider="google")

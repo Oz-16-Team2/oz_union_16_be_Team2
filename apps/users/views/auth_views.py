@@ -1,10 +1,12 @@
 from django.conf import settings
+from django.contrib.auth import logout
 from drf_spectacular.utils import OpenApiExample, extend_schema
 from rest_framework import parsers, status
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.exceptions import TokenError
 
 from apps.users.serializers.auth_serializers import LoginSerializer
 from apps.users.serializers.common_serializers import (
@@ -110,13 +112,23 @@ class LogoutAPIView(APIView):
         refresh_token_value = request.COOKIES.get("refresh_token")
 
         if refresh_token_value:
-            logout_user(refresh_token=refresh_token_value)
+            try:
+                logout_user(refresh_token=refresh_token_value)
+            except TokenError:
+                pass
+
+        logout(request)
 
         response = Response({"detail": "로그아웃 되었습니다."}, status=status.HTTP_200_OK)
         response.delete_cookie(
             key="refresh_token",
             path="/",
             samesite=getattr(settings, "COOKIE_SAME_SITE", "Lax"),
+        )
+        response.delete_cookie(
+            key="sessionid",
+            path="/",
+            samesite=getattr(settings, "SESSION_COOKIE_SAMESITE", "Lax"),
         )
         return response
 
@@ -143,5 +155,18 @@ class TokenRefreshAPIView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        result = refresh_token(refresh_token=refresh_token_value)
+        try:
+            result = refresh_token(refresh_token=refresh_token_value)
+        except TokenError:
+            response = Response(
+                {"error_detail": "로그인 인증이 필요합니다."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+            response.delete_cookie(
+                key="refresh_token",
+                path="/",
+                samesite=getattr(settings, "COOKIE_SAME_SITE", "Lax"),
+            )
+            return response
+
         return Response(result, status=status.HTTP_200_OK)

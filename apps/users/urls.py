@@ -3,6 +3,7 @@ from django.urls import path
 from apps.users.views.account_views import (
     EmailVerificationSendAPIView,
     EmailVerificationVerifyAPIView,
+    NicknameCheckAPIView,
     SignupAPIView,
 )
 from apps.users.views.auth_views import LoginAPIView, LogoutAPIView, TokenRefreshAPIView
@@ -17,6 +18,7 @@ from apps.users.views.social_views import GoogleSocialLoginAPIView, KakaoSocialL
 
 urlpatterns = [
     path("signup", SignupAPIView.as_view(), name="signup"),
+    path("nickname/check", NicknameCheckAPIView.as_view(), name="check-nickname"),
     path("verification/send-email", EmailVerificationSendAPIView.as_view(), name="verification-send-email"),
     path(
         "verification/verify-email",

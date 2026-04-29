@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from typing import cast
+
 from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 from rest_framework_simplejwt.exceptions import TokenError
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken, Token
 
 from apps.users.models import User
 from apps.users.services.common_services import _build_login_payload, _normalize_email, _validate_login_user
@@ -21,7 +23,7 @@ def login_user(*, email: str, password: str) -> dict[str, str]:
 
 def logout_user(*, refresh_token: str) -> dict[str, str]:
     try:
-        token = RefreshToken(refresh_token)
+        token = RefreshToken(cast(Token, refresh_token))
         token.blacklist()
     except TokenError as exc:
         raise AuthenticationFailed("유효하지 않은 토큰입니다.") from exc
@@ -31,7 +33,7 @@ def logout_user(*, refresh_token: str) -> dict[str, str]:
 
 def refresh_token(*, refresh_token: str) -> dict[str, str]:
     try:
-        token = RefreshToken(refresh_token)
+        token = RefreshToken(cast(Token, refresh_token))
         return {"access_token": str(token.access_token)}
     except TokenError as exc:
         raise PermissionDenied({"detail": "로그인 세션이 만료되었습니다."}) from exc
