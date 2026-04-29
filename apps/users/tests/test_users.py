@@ -8,7 +8,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from apps.users.services.user_services import generate_email_token
+from apps.users.services.account_services import generate_email_token
 
 User = get_user_model()
 

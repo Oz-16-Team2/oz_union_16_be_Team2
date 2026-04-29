@@ -1,37 +1,51 @@
 from django.urls import path
 
-from apps.users.views import user_views
+from apps.users.views.account_views import (
+    EmailVerificationSendAPIView,
+    EmailVerificationVerifyAPIView,
+    NicknameCheckAPIView,
+    SignupAPIView,
+)
+from apps.users.views.auth_views import LoginAPIView, LogoutAPIView, TokenRefreshAPIView
+from apps.users.views.profile_views import (
+    ChangePasswordAPIView,
+    MeActivitySummaryAchievementRateAPIView,
+    MeActivitySummaryCompletedGoalsAPIView,
+    MeActivitySummaryDaysAPIView,
+    MeAPIView,
+)
+from apps.users.views.social_views import GoogleSocialLoginAPIView, KakaoSocialLoginAPIView, NaverSocialLoginAPIView
 
 urlpatterns = [
-    path("signup", user_views.SignupAPIView.as_view(), name="signup"),
-    path("verification/send-email", user_views.EmailVerificationSendAPIView.as_view(), name="verification-send-email"),
+    path("signup", SignupAPIView.as_view(), name="signup"),
+    path("nickname/check", NicknameCheckAPIView.as_view(), name="check-nickname"),
+    path("verification/send-email", EmailVerificationSendAPIView.as_view(), name="verification-send-email"),
     path(
         "verification/verify-email",
-        user_views.EmailVerificationVerifyAPIView.as_view(),
+        EmailVerificationVerifyAPIView.as_view(),
         name="verification-verify-email",
     ),
-    path("social-login/kakao/callback/", user_views.KakaoSocialLoginAPIView.as_view(), name="social-login-kakao"),
-    path("social-login/naver/callback/", user_views.NaverSocialLoginAPIView.as_view(), name="social-login-naver"),
-    path("social-login/google/callback/", user_views.GoogleSocialLoginAPIView.as_view(), name="social-login-google"),
-    path("login", user_views.LoginAPIView.as_view(), name="login"),
-    path("logout", user_views.LogoutAPIView.as_view(), name="logout"),
-    path("me/", user_views.MeAPIView.as_view(), name="me"),
+    path("social-login/kakao/callback/", KakaoSocialLoginAPIView.as_view(), name="social-login-kakao"),
+    path("social-login/naver/callback/", NaverSocialLoginAPIView.as_view(), name="social-login-naver"),
+    path("social-login/google/callback/", GoogleSocialLoginAPIView.as_view(), name="social-login-google"),
+    path("login", LoginAPIView.as_view(), name="login"),
+    path("logout", LogoutAPIView.as_view(), name="logout"),
+    path("me/", MeAPIView.as_view(), name="me"),
     path(
         "me/activity-summary/days/",
-        user_views.MeActivitySummaryDaysAPIView.as_view(),
+        MeActivitySummaryDaysAPIView.as_view(),
         name="me-activity-summary-days",
     ),
     path(
         "me/activity-summary/achievement-rate/",
-        user_views.MeActivitySummaryAchievementRateAPIView.as_view(),
+        MeActivitySummaryAchievementRateAPIView.as_view(),
         name="me-activity-summary-achievement-rate",
     ),
     path(
         "me/activity-summary/completed-goals/",
-        user_views.MeActivitySummaryCompletedGoalsAPIView.as_view(),
+        MeActivitySummaryCompletedGoalsAPIView.as_view(),
         name="me-activity-summary-completed-goals",
     ),
-    path("token/refresh", user_views.TokenRefreshAPIView.as_view(), name="token-refresh"),
-    path("check-nickname", user_views.NicknameCheckAPIView.as_view(), name="check-nickname"),
-    path("change-password", user_views.ChangePasswordAPIView.as_view(), name="change-password"),
+    path("token/refresh", TokenRefreshAPIView.as_view(), name="token-refresh"),
+    path("change-password", ChangePasswordAPIView.as_view(), name="change-password"),
 ]
