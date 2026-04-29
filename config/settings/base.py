@@ -209,3 +209,11 @@ BACKEND_BASE_URL = env("BACKEND_BASE_URL", "http://127.0.0.1:8000")
 
 COOKIE_SECURE = env("COOKIE_SECURE", "False") == "True"
 COOKIE_SAME_SITE = env("COOKIE_SAME_SITE", "Lax")
+
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://oz-union-16-fe-team2.vercel.app",
+]
