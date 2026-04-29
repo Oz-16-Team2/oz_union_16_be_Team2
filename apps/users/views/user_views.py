@@ -3,7 +3,7 @@ from typing import Any
 from django.conf import settings
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import parsers, status
-from rest_framework.exceptions import NotAuthenticated, ValidationError
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -27,6 +27,7 @@ from apps.users.serializers.user_serializers import (
     NicknameCheckSerializer,
     SignupSerializer,
     SocialLoginSerializer,
+    TokenRefreshSerializer,
     TokenResponseSerializer,
     UserProfileSerializer,
 )
@@ -627,7 +628,7 @@ class TokenRefreshAPIView(APIView):
 
     @extend_schema(
         summary="JWT 토큰 재발급",
-        request=None,
+        request=TokenRefreshSerializer,
         responses={
             200: TokenResponseSerializer,
             401: ErrorDetailStringSerializer,
@@ -655,10 +656,10 @@ class TokenRefreshAPIView(APIView):
         ],
     )
     def post(self, request: Request) -> Response:
-        refresh_token_value = request.COOKIES.get("refresh_token")
+        serializer = TokenRefreshSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        if not refresh_token_value:
-            raise NotAuthenticated("로그인 인증이 필요합니다.")
+        refresh_token_value = serializer.validated_data["refresh_token"]
 
         result = refresh_token(refresh_token=refresh_token_value)
         return Response(result, status=status.HTTP_200_OK)

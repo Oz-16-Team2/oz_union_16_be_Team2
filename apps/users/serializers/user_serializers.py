@@ -90,7 +90,7 @@ class LogoutSerializer(serializers.Serializer[Any]):
 
 
 class TokenRefreshSerializer(serializers.Serializer[Any]):
-    refresh_token = serializers.CharField(required=False)
+    refresh_token = serializers.CharField()
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         if not attrs.get("refresh_token"):
