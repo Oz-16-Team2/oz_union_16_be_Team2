@@ -16,7 +16,7 @@ class UserManager(BaseUserManager["User"]):
     ) -> User:
         if not email:
             raise ValueError("이메일은 필수입니다.")
-        email = self.normalize_email(email)
+        email = self.normalize_email(email).strip().lower()
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -38,19 +38,20 @@ class User(AbstractBaseUser, PermissionsMixin):
     password = models.CharField(max_length=128)
     nickname = models.CharField(max_length=100, unique=True)
     profile_image = models.CharField(max_length=20, choices=ProfileImageCode, default=ProfileImageCode.AVATAR_01)
+    social_profile_image_url = models.URLField(null=True, blank=True)
     total_goals_count = models.IntegerField(default=0)
     deleted_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["nickname"]
+
     status = models.CharField(max_length=20, choices=UserStatus, default=UserStatus.ACTIVE)
     status_expires_at = models.DateTimeField(null=True, blank=True)
-    # 정지(SUSPENDED) 또는 제한(RESTRICTED) 상태가 해제되는 시점 (기한 없으면 null)
     memo = models.TextField(null=True, blank=True)
-    # 관리자 메모 (정지/제한 사유 등 기록)
 
     objects = UserManager()
 

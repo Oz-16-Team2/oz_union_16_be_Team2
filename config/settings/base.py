@@ -220,3 +220,5 @@ CORS_ALLOWED_ORIGINS = [
     "https://oz-union-16-fe-team2.vercel.app",
     "https://jaksim.duckdns.org",
 ]
+
+OAUTH_ALLOWED_REDIRECT_URIS = [uri.strip() for uri in env("OAUTH_ALLOWED_REDIRECT_URIS", "").split(",") if uri.strip()]
