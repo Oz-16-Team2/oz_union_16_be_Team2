@@ -2,6 +2,24 @@
 
 {% block extrahead %}
 {{ block.super }}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const actionForm = document.querySelector("#changelist-form");
+    const actionSelect = document.querySelector("select[name='action']");
+
+    if (!actionForm || !actionSelect) return;
+
+    actionForm.addEventListener("submit", function (e) {
+        if (actionSelect.value === "hard_delete_users") {
+            const confirmed = confirm("⚠️ 정말 유저를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.");
+            if (!confirmed) {
+                e.preventDefault();
+            }
+        }
+    });
+});
+</script>
+
 <style>
     .actions {
         display: flex !important;

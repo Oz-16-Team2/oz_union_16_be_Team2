@@ -94,7 +94,7 @@ class UserAdmin(DjangoUserAdmin[User]):
         "groups",
         "user_permissions",
     )
-    actions = ("activate_users", "suspend_users")
+    actions = ("activate_users", "suspend_users", "hard_delete_users")
     inlines = (SocialLoginInline,)
 
     fieldsets = (
@@ -133,6 +133,21 @@ class UserAdmin(DjangoUserAdmin[User]):
             },
         ),
     )
+
+    @admin.action(description="⚠️ 유저 하드 삭제")
+    def hard_delete_users(self, request: HttpRequest, queryset: QuerySet[User]) -> None:
+        if not request.user.is_superuser:
+            self.message_user(request, "슈퍼유저만 유저를 완전 삭제할 수 있습니다.", messages.ERROR)
+            return
+
+        if queryset.filter(id=request.user.id).exists():
+            self.message_user(request, "자기 자신은 삭제할 수 없습니다.", messages.ERROR)
+            return
+
+        count = queryset.count()
+        queryset.delete()
+
+        self.message_user(request, f"{count}명 사용자를 완전히 삭제했습니다.", messages.WARNING)
 
     def get_search_results(
         self,
