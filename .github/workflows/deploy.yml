@@ -92,7 +92,7 @@ jobs:
               echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}"
               echo "AWS_STORAGE_BUCKET_NAME=${{ secrets.AWS_STORAGE_BUCKET_NAME }}"
               echo "AWS_REGION=${{ secrets.AWS_REGION }}"
-              echo "CORS_ALLOWED_ORIGINS=https://oz-union-16-fe-team2.vercel.app,http://localhost:5173,http://127.0.0.1:5173
+              echo "CORS_ALLOWED_ORIGINS=https://oz-union-16-fe-team2.vercel.app,http://localhost:5173,http://127.0.0.1:5173"
               echo "EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER }}"
               echo "EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD }}"
               echo "GITHUB_REPOSITORY=$REPO_LOWER"
