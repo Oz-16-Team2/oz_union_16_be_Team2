@@ -488,7 +488,12 @@ def _count_completed_goals(user: Any) -> int:
                     label = choice
 
                 choice_text = f"{value} {label}".upper()
-                if "COMPLETE" in choice_text or "DONE" in choice_text or "FINISH" in choice_text or "완료" in str(label):
+                if (
+                    "COMPLETE" in choice_text
+                    or "DONE" in choice_text
+                    or "FINISH" in choice_text
+                    or "완료" in str(label)
+                ):
                     completed_values.append(value)
 
             if completed_values:
