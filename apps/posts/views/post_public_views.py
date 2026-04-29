@@ -381,7 +381,11 @@ class PostSearchAPIView(APIView):
                 description="검색어 (최소 2글자)",
             ),
             OpenApiParameter(
-                name="type", type=str, location=OpenApiParameter.QUERY, required=False, description="title 또는 content"
+                name="type",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="검색 타입: title (제목), content (내용), all (제목+내용, 기본값)",
             ),
             OpenApiParameter(name="page", type=int, location=OpenApiParameter.QUERY, default=0),
             OpenApiParameter(name="size", type=int, location=OpenApiParameter.QUERY, default=8),
