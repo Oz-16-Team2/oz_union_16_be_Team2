@@ -1,5 +1,6 @@
 from typing import Any
 
+from django.conf import settings
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import parsers, status
 from rest_framework.exceptions import NotAuthenticated, ValidationError
@@ -22,6 +23,7 @@ from apps.users.serializers.user_serializers import (
     MeActivitySummaryCompletedGoalsResponseSerializer,
     MeActivitySummaryDaysResponseSerializer,
     MessageResponseSerializer,
+    NaverSocialLoginSerializer,
     NicknameCheckSerializer,
     SignupSerializer,
     SocialLoginSerializer,
@@ -56,9 +58,16 @@ def _social_login_response(result: dict[str, str]) -> Response:
         key="refresh_token",
         value=refresh_token_value,
         httponly=True,
-        samesite="Lax",
+        secure=getattr(settings, "COOKIE_SECURE", False),
+        samesite=getattr(settings, "COOKIE_SAME_SITE", "Lax"),
+        path="/",
     )
     return response
+
+
+def _oauth_callback_url(provider: str) -> str:
+    base = getattr(settings, "BACKEND_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
+    return f"{base}/api/v1/accounts/social-login/{provider}/callback/"
 
 
 def _social_callback_login(request: Request, *, provider: str) -> Response:
@@ -68,7 +77,7 @@ def _social_callback_login(request: Request, *, provider: str) -> Response:
     if code is None:
         raise ValidationError({"code": ["이 필드는 필수 항목입니다."]})
 
-    redirect_uri = request.build_absolute_uri(request.path)
+    redirect_uri = _oauth_callback_url(provider)
 
     if provider == "google":
         result = google_social_login(code=code, redirect_uri=redirect_uri)
@@ -321,13 +330,13 @@ class KakaoSocialLoginAPIView(APIView):
 
 @extend_schema(tags=["Accounts"])
 class NaverSocialLoginAPIView(APIView):
-    serializer_class = SocialLoginSerializer
+    serializer_class = NaverSocialLoginSerializer
     permission_classes = [AllowAny]
     parser_classes = [parsers.JSONParser]
 
     @extend_schema(
         summary="소셜 네이버 로그인",
-        request=SocialLoginSerializer,
+        request=NaverSocialLoginSerializer,
         responses={200: TokenResponseSerializer},
         examples=[
             OpenApiExample(
@@ -343,7 +352,7 @@ class NaverSocialLoginAPIView(APIView):
 
     @extend_schema(
         summary="소셜 네이버 로그인",
-        request=SocialLoginSerializer,
+        request=NaverSocialLoginSerializer,
         responses={200: TokenResponseSerializer},
         examples=[
             OpenApiExample(
@@ -469,7 +478,9 @@ class LoginAPIView(APIView):
             key="refresh_token",
             value=refresh_token_value,
             httponly=True,
-            samesite="Lax",
+            secure=getattr(settings, "COOKIE_SECURE", False),
+            samesite=getattr(settings, "COOKIE_SAME_SITE", "Lax"),
+            path="/",
         )
         return response
 
