@@ -7,7 +7,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.users.serializers.auth_serializers import ChangePasswordSerializer
-from apps.users.serializers.common_serializers import ErrorDetailStringSerializer, MessageResponseSerializer
+from apps.users.serializers.common_serializers import (
+    ErrorDetailFieldListSerializer,
+    ErrorDetailStringSerializer,
+    MessageResponseSerializer,
+)
 from apps.users.serializers.profile_serializers import (
     MeActivitySummaryAchievementRateResponseSerializer,
     MeActivitySummaryCompletedGoalsResponseSerializer,
@@ -33,7 +37,11 @@ class MeAPIView(APIView):
         examples=[
             OpenApiExample(
                 "내 프로필 조회 성공",
-                value={"id": 1, "nickname": "testnick", "profile_image_url": "https://example.com/profile.png"},
+                value={
+                    "id": 1,
+                    "nickname": "testnick",
+                    "profile_image_url": "https://example.com/profile.png",
+                },
                 response_only=True,
                 status_codes=["200"],
             ),
@@ -140,7 +148,7 @@ class ChangePasswordAPIView(APIView):
         request=ChangePasswordSerializer,
         responses={
             200: MessageResponseSerializer,
-            400: ErrorDetailStringSerializer,
+            400: ErrorDetailFieldListSerializer,
             401: ErrorDetailStringSerializer,
             403: ErrorDetailStringSerializer,
         },

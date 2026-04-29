@@ -1,3 +1,5 @@
+from typing import Any
+
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import parsers, status
 from rest_framework.permissions import AllowAny
@@ -206,7 +208,7 @@ class EmailVerificationVerifyAPIView(APIView):
             ),
         ],
     )
-    def post(self, request: Request) -> Response:
+    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
