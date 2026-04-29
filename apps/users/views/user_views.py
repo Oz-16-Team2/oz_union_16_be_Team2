@@ -1,12 +1,12 @@
 from typing import Any
 
 from django.conf import settings
-from django.contrib.auth import logout
+from django.contrib.auth import get_user_model, logout
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import parsers, status
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import AuthenticationFailed, ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -49,6 +49,8 @@ from apps.users.services.user_services import (
     signup_user,
     verify_email,
 )
+
+User = get_user_model()
 
 
 def _oauth_callback_url(provider: str) -> str:
@@ -543,7 +545,7 @@ class LogoutAPIView(APIView):
         if refresh_token_value:
             try:
                 logout_user(refresh_token=refresh_token_value)
-            except TokenError:
+            except (TokenError, AuthenticationFailed, User.DoesNotExist):
                 pass
 
         logout(request)
@@ -586,7 +588,7 @@ class TokenRefreshAPIView(APIView):
 
         try:
             result = refresh_token(refresh_token=refresh_token_value)
-        except TokenError:
+        except (TokenError, AuthenticationFailed, User.DoesNotExist):
             response = Response(
                 {"error_detail": "로그인 인증이 필요합니다."},
                 status=status.HTTP_401_UNAUTHORIZED,
@@ -595,6 +597,11 @@ class TokenRefreshAPIView(APIView):
                 key="refresh_token",
                 path="/",
                 samesite=getattr(settings, "COOKIE_SAME_SITE", "Lax"),
+            )
+            response.delete_cookie(
+                key="sessionid",
+                path="/",
+                samesite=getattr(settings, "SESSION_COOKIE_SAMESITE", "Lax"),
             )
             return response
 
