@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core import detail_response, error_response
-from apps.posts.models import Post, PostTag, Scrap
+from apps.posts.models import Post, PostLike, PostTag, Scrap
 from apps.posts.serializers.post_serializers import PostListQuerySerializer, PostSuggestionResponseSerializer
 from apps.posts.services.post_suggestion_service import get_recommended_posts
 from apps.users.constants import PROFILE_IMAGE_URL_MAP
@@ -32,6 +32,7 @@ def _build_suggestion_items(posts: list[Post], user: User) -> list[dict[str, Any
         tag_map[pt.post_id].append(pt.tag.name)
 
     scrapped_ids = set(Scrap.objects.filter(post_id__in=post_ids, user=user).values_list("post_id", flat=True))
+    liked_ids = set(PostLike.objects.filter(post_id__in=post_ids, user=user).values_list("post_id", flat=True))
 
     items: list[dict[str, Any]] = []
     for p in posts:
@@ -48,6 +49,7 @@ def _build_suggestion_items(posts: list[Post], user: User) -> list[dict[str, Any
                 "content_preview": preview,
                 "like_count": p.likes.count(),
                 "comment_count": p.comments.count(),
+                "is_liked": p.pk in liked_ids,
                 "is_scrapped": p.pk in scrapped_ids,
             }
         )

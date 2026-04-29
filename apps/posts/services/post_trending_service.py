@@ -6,7 +6,7 @@ from typing import Any
 from django.db.models import Count, Exists, OuterRef
 from django.utils import timezone
 
-from apps.posts.models import Scrap
+from apps.posts.models import PostLike, Scrap
 from apps.posts.serializers.post_serializers import active_comment_q
 from apps.posts.services.post_service import _base_visible_posts, get_tags_by_post_id
 from apps.users.constants import PROFILE_IMAGE_URL_MAP
@@ -34,6 +34,7 @@ def get_trending_posts(*, user: User, page: int, size: int, period: str) -> dict
         .annotate(
             like_count=Count("likes", distinct=True),
             comment_count=Count("comments", filter=cq, distinct=True),
+            is_liked=Exists(PostLike.objects.filter(post_id=OuterRef("pk"), user_id=user.id)),
             is_scrapped=Exists(Scrap.objects.filter(post_id=OuterRef("pk"), user_id=user.id)),
         )
         .order_by("-like_count", "-created_at")
@@ -59,6 +60,7 @@ def get_trending_posts(*, user: User, page: int, size: int, period: str) -> dict
                 "content_preview": preview,
                 "like_count": int(p.like_count),
                 "comment_count": int(p.comment_count),
+                "is_liked": bool(p.is_liked),
                 "is_scrapped": bool(p.is_scrapped),
             }
         )

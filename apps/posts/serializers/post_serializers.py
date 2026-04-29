@@ -226,12 +226,13 @@ class PostSuggestionItemSerializer(serializers.Serializer[Any]):
     images = serializers.ListField(child=serializers.CharField(), allow_empty=True)
     profile_image_url = serializers.CharField(allow_null=True, required=False, allow_blank=True)
     nickname = serializers.CharField()
-    created_at = serializers.DateTimeField()
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S")
     title = serializers.CharField()
     tags = serializers.ListField(child=serializers.CharField())
     content_preview = serializers.CharField()
     like_count = serializers.IntegerField()
     comment_count = serializers.IntegerField()
+    is_liked = serializers.BooleanField()
     is_scrapped = serializers.BooleanField()
 
 
