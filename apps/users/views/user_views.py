@@ -505,8 +505,6 @@ class MeAPIView(APIView):
         ],
     )
     def get(self, request: Request) -> Response:
-        if not request.user.is_authenticated:
-            raise NotAuthenticated()
         return Response(get_my_profile(request.user), status=status.HTTP_200_OK)
 
 
