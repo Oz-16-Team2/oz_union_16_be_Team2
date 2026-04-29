@@ -46,24 +46,37 @@
                         <strong>목표</strong>
                         <p>목표명: {{ original.goal_title }}</p>
                         <p>기간: {{ original.goal_start_date }} ~ {{ original.goal_end_date }}</p>
-                        <p>달성률: {{ original.goal_progress }}%</p>
+                        <p>달성률: {{ original.goal_progress|default:0 }}%</p>
                     </div>
                 {% endif %}
 
-                {% with vote=original.vote_set.first %}
-                    {% if vote %}
-                        <div style="margin-top:24px; padding:18px; background:#f7f7f7; border-radius:14px;">
-                            <strong>투표</strong>
-                            <p>{{ vote.question }}</p>
+                {% if original.vote %}
+                    <div style="margin-top:24px; padding:18px; background:#f7f7f7; border-radius:14px;">
+                        <strong>투표</strong>
 
-                            {% for option in vote.options.all %}
-                                <div style="margin-top:8px;">
-                                    {{ option.content }}
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                {% endwith %}
+                        <p style="font-size:13px; color:#777;">
+                            총 참여 {{ original.vote.participations.count }}명
+                        </p>
+
+                        {% for option in original.vote.options.all %}
+                            <div style="
+                                margin-top:10px;
+                                padding:12px 14px;
+                                background:#fff;
+                                border:1px solid #ddd;
+                                border-radius:10px;
+                                display:flex;
+                                justify-content:space-between;
+                                align-items:center;
+                            ">
+                                <strong>{{ option.content }}</strong>
+                                <span style="font-size:13px; color:#888;">
+                                    {{ option.participations.count }}명
+                                </span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
 
                 <div style="margin-top:24px; padding:18px; background:#f7f7f7; border-radius:14px;">
                     <strong>댓글</strong>
