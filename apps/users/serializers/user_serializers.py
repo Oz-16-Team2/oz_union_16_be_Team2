@@ -49,6 +49,9 @@ class SignupSerializer(serializers.Serializer[Any]):
     )
     email_token = serializers.CharField(required=True, max_length=1024)
 
+    def validate_email(self, value: str) -> str:
+        return value.strip().lower()
+
     def validate_password(self, value: str) -> str:
         if not re.search(r"[A-Za-z]", value) or not re.search(r"\d", value):
             raise serializers.ValidationError("비밀번호 형식이 올바르지 않습니다.")
@@ -58,26 +61,29 @@ class SignupSerializer(serializers.Serializer[Any]):
 class EmailVerificationSendSerializer(serializers.Serializer[Any]):
     email = serializers.EmailField()
 
+    def validate_email(self, value: str) -> str:
+        return value.strip().lower()
+
 
 class EmailVerificationVerifySerializer(serializers.Serializer[Any]):
     email = serializers.EmailField()
     code = serializers.CharField(max_length=20)
+
+    def validate_email(self, value: str) -> str:
+        return value.strip().lower()
 
 
 class LoginSerializer(serializers.Serializer[Any]):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
+    def validate_email(self, value: str) -> str:
+        return value.strip().lower()
+
 
 class SocialLoginSerializer(serializers.Serializer[Any]):
     code = serializers.CharField()
-    redirect_uri = serializers.URLField()
-
-
-class NaverSocialLoginSerializer(serializers.Serializer[Any]):
-    code = serializers.CharField()
-    redirect_uri = serializers.URLField()
-    state = serializers.CharField()
+    state = serializers.CharField(required=False, allow_blank=True, default="")
 
 
 class LogoutSerializer(serializers.Serializer[Any]):

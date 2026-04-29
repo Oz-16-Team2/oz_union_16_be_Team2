@@ -315,7 +315,11 @@ class KakaoSocialLoginAPIView(APIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        result = kakao_social_login(**serializer.validated_data)
+        redirect_uri = request.build_absolute_uri(request.path)
+        result = kakao_social_login(
+            code=serializer.validated_data["code"],
+            redirect_uri=redirect_uri,
+        )
         return _social_login_response(result)
 
 
@@ -358,7 +362,16 @@ class NaverSocialLoginAPIView(APIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        result = naver_social_login(**serializer.validated_data)
+        state = serializer.validated_data.get("state", "")
+        if not state:
+            raise ValidationError({"state": ["이 필드는 필수 항목입니다."]})
+
+        redirect_uri = request.build_absolute_uri(request.path)
+        result = naver_social_login(
+            code=serializer.validated_data["code"],
+            redirect_uri=redirect_uri,
+            state=state,
+        )
         return _social_login_response(result)
 
 
@@ -401,7 +414,11 @@ class GoogleSocialLoginAPIView(APIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        result = google_social_login(**serializer.validated_data)
+        redirect_uri = request.build_absolute_uri(request.path)
+        result = google_social_login(
+            code=serializer.validated_data["code"],
+            redirect_uri=redirect_uri,
+        )
         return _social_login_response(result)
 
 
@@ -484,11 +501,7 @@ class MeAPIView(APIView):
         examples=[
             OpenApiExample(
                 "내 프로필 조회 성공",
-                value={
-                    "id": 1,
-                    "nickname": "testnick",
-                    "profile_image_url": "https://example.com/profile.png",
-                },
+                value={"id": 1, "nickname": "testnick", "profile_image_url": "https://example.com/profile.png"},
                 response_only=True,
                 status_codes=["200"],
             ),

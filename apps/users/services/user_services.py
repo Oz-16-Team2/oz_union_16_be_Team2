@@ -79,6 +79,10 @@ def _build_login_payload(user: User) -> dict[str, str]:
     }
 
 
+def _normalize_email(email: str) -> str:
+    return email.strip().lower()
+
+
 def _validate_login_user(user: User) -> User:
     user = refresh_user_status(user)
 
@@ -96,19 +100,145 @@ def _validate_login_user(user: User) -> User:
     return user
 
 
-def _normalize_social_email(provider: str, provider_user_id: str, email: str | None) -> str:
-    if email:
-        return email.strip().lower()
-    return f"{provider}_{provider_user_id}@social.local"
+class SocialAuthService:
+    @staticmethod
+    def _create_social_user(*, email: str, nickname: str) -> User:
+        user = User.objects.create_user(
+            email=email,
+            password=secrets.token_urlsafe(32),
+            nickname=_get_or_create_unique_nickname(nickname),
+            profile_image=ProfileImageCode.AVATAR_01,
+        )
+        user.set_unusable_password()
+        user.save(update_fields=["password"])
+        return user
 
+    @classmethod
+    def _get_or_create_social_user(cls, *, email: str, nickname: str) -> User:
+        normalized_email = _normalize_email(email)
+        user = User.objects.filter(email=normalized_email).first()
 
-def _create_social_user(*, email: str, nickname: str) -> User:
-    return User.objects.create_user(
-        email=email,
-        password=secrets.token_urlsafe(32),
-        nickname=_get_or_create_unique_nickname(nickname),
-        profile_image=ProfileImageCode.AVATAR_01,
-    )
+        if user is None:
+            return cls._create_social_user(email=normalized_email, nickname=nickname)
+
+        return _validate_login_user(user)
+
+    @staticmethod
+    def _google_profile(*, code: str, redirect_uri: str) -> dict[str, Any]:
+        token_data = _http_json(
+            method="POST",
+            url="https://oauth2.googleapis.com/token",
+            data={
+                "grant_type": "authorization_code",
+                "code": code,
+                "client_id": getattr(settings, "GOOGLE_CLIENT_ID", ""),
+                "client_secret": getattr(settings, "GOOGLE_CLIENT_SECRET", ""),
+                "redirect_uri": redirect_uri,
+            },
+        )
+
+        access_token = token_data.get("access_token")
+        if not access_token:
+            raise ValidationError({"detail": "구글 액세스 토큰을 받을 수 없습니다."})
+
+        return _http_json(
+            method="GET",
+            url="https://openidconnect.googleapis.com/v1/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+
+    @staticmethod
+    def _naver_profile(*, code: str, redirect_uri: str, state: str) -> dict[str, Any]:
+        if not state:
+            raise ValidationError({"state": ["네이버 로그인에는 state가 필요합니다."]})
+
+        token_data = _http_json(
+            method="POST",
+            url="https://nid.naver.com/oauth2.0/token",
+            data={
+                "grant_type": "authorization_code",
+                "client_id": getattr(settings, "NAVER_CLIENT_ID", ""),
+                "client_secret": getattr(settings, "NAVER_CLIENT_SECRET", ""),
+                "code": code,
+                "state": state,
+                "redirect_uri": redirect_uri,
+            },
+        )
+
+        access_token = token_data.get("access_token")
+        if not access_token:
+            raise ValidationError({"detail": "네이버 액세스 토큰을 받을 수 없습니다."})
+
+        return _http_json(
+            method="GET",
+            url="https://openapi.naver.com/v1/nid/me",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+
+    @staticmethod
+    def _kakao_profile(*, code: str, redirect_uri: str) -> dict[str, Any]:
+        token_payload: dict[str, Any] = {
+            "grant_type": "authorization_code",
+            "client_id": getattr(settings, "KAKAO_REST_API_KEY", ""),
+            "redirect_uri": redirect_uri,
+            "code": code,
+        }
+        client_secret = getattr(settings, "KAKAO_CLIENT_SECRET", "")
+        if client_secret:
+            token_payload["client_secret"] = client_secret
+
+        token_data = _http_json(
+            method="POST",
+            url="https://kauth.kakao.com/oauth/token",
+            data=token_payload,
+        )
+
+        access_token = token_data.get("access_token")
+        if not access_token:
+            raise ValidationError({"detail": "카카오 액세스 토큰을 받을 수 없습니다."})
+
+        return _http_json(
+            method="GET",
+            url="https://kapi.kakao.com/v2/user/me",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+
+    @classmethod
+    def google_login(cls, *, code: str, redirect_uri: str) -> dict[str, str]:
+        profile = cls._google_profile(code=code, redirect_uri=redirect_uri)
+
+        provider_user_id = str(profile.get("sub", ""))
+        email = _normalize_email(profile.get("email") or f"google_{provider_user_id}@social.local")
+        nickname = profile.get("name") or email.split("@")[0]
+
+        user = cls._get_or_create_social_user(email=email, nickname=nickname)
+        return _build_login_payload(user)
+
+    @classmethod
+    def naver_login(cls, *, code: str, redirect_uri: str, state: str) -> dict[str, str]:
+        profile = cls._naver_profile(code=code, redirect_uri=redirect_uri, state=state)
+
+        response = profile.get("response") or {}
+        provider_user_id = str(response.get("id", ""))
+        email = _normalize_email(response.get("email") or f"naver_{provider_user_id}@social.local")
+        nickname = response.get("nickname") or email.split("@")[0]
+
+        user = cls._get_or_create_social_user(email=email, nickname=nickname)
+        return _build_login_payload(user)
+
+    @classmethod
+    def kakao_login(cls, *, code: str, redirect_uri: str) -> dict[str, str]:
+        profile = cls._kakao_profile(code=code, redirect_uri=redirect_uri)
+
+        kakao_account = profile.get("kakao_account") or {}
+        kakao_profile = kakao_account.get("profile") or {}
+
+        provider_user_id = str(profile.get("id", ""))
+        email = _normalize_email(kakao_account.get("email") or f"kakao_{provider_user_id}@social.local")
+        nickname = kakao_profile.get("nickname") or email.split("@")[0]
+
+        user = cls._get_or_create_social_user(email=email, nickname=nickname)
+        return _build_login_payload(user)
 
 
 def signup_user(
@@ -119,6 +249,9 @@ def signup_user(
     profile_image: str,
     email_token: str,
 ) -> dict[str, str]:
+    email = _normalize_email(email)
+    nickname = nickname.strip()
+
     if not email_token:
         raise ValidationError({"email_token": ["이메일 인증이 필요합니다."]})
 
@@ -158,12 +291,15 @@ def signup_user(
 
 
 def check_nickname(*, nickname: str) -> dict[str, str]:
+    nickname = nickname.strip()
+
     if User.objects.filter(nickname=nickname).exists():
         raise ConflictException({"nickname": ["이미 사용 중인 닉네임입니다."]})
     return {"detail": "사용가능한 닉네임입니다."}
 
 
 def login_user(*, email: str, password: str) -> dict[str, str]:
+    email = _normalize_email(email)
     user = User.objects.filter(email=email).first()
 
     if user is None or not user.check_password(password):
@@ -209,6 +345,8 @@ def change_password(
 
 
 def send_email_verification_code(*, email: str) -> dict[str, str]:
+    email = _normalize_email(email)
+
     if User.objects.filter(email=email).exists():
         raise ConflictException({"email": ["이미 가입된 이메일입니다."]})
 
@@ -228,6 +366,7 @@ def send_email_verification_code(*, email: str) -> dict[str, str]:
 
 
 def verify_email(*, email: str, code: str) -> dict[str, str]:
+    email = _normalize_email(email)
     saved_code = cache.get(f"email_code:{email}")
 
     if saved_code is None:
@@ -246,123 +385,15 @@ def verify_email(*, email: str, code: str) -> dict[str, str]:
 
 
 def google_social_login(*, code: str, redirect_uri: str) -> dict[str, str]:
-    token_data = _http_json(
-        method="POST",
-        url="https://oauth2.googleapis.com/token",
-        data={
-            "grant_type": "authorization_code",
-            "code": code,
-            "client_id": getattr(settings, "GOOGLE_CLIENT_ID", ""),
-            "client_secret": getattr(settings, "GOOGLE_CLIENT_SECRET", ""),
-            "redirect_uri": redirect_uri,
-        },
-    )
-
-    access_token = token_data.get("access_token")
-    if not access_token:
-        raise ValidationError({"detail": "구글 액세스 토큰을 받을 수 없습니다."})
-
-    profile = _http_json(
-        method="GET",
-        url="https://openidconnect.googleapis.com/v1/userinfo",
-        headers={"Authorization": f"Bearer {access_token}"},
-    )
-
-    provider_user_id = str(profile.get("sub", ""))
-    email = _normalize_social_email("google", provider_user_id, profile.get("email"))
-    nickname = profile.get("name") or email.split("@")[0]
-
-    user = User.objects.filter(email=email).first()
-    if user is None:
-        user = _create_social_user(email=email, nickname=nickname)
-    else:
-        user = _validate_login_user(user)
-
-    return _build_login_payload(user)
+    return SocialAuthService.google_login(code=code, redirect_uri=redirect_uri)
 
 
 def naver_social_login(*, code: str, redirect_uri: str, state: str) -> dict[str, str]:
-    if not state:
-        raise ValidationError({"state": ["네이버 로그인에는 state가 필요합니다."]})
-
-    token_data = _http_json(
-        method="POST",
-        url="https://nid.naver.com/oauth2.0/token",
-        data={
-            "grant_type": "authorization_code",
-            "client_id": getattr(settings, "NAVER_CLIENT_ID", ""),
-            "client_secret": getattr(settings, "NAVER_CLIENT_SECRET", ""),
-            "code": code,
-            "state": state,
-            "redirect_uri": redirect_uri,
-        },
-    )
-
-    access_token = token_data.get("access_token")
-    if not access_token:
-        raise ValidationError({"detail": "네이버 액세스 토큰을 받을 수 없습니다."})
-
-    profile = _http_json(
-        method="GET",
-        url="https://openapi.naver.com/v1/nid/me",
-        headers={"Authorization": f"Bearer {access_token}"},
-    )
-
-    response = profile.get("response") or {}
-    provider_user_id = str(response.get("id", ""))
-    email = _normalize_social_email("naver", provider_user_id, response.get("email"))
-    nickname = response.get("nickname") or email.split("@")[0]
-
-    user = User.objects.filter(email=email).first()
-    if user is None:
-        user = _create_social_user(email=email, nickname=nickname)
-    else:
-        user = _validate_login_user(user)
-
-    return _build_login_payload(user)
+    return SocialAuthService.naver_login(code=code, redirect_uri=redirect_uri, state=state)
 
 
 def kakao_social_login(*, code: str, redirect_uri: str) -> dict[str, str]:
-    token_payload: dict[str, Any] = {
-        "grant_type": "authorization_code",
-        "client_id": getattr(settings, "KAKAO_REST_API_KEY", ""),
-        "redirect_uri": redirect_uri,
-        "code": code,
-    }
-    client_secret = getattr(settings, "KAKAO_CLIENT_SECRET", "")
-    if client_secret:
-        token_payload["client_secret"] = client_secret
-
-    token_data = _http_json(
-        method="POST",
-        url="https://kauth.kakao.com/oauth/token",
-        data=token_payload,
-    )
-
-    access_token = token_data.get("access_token")
-    if not access_token:
-        raise ValidationError({"detail": "카카오 액세스 토큰을 받을 수 없습니다."})
-
-    profile = _http_json(
-        method="GET",
-        url="https://kapi.kakao.com/v2/user/me",
-        headers={"Authorization": f"Bearer {access_token}"},
-    )
-
-    kakao_account = profile.get("kakao_account") or {}
-    kakao_profile = kakao_account.get("profile") or {}
-
-    provider_user_id = str(profile.get("id", ""))
-    email = _normalize_social_email("kakao", provider_user_id, kakao_account.get("email"))
-    nickname = kakao_profile.get("nickname") or email.split("@")[0]
-
-    user = User.objects.filter(email=email).first()
-    if user is None:
-        user = _create_social_user(email=email, nickname=nickname)
-    else:
-        user = _validate_login_user(user)
-
-    return _build_login_payload(user)
+    return SocialAuthService.kakao_login(code=code, redirect_uri=redirect_uri)
 
 
 def get_my_profile(user: Any) -> dict[str, Any]:
@@ -457,12 +488,7 @@ def _count_completed_goals(user: Any) -> int:
                     label = choice
 
                 choice_text = f"{value} {label}".upper()
-                if (
-                    "COMPLETE" in choice_text
-                    or "DONE" in choice_text
-                    or "FINISH" in choice_text
-                    or "완료" in str(label)
-                ):
+                if "COMPLETE" in choice_text or "DONE" in choice_text or "FINISH" in choice_text or "완료" in str(label):
                     completed_values.append(value)
 
             if completed_values:
