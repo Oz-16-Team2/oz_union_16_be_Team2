@@ -224,11 +224,9 @@ def test_token_refresh_success(
     )
     refresh_token = login_response.cookies["refresh_token"].value
 
-    response = api_client.post(
-        token_refresh_url,
-        {"refresh_token": refresh_token},
-        format="json",
-    )
+    api_client.cookies["refresh_token"] = refresh_token
+
+    response = api_client.post(token_refresh_url)
 
     assert response.status_code == status.HTTP_200_OK
     assert "access_token" in response.json()
@@ -239,13 +237,11 @@ def test_token_refresh_fail_missing_token(
     api_client: APIClient,
     token_refresh_url: str,
 ) -> None:
-    response = api_client.post(token_refresh_url, {}, format="json")
+    response = api_client.post(token_refresh_url)
 
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
     assert response.json() == {
-        "error_detail": {
-            "refresh_token": ["이 필드는 필수 항목입니다."],
-        }
+        "error_detail": "로그인 인증이 필요합니다.",
     }
 
 

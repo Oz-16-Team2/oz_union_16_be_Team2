@@ -34,3 +34,8 @@ CACHES = {
         },
     }
 }
+
+FRONTEND_BASE_URL = os.environ.get(
+    "FRONTEND_BASE_URL",
+    "https://oz-union-16-fe-team2.vercel.app",
+)
