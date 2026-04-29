@@ -542,7 +542,11 @@ class LogoutAPIView(APIView):
             logout_user(refresh_token=refresh_token_value)
 
         response = Response({"detail": "로그아웃 되었습니다."}, status=status.HTTP_200_OK)
-        response.delete_cookie("refresh_token")
+        response.delete_cookie(
+            key="refresh_token",
+            path="/",
+            samesite=getattr(settings, "COOKIE_SAME_SITE", "Lax"),
+        )
         return response
 
 
