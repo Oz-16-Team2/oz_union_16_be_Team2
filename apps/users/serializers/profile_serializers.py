@@ -14,6 +14,8 @@ class UserProfileSerializer(serializers.ModelSerializer[Any]):
         fields = ["id", "nickname", "profile_image_url"]
 
     def get_profile_image_url(self, obj: User) -> str:
+        if obj.social_profile_image_url:
+            return obj.social_profile_image_url
         return PROFILE_IMAGE_URL_MAP.get(obj.profile_image, "")
 
 

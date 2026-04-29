@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import secrets
 from typing import Any, cast
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
@@ -10,11 +9,19 @@ from uuid import uuid4
 
 from django.conf import settings
 from django.core.cache import cache  # noqa: F401  # keep parity if you later move helpers here
-from rest_framework.exceptions import ValidationError
+from django.db import transaction
+from django.utils import timezone
+from rest_framework.exceptions import APIException, ValidationError
 
 from apps.core.choices import ProfileImageCode
-from apps.users.models import User
+from apps.users.models import SocialLogin, User
 from apps.users.services.common_services import _build_login_payload, _validate_login_user
+
+
+class ConflictError(APIException):
+    status_code = 409
+    default_detail = "이미 가입된 계정입니다."
+    default_code = "conflict"
 
 
 def _http_json(
@@ -63,16 +70,82 @@ def _normalize_social_email(provider: str, provider_user_id: str, email: str | N
     return f"{provider}_{provider_user_id}@social.local"
 
 
-def _create_social_user(*, email: str, nickname: str) -> User:
+def _create_social_user(
+    *,
+    provider: str,
+    provider_user_id: str,
+    email: str,
+    nickname: str,
+    social_profile_image_url: str | None,
+) -> User:
     user = User.objects.create_user(
         email=email,
-        password=secrets.token_urlsafe(32),
+        password=None,
         nickname=_get_or_create_unique_nickname(nickname),
         profile_image=ProfileImageCode.AVATAR_01,
+        social_profile_image_url=social_profile_image_url,
     )
     user.set_unusable_password()
     user.save(update_fields=["password"])
+
+    SocialLogin.objects.create(
+        user=user,
+        provider=provider,
+        provider_user_id=provider_user_id,
+        linked_at=timezone.now(),
+    )
+
     return user
+
+
+def _get_user_for_social_login(
+    *,
+    provider: str,
+    provider_user_id: str,
+    email: str,
+    nickname: str,
+    social_profile_image_url: str | None,
+) -> User:
+    with transaction.atomic():
+        social_login = (
+            SocialLogin.objects.select_related("user")
+            .filter(
+                provider=provider,
+                provider_user_id=provider_user_id,
+            )
+            .first()
+        )
+
+        if social_login is not None:
+            user = social_login.user
+
+            if social_profile_image_url and user.social_profile_image_url != social_profile_image_url:
+                user.social_profile_image_url = social_profile_image_url
+                user.save(update_fields=["social_profile_image_url"])
+
+            return _validate_login_user(user)
+
+        existing_user = User.objects.filter(email__iexact=email).first()
+
+        if existing_user is None:
+            created_user = _create_social_user(
+                provider=provider,
+                provider_user_id=provider_user_id,
+                email=email,
+                nickname=nickname,
+                social_profile_image_url=social_profile_image_url,
+            )
+            return _validate_login_user(created_user)
+
+        if existing_user.has_usable_password():
+            raise ConflictError({"email": ["이미 일반 회원가입으로 가입된 이메일입니다."]})
+
+        existing_social_login = existing_user.social_logins.first()
+
+        if existing_social_login is not None and existing_social_login.provider != provider:
+            raise ConflictError({"email": ["이미 다른 소셜 계정으로 가입된 이메일입니다."]})
+
+        raise ConflictError({"email": ["이미 가입된 이메일이지만 소셜 계정 정보가 일치하지 않습니다."]})
 
 
 def google_social_login(*, code: str, redirect_uri: str) -> dict[str, str]:
@@ -100,13 +173,16 @@ def google_social_login(*, code: str, redirect_uri: str) -> dict[str, str]:
 
     provider_user_id = str(profile.get("sub", ""))
     email = _normalize_social_email("google", provider_user_id, profile.get("email"))
-    nickname = profile.get("name") or email.split("@")[0]
+    nickname = str(profile.get("name") or email.split("@")[0])
+    social_profile_image_url = profile.get("picture")
 
-    user = User.objects.filter(email__iexact=email).first()
-    if user is None:
-        user = _create_social_user(email=email, nickname=nickname)
-    else:
-        user = _validate_login_user(user)
+    user = _get_user_for_social_login(
+        provider="google",
+        provider_user_id=provider_user_id,
+        email=email,
+        nickname=nickname,
+        social_profile_image_url=social_profile_image_url,
+    )
 
     return _build_login_payload(user)
 
@@ -141,13 +217,16 @@ def naver_social_login(*, code: str, redirect_uri: str, state: str) -> dict[str,
     response = profile.get("response") or {}
     provider_user_id = str(response.get("id", ""))
     email = _normalize_social_email("naver", provider_user_id, response.get("email"))
-    nickname = response.get("nickname") or email.split("@")[0]
+    nickname = str(response.get("nickname") or email.split("@")[0])
+    social_profile_image_url = response.get("profile_image")
 
-    user = User.objects.filter(email__iexact=email).first()
-    if user is None:
-        user = _create_social_user(email=email, nickname=nickname)
-    else:
-        user = _validate_login_user(user)
+    user = _get_user_for_social_login(
+        provider="naver",
+        provider_user_id=provider_user_id,
+        email=email,
+        nickname=nickname,
+        social_profile_image_url=social_profile_image_url,
+    )
 
     return _build_login_payload(user)
 
@@ -184,12 +263,15 @@ def kakao_social_login(*, code: str, redirect_uri: str) -> dict[str, str]:
 
     provider_user_id = str(profile.get("id", ""))
     email = _normalize_social_email("kakao", provider_user_id, kakao_account.get("email"))
-    nickname = kakao_profile.get("nickname") or email.split("@")[0]
+    nickname = str(kakao_profile.get("nickname") or email.split("@")[0])
+    social_profile_image_url = kakao_profile.get("profile_image_url")
 
-    user = User.objects.filter(email__iexact=email).first()
-    if user is None:
-        user = _create_social_user(email=email, nickname=nickname)
-    else:
-        user = _validate_login_user(user)
+    user = _get_user_for_social_login(
+        provider="kakao",
+        provider_user_id=provider_user_id,
+        email=email,
+        nickname=nickname,
+        social_profile_image_url=social_profile_image_url,
+    )
 
     return _build_login_payload(user)
