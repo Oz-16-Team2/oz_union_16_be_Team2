@@ -1,8 +1,8 @@
 from typing import Any
 
 from django.conf import settings
-from django.shortcuts import redirect
 from django.http import HttpResponseRedirect
+from django.shortcuts import redirect
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import parsers, status
 from rest_framework.exceptions import ValidationError

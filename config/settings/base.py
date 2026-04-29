@@ -220,4 +220,3 @@ CORS_ALLOWED_ORIGINS = [
     "https://oz-union-16-fe-team2.vercel.app",
     "https://jaksim.duckdns.org",
 ]
-
