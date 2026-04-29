@@ -195,6 +195,7 @@ ALLOWED_HOSTS = ["jaksim.duckdns.org", "localhost", "127.0.0.1"]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://jaksim.duckdns.org",
+    "https://oz-union-16-fe-team2.vercel.app",
 ]
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
@@ -209,3 +210,12 @@ BACKEND_BASE_URL = env("BACKEND_BASE_URL", "http://127.0.0.1:8000")
 
 COOKIE_SECURE = env("COOKIE_SECURE", "False") == "True"
 COOKIE_SAME_SITE = env("COOKIE_SAME_SITE", "Lax")
+
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://oz-union-16-fe-team2.vercel.app",
+    "https://jaksim.duckdns.org",
+]
