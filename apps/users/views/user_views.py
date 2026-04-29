@@ -1,6 +1,7 @@
 from typing import Any
 
 from django.conf import settings
+from django.contrib.auth import logout
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
@@ -545,11 +546,18 @@ class LogoutAPIView(APIView):
             except TokenError:
                 pass
 
+        logout(request)
+
         response = Response({"detail": "로그아웃 되었습니다."}, status=status.HTTP_200_OK)
         response.delete_cookie(
             key="refresh_token",
             path="/",
             samesite=getattr(settings, "COOKIE_SAME_SITE", "Lax"),
+        )
+        response.delete_cookie(
+            key="sessionid",
+            path="/",
+            samesite=getattr(settings, "SESSION_COOKIE_SAMESITE", "Lax"),
         )
         return response
 
