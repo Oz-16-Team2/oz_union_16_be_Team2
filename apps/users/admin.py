@@ -5,9 +5,11 @@ from typing import Any, cast
 from django import forms
 from django.contrib import admin, messages
 from django.contrib.admin.helpers import ActionForm
+from django.contrib.admin.models import CHANGE, LogEntry
 from django.contrib.admin.widgets import AdminSplitDateTime
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.contrib.auth.models import Group
+from django.contrib.contenttypes.models import ContentType
 from django.db.models import Count, QuerySet
 from django.http import HttpRequest
 from django.utils import timezone
@@ -271,6 +273,8 @@ class UserAdmin(DjangoUserAdmin[User]):
             self.message_user(request, "입력값이 올바르지 않습니다.", messages.ERROR)
             return
 
+        users = list(queryset)
+
         memo = form.cleaned_data.get("memo", "")
 
         updated_count = queryset.update(
@@ -279,6 +283,22 @@ class UserAdmin(DjangoUserAdmin[User]):
             memo=memo,
             updated_at=timezone.now(),
         )
+
+        content_type = ContentType.objects.get_for_model(User)
+        admin_id = request.user.id
+        if admin_id is None:
+            return
+
+        for user in users:
+            LogEntry.objects.create(
+                user_id=admin_id,
+                content_type_id=content_type.id,
+                object_id=str(user.id),
+                object_repr=str(user),
+                action_flag=CHANGE,
+                change_message="유저 정상 처리",
+            )
+
         self.message_user(request, f"{updated_count}명 사용자를 정상 처리했습니다.", messages.SUCCESS)
 
     @admin.action(description="정지 처리")
@@ -294,12 +314,29 @@ class UserAdmin(DjangoUserAdmin[User]):
             memo = request.POST.get("memo", "")
             status_expires_at = None
 
+        users = list(queryset)
+
         updated_count = queryset.update(
             status=UserStatus.SUSPENDED,
             status_expires_at=status_expires_at,
             memo=memo,
             updated_at=timezone.now(),
         )
+
+        content_type = ContentType.objects.get_for_model(User)
+        admin_id = request.user.id
+        if admin_id is None:
+            return
+
+        for user in users:
+            LogEntry.objects.create(
+                user_id=admin_id,
+                content_type_id=content_type.id,
+                object_id=str(user.id),
+                object_repr=str(user),
+                action_flag=CHANGE,
+                change_message="유저 정지 처리",
+            )
 
         self.message_user(request, f"{updated_count}명 사용자를 정지 처리했습니다.", messages.SUCCESS)
 
