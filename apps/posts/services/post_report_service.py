@@ -26,5 +26,4 @@ def create_post_report(*, user: Any, post_id: int, reason_type: str, reason_deta
         status=PostStatus.REPORTED,
     )
 
-
     return report
