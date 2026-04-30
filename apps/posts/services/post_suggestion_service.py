@@ -3,14 +3,17 @@ from collections import defaultdict
 from typing import Any
 
 from django.conf import settings
-from django.db.models import QuerySet
+from django.db.models import Count, QuerySet
 from django.utils import timezone
 
-from apps.posts.models import Post, PostLike, PostTag
+from apps.posts.models import Post, PostLike, PostTag, Scrap
+from apps.posts.serializers.post_serializers import active_comment_q
+from apps.users.constants import PROFILE_IMAGE_URL_MAP
 from apps.users.models import User
 
 logger = logging.getLogger(__name__)
 
+_CONTENT_PREVIEW_LENGTH: int = 100
 _AUTHORED_WEIGHT: float = 5.0
 _LIKED_WEIGHT: float = 3.0
 _MAX_DAYS: float = 20.0
@@ -28,6 +31,63 @@ def get_recommended_posts(user: User, page: int = 1, size: int = 8) -> tuple[lis
     total = len(posts)
     start = (page - 1) * size
     return posts[start : start + size], total
+
+
+def _enrich_posts(posts: list[Post], *, user: User) -> list[dict[str, Any]]:
+    if not posts:
+        return []
+
+    post_ids = [p.pk for p in posts]
+    cq = active_comment_q()
+
+    counts: dict[int, dict[str, int]] = {
+        int(row["id"]): {"like_count": int(row["like_count"]), "comment_count": int(row["comment_count"])}
+        for row in Post.objects.filter(id__in=post_ids)
+        .annotate(
+            like_count=Count("likes", distinct=True),
+            comment_count=Count("comments", filter=cq, distinct=True),
+        )
+        .values("id", "like_count", "comment_count")
+    }
+
+    tag_map: dict[int, list[str]] = {pid: [] for pid in post_ids}
+    for pt in PostTag.objects.filter(post_id__in=post_ids).select_related("tag").order_by("post_id", "id"):
+        tag_map[pt.post_id].append(pt.tag.name)
+
+    scrapped_ids = set(Scrap.objects.filter(post_id__in=post_ids, user=user).values_list("post_id", flat=True))
+    liked_ids = set(PostLike.objects.filter(post_id__in=post_ids, user=user).values_list("post_id", flat=True))
+
+    items: list[dict[str, Any]] = []
+    for p in posts:
+        c = counts.get(p.pk, {})
+        preview = p.content[:_CONTENT_PREVIEW_LENGTH] if p.content else ""
+        items.append(
+            {
+                "post_id": p.pk,
+                "images": p.images or [],
+                "profile_image_url": PROFILE_IMAGE_URL_MAP.get(p.user.profile_image),
+                "nickname": p.user.nickname,
+                "created_at": p.created_at,
+                "title": p.title,
+                "tags": tag_map.get(p.pk, []),
+                "content_preview": preview,
+                "like_count": c.get("like_count", 0),
+                "comment_count": c.get("comment_count", 0),
+                "is_liked": p.pk in liked_ids,
+                "is_scrapped": p.pk in scrapped_ids,
+            }
+        )
+    return items
+
+
+def get_recommendation_feed(*, user: User, page: int = 0, size: int = 8) -> dict[str, Any]:
+    chunk, total = get_recommended_posts(user=user, page=page + 1, size=size)
+    return {
+        "posts": _enrich_posts(chunk, user=user),
+        "page": page,
+        "size": size,
+        "total_count": total,
+    }
 
 
 class PostSuggestionService:
@@ -83,7 +143,7 @@ class PostSuggestionService:
             tag_scores[tag_id] += _LIKED_WEIGHT
 
         if not tag_scores:
-            return list(queryset.exclude(user=user).order_by("-created_at")[:_CANDIDATE_LIMIT])
+            return list(queryset.exclude(user=user).select_related("user").order_by("-created_at")[:_CANDIDATE_LIMIT])
 
         now = timezone.now()
         interested_tag_ids = list(tag_scores.keys())
@@ -93,6 +153,7 @@ class PostSuggestionService:
             queryset.exclude(user=user)
             .filter(post_tags__tag_id__in=interested_tag_ids)
             .distinct()
+            .select_related("user")
             .prefetch_related("post_tags")
             .order_by("-created_at")[: _CANDIDATE_LIMIT * 3]
         )
