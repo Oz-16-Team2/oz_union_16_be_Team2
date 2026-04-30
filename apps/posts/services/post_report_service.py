@@ -4,6 +4,7 @@ from typing import Any
 
 from rest_framework.exceptions import NotFound, ValidationError
 
+from apps.core.choices import PostStatus
 from apps.posts.models import Post
 from apps.reports.models import Report
 
@@ -22,7 +23,7 @@ def create_post_report(*, user: Any, post_id: int, reason_type: str, reason_deta
         target_type="POST",
         reason_type=reason_type,
         reason_detail=reason_detail or "",
-        status="PENDING",
+        status=PostStatus.REPORTED,
     )
 
     return report

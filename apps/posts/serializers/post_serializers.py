@@ -11,7 +11,7 @@ from rest_framework import serializers
 from apps.core.choices import CommentStatus
 from apps.goals.models import Goal
 from apps.posts.models import Post, PostTag, Tag
-from apps.votes.serializers import VoteCreateRequestSerializer
+from apps.votes.serializers import VoteCreateRequestSerializer, VoteUpdateSerializer
 
 MAX_TAGS = 3
 CONTENT_PREVIEW_LENGTH = 100
@@ -43,7 +43,7 @@ class PostSearchQuerySerializer(serializers.Serializer[Any]):
     keyword = serializers.CharField(
         min_length=2, error_messages={"min_length": "검색어는 최소 2글자 이상 입력해야 합니다."}
     )
-    type = serializers.ChoiceField(choices=["title", "content"], required=False)
+    type = serializers.ChoiceField(choices=["title", "content", "all"], required=False, default="all")
     page = serializers.IntegerField(required=False, min_value=0, default=0)
     size = serializers.IntegerField(required=False, min_value=1, max_value=100, default=8)
 
@@ -164,7 +164,7 @@ class PostPatchSerializer(serializers.Serializer[Any]):
     has_goal = serializers.BooleanField(required=False)
     goal_id = serializers.IntegerField(required=False, allow_null=True)
     has_vote = serializers.BooleanField(required=False)
-    vote = VoteCreateRequestSerializer(required=False, allow_null=True)
+    vote = VoteUpdateSerializer(required=False, allow_null=True)
     is_vote_closed = serializers.BooleanField(required=False, default=False)
     tag_ids = serializers.ListField(
         child=serializers.IntegerField(min_value=1),
@@ -200,8 +200,8 @@ class VoteOptionDetailSerializer(serializers.Serializer[Any]):
 
 class VoteInfoSerializer(serializers.Serializer[Any]):
     vote_id = serializers.IntegerField()
-    start_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S")
-    end_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S")
+    start_at = serializers.DateTimeField(format="%Y-%m-%d")
+    end_at = serializers.DateTimeField(format="%Y-%m-%d")
     status = serializers.CharField()
     options = VoteOptionDetailSerializer(many=True)
 
@@ -209,8 +209,8 @@ class VoteInfoSerializer(serializers.Serializer[Any]):
 class GoalInfoSerializer(serializers.Serializer[Any]):
     goal_id = serializers.IntegerField()
     goal_title = serializers.CharField()
-    goal_start_date = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", allow_null=True)
-    goal_end_date = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", allow_null=True)
+    goal_start_date = serializers.DateTimeField(format="%Y-%m-%d", allow_null=True)
+    goal_end_date = serializers.DateTimeField(format="%Y-%m-%d", allow_null=True)
     goal_progress = serializers.IntegerField(allow_null=True)
 
 
@@ -248,7 +248,7 @@ class PostDetailSerializer(serializers.Serializer[Any]):
     images = serializers.ListField(child=serializers.CharField(), allow_empty=True)
     profile_image_url = serializers.CharField(allow_null=True, required=False, allow_blank=True)
     nickname = serializers.CharField()
-    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S")
+    created_at = serializers.DateField(format="%Y-%m-%d")
     title = serializers.CharField()
     content = serializers.CharField()
     tags = serializers.ListField(child=serializers.CharField())
@@ -322,7 +322,7 @@ def build_post_detail(
             else None
         ),
         "nickname": post.user.nickname,
-        "created_at": post.created_at,
+        "created_at": post.created_at.date(),
         "title": post.title,
         "content": post.content,
         "tags": tags,

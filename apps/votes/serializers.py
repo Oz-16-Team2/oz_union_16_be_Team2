@@ -15,8 +15,8 @@ class VoteOptionDetailSerializer(serializers.Serializer[Any]):
 
 class VoteCreateRequestSerializer(serializers.Serializer[Any]):
     options = serializers.ListField(child=serializers.CharField(max_length=255), min_length=2, max_length=2)
-    start_at = serializers.DateTimeField()
-    end_at = serializers.DateTimeField()
+    start_at = serializers.DateField()
+    end_at = serializers.DateField()
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         if attrs.get("start_at") and attrs.get("end_at") and attrs["start_at"] >= attrs["end_at"]:
@@ -33,8 +33,8 @@ class VoteCreateRequestSerializer(serializers.Serializer[Any]):
 class VoteCreateResponseSerializer(serializers.Serializer[Any]):
     vote_id = serializers.IntegerField()
     post_id = serializers.IntegerField()
-    start_at = serializers.DateTimeField()
-    end_at = serializers.DateTimeField()
+    start_at = serializers.DateField(format="%Y-%m-%d")
+    end_at = serializers.DateField(format="%Y-%m-%d")
     status = serializers.ChoiceField(choices=VoteStatus.choices)
     options = VoteOptionDetailSerializer(many=True)
 
@@ -56,8 +56,8 @@ class VoteUpdateSerializer(serializers.Serializer[Any]):
         min_length=2,
         max_length=2,
     )
-    start_at = serializers.DateTimeField()
-    end_at = serializers.DateTimeField()
+    start_at = serializers.DateField()
+    end_at = serializers.DateField()
     is_ended = serializers.BooleanField(required=False)
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
@@ -68,8 +68,8 @@ class VoteUpdateSerializer(serializers.Serializer[Any]):
 
 class VoteUpdateResponseSerializer(serializers.Serializer[Any]):
     vote_id = serializers.IntegerField()
-    start_at = serializers.DateTimeField()
-    end_at = serializers.DateTimeField()
+    start_at = serializers.DateTimeField(format="%Y-%m-%d")
+    end_at = serializers.DateTimeField(format="%Y-%m-%d")
     status = serializers.ChoiceField(choices=VoteStatus.choices)
     options = VoteOptionDetailSerializer(many=True)
 
