@@ -16,7 +16,7 @@ def get_weekly_ranking() -> list[dict[str, object]]:
         Ranking.objects.filter(week_start=week_start, weekly_cert_count__gt=0)
         .select_related("user")
         .order_by("-weekly_cert_count", "calculated_at")
-    )
+    )[:5]
 
     result = []
     for index, row in enumerate(rows, start=1):
@@ -40,7 +40,7 @@ def get_monthly_ranking() -> list[dict[str, object]]:
         Ranking.objects.filter(month_start=month_start, monthly_cert_count__gt=0)
         .select_related("user")
         .order_by("-monthly_cert_count", "calculated_at")
-    )
+    )[:5]
 
     result = []
     for index, row in enumerate(rows, start=1):
@@ -61,7 +61,7 @@ def get_total_ranking() -> list[dict[str, object]]:
         Ranking.objects.filter(total_cert_count__gt=0)
         .select_related("user")
         .order_by("-total_cert_count", "calculated_at")
-    )
+    )[:5]
 
     result = []
     for index, row in enumerate(rows, start=1):
