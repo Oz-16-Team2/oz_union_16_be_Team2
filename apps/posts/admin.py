@@ -4,6 +4,8 @@ from typing import Any, cast
 
 from django.contrib import admin, messages
 from django.contrib.admin import SimpleListFilter
+from django.contrib.admin.models import CHANGE, LogEntry
+from django.contrib.contenttypes.models import ContentType
 from django.db.models import Count, Exists, IntegerField, OuterRef, QuerySet, Subquery
 from django.http import HttpRequest
 from django.urls import reverse
@@ -266,14 +268,32 @@ class PostAdmin(admin.ModelAdmin[Post]):
     def report_count(self, obj: Post) -> int:
         return int(getattr(obj, "report_count_value", 0) or 0)
 
+    def _log_post_action(self, request: HttpRequest, posts: list[Post], message: str) -> None:
+        content_type = ContentType.objects.get_for_model(Post)
+
+        for post in posts:
+            LogEntry.objects.create(
+                user_id=request.user.id,
+                content_type_id=content_type.id,
+                object_id=str(post.id),
+                object_repr=str(post),
+                action_flag=CHANGE,
+                change_message=message,
+            )
+
     @admin.action(description="선택한 게시글 활성 처리")
     def mark_active(self, request: HttpRequest, queryset: QuerySet[Post]) -> None:
+        target_queryset = queryset.exclude(status=PostStatus.DELETED)
+        posts = list(target_queryset)
+
         deleted_count = queryset.filter(status=PostStatus.DELETED).count()
-        updated_count = queryset.exclude(status=PostStatus.DELETED).update(
+        updated_count = target_queryset.update(
             status=PostStatus.ACTIVE,
             deleted_at=None,
             updated_at=timezone.now(),
         )
+
+        self._log_post_action(request, posts, "게시글 활성 처리")
 
         if deleted_count:
             self.message_user(request, f"삭제된 게시글 {deleted_count}개는 활성 처리할 수 없습니다.", messages.WARNING)
@@ -281,11 +301,16 @@ class PostAdmin(admin.ModelAdmin[Post]):
 
     @admin.action(description="선택한 게시글 신고됨 처리")
     def mark_reported(self, request: HttpRequest, queryset: QuerySet[Post]) -> None:
+        target_queryset = queryset.exclude(status=PostStatus.DELETED)
+        posts = list(target_queryset)
+
         deleted_count = queryset.filter(status=PostStatus.DELETED).count()
-        updated_count = queryset.exclude(status=PostStatus.DELETED).update(
+        updated_count = target_queryset.update(
             status=PostStatus.REPORTED,
             updated_at=timezone.now(),
         )
+
+        self._log_post_action(request, posts, "게시글 신고됨 처리")
 
         if deleted_count:
             self.message_user(
@@ -295,11 +320,17 @@ class PostAdmin(admin.ModelAdmin[Post]):
 
     @admin.action(description="선택한 게시글 삭제 처리")
     def soft_delete_posts(self, request: HttpRequest, queryset: QuerySet[Post]) -> None:
-        updated_count = queryset.exclude(status=PostStatus.DELETED).update(
+        target_queryset = queryset.exclude(status=PostStatus.DELETED)
+        posts = list(target_queryset)
+
+        updated_count = target_queryset.update(
             status=PostStatus.DELETED,
             deleted_at=timezone.now(),
             updated_at=timezone.now(),
         )
+
+        self._log_post_action(request, posts, "게시글 삭제 처리")
+
         self.message_user(request, f"{updated_count}개 게시글을 삭제 처리했습니다.", messages.SUCCESS)
 
 
@@ -438,14 +469,32 @@ class CommentAdmin(admin.ModelAdmin[Comment]):
     def report_count(self, obj: Comment) -> int:
         return int(getattr(obj, "report_count_value", 0) or 0)
 
+    def _log_comment_action(self, request: HttpRequest, comments: list[Comment], message: str) -> None:
+        content_type = ContentType.objects.get_for_model(Comment)
+
+        for comment in comments:
+            LogEntry.objects.create(
+                user_id=request.user.id,
+                content_type_id=content_type.id,
+                object_id=str(comment.id),
+                object_repr=str(comment),
+                action_flag=CHANGE,
+                change_message=message,
+            )
+
     @admin.action(description="선택한 댓글 활성 처리")
     def mark_active(self, request: HttpRequest, queryset: QuerySet[Comment]) -> None:
+        target_queryset = queryset.exclude(status=CommentStatus.DELETED)
+        comments = list(target_queryset)
+
         deleted_count = queryset.filter(status=CommentStatus.DELETED).count()
-        updated_count = queryset.exclude(status=CommentStatus.DELETED).update(
+        updated_count = target_queryset.update(
             status=CommentStatus.ACTIVE,
             deleted_at=None,
             updated_at=timezone.now(),
         )
+
+        self._log_comment_action(request, comments, "댓글 활성 처리")
 
         if deleted_count:
             self.message_user(request, f"삭제된 댓글 {deleted_count}개는 활성 처리할 수 없습니다.", messages.WARNING)
@@ -453,11 +502,16 @@ class CommentAdmin(admin.ModelAdmin[Comment]):
 
     @admin.action(description="선택한 댓글 신고됨 처리")
     def mark_reported(self, request: HttpRequest, queryset: QuerySet[Comment]) -> None:
+        target_queryset = queryset.exclude(status=CommentStatus.DELETED)
+        comments = list(target_queryset)
+
         deleted_count = queryset.filter(status=CommentStatus.DELETED).count()
-        updated_count = queryset.exclude(status=CommentStatus.DELETED).update(
+        updated_count = target_queryset.update(
             status=CommentStatus.REPORTED,
             updated_at=timezone.now(),
         )
+
+        self._log_comment_action(request, comments, "댓글 신고됨 처리")
 
         if deleted_count:
             self.message_user(request, f"삭제된 댓글 {deleted_count}개는 신고됨 처리할 수 없습니다.", messages.WARNING)
@@ -465,11 +519,17 @@ class CommentAdmin(admin.ModelAdmin[Comment]):
 
     @admin.action(description="선택한 댓글 삭제 처리")
     def soft_delete_comments(self, request: HttpRequest, queryset: QuerySet[Comment]) -> None:
-        updated_count = queryset.exclude(status=CommentStatus.DELETED).update(
+        target_queryset = queryset.exclude(status=CommentStatus.DELETED)
+        comments = list(target_queryset)
+
+        updated_count = target_queryset.update(
             status=CommentStatus.DELETED,
             deleted_at=timezone.now(),
             updated_at=timezone.now(),
         )
+
+        self._log_comment_action(request, comments, "댓글 삭제 처리")
+
         self.message_user(request, f"{updated_count}개 댓글을 삭제 처리했습니다.", messages.SUCCESS)
 
 

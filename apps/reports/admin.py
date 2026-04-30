@@ -5,6 +5,8 @@ from typing import Any, cast
 from django import forms
 from django.contrib import admin, messages
 from django.contrib.admin.helpers import ActionForm
+from django.contrib.admin.models import CHANGE, LogEntry
+from django.contrib.contenttypes.models import ContentType
 from django.db.models import QuerySet
 from django.http import HttpRequest
 from django.urls import reverse
@@ -203,6 +205,18 @@ class ReportAdmin(admin.ModelAdmin[Report]):
         latest_action = self._latest_action(obj)
         return latest_action.memo if latest_action else None
 
+    def _log_report_action(self, request: HttpRequest, report: Report, message: str) -> None:
+        content_type = ContentType.objects.get_for_model(Report)
+
+        LogEntry.objects.create(
+            user_id=request.user.id,
+            content_type_id=content_type.id,
+            object_id=str(report.id),
+            object_repr=str(report),
+            action_flag=CHANGE,
+            change_message=message,
+        )
+
     @admin.action(description="삭제 처리")
     def delete_target_and_handle(self, request: HttpRequest, queryset: QuerySet[Report]) -> None:
         admin_id = request.user.id
@@ -222,6 +236,9 @@ class ReportAdmin(admin.ModelAdmin[Report]):
                     admin_id=admin_id,
                 )
                 handled_count += 1
+
+                report.refresh_from_db()
+                self._log_report_action(request, report, "신고 삭제 처리")
             except (ConflictException, ResourceNotFoundException) as exc:
                 messages.error(request, f"신고 {report.id}번: {exc}")
 
@@ -246,6 +263,9 @@ class ReportAdmin(admin.ModelAdmin[Report]):
                     admin_id=admin_id,
                 )
                 handled_count += 1
+
+                report.refresh_from_db()
+                self._log_report_action(request, report, "신고 유지 처리")
             except (ConflictException, ResourceNotFoundException) as exc:
                 messages.error(request, f"신고 {report.id}번: {exc}")
 
