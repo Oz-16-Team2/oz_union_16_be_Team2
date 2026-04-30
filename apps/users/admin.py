@@ -285,10 +285,13 @@ class UserAdmin(DjangoUserAdmin[User]):
         )
 
         content_type = ContentType.objects.get_for_model(User)
+        admin_id = request.user.id
+        if admin_id is None:
+            return
 
         for user in users:
             LogEntry.objects.create(
-                user_id=request.user.id,
+                user_id=admin_id,
                 content_type_id=content_type.id,
                 object_id=str(user.id),
                 object_repr=str(user),
@@ -321,9 +324,13 @@ class UserAdmin(DjangoUserAdmin[User]):
         )
 
         content_type = ContentType.objects.get_for_model(User)
+        admin_id = request.user.id
+        if admin_id is None:
+            return
+
         for user in users:
             LogEntry.objects.create(
-                user_id=request.user.id,
+                user_id=admin_id,
                 content_type_id=content_type.id,
                 object_id=str(user.id),
                 object_repr=str(user),

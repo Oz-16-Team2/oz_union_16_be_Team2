@@ -270,10 +270,13 @@ class PostAdmin(admin.ModelAdmin[Post]):
 
     def _log_post_action(self, request: HttpRequest, posts: list[Post], message: str) -> None:
         content_type = ContentType.objects.get_for_model(Post)
+        admin_id = request.user.id
+        if admin_id is None:
+            return
 
         for post in posts:
             LogEntry.objects.create(
-                user_id=request.user.id,
+                user_id=admin_id,
                 content_type_id=content_type.id,
                 object_id=str(post.id),
                 object_repr=str(post),
@@ -471,10 +474,13 @@ class CommentAdmin(admin.ModelAdmin[Comment]):
 
     def _log_comment_action(self, request: HttpRequest, comments: list[Comment], message: str) -> None:
         content_type = ContentType.objects.get_for_model(Comment)
+        admin_id = request.user.id
+        if admin_id is None:
+            return
 
         for comment in comments:
             LogEntry.objects.create(
-                user_id=request.user.id,
+                user_id=admin_id,
                 content_type_id=content_type.id,
                 object_id=str(comment.id),
                 object_repr=str(comment),

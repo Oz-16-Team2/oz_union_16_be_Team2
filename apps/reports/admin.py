@@ -207,9 +207,12 @@ class ReportAdmin(admin.ModelAdmin[Report]):
 
     def _log_report_action(self, request: HttpRequest, report: Report, message: str) -> None:
         content_type = ContentType.objects.get_for_model(Report)
+        admin_id = request.user.id
+        if admin_id is None:
+            return
 
         LogEntry.objects.create(
-            user_id=request.user.id,
+            user_id=admin_id,
             content_type_id=content_type.id,
             object_id=str(report.id),
             object_repr=str(report),
