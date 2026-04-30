@@ -116,7 +116,12 @@ class GoalCheckedHistoryListView(APIView):
                         {
                             "goal_id": 1,
                             "title": "물 2L 마시기",
+                            "start_date": "2026-04-14",
+                            "end_date": "2026-05-14",
                             "status": "COMPLETED",
+                            "created_at": "2026-04-14T19:00:00",
+                            "progress_rate": 100.0,
+                            "is_checked_today": True,
                         }
                     ],
                 },
@@ -147,8 +152,8 @@ class GoalCheckedHistoryListView(APIView):
         paginated_queryset = paginator.paginate_queryset(queryset, request, view=self)
 
         if paginated_queryset is not None:
-            serializer = GoalReadSerializer(paginated_queryset, many=True)
+            serializer = GoalReadSerializer(paginated_queryset, many=True, context={"request": request})
             return paginator.get_paginated_response(serializer.data)
 
-        serializer = GoalReadSerializer(queryset, many=True)
+        serializer = GoalReadSerializer(queryset, many=True, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
