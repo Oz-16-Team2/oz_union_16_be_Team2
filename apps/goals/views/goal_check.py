@@ -3,6 +3,7 @@ from typing import Any, cast
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema, inline_serializer
 from rest_framework import serializers as drf_serializers
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
@@ -72,12 +73,9 @@ class GoalCheckView(APIView):
         ],
     )
     def post(self, request: Request, goal_id: int) -> Response:
-        try:
-            result = GoalCheckService.check_goal_today(goal_id, request.user)
-            serializer = GoalCheckSerializer(result)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except ValueError as e:
-            return Response({"error_detail": {"detail": [str(e)]}}, status=status.HTTP_400_BAD_REQUEST)
+        result = GoalCheckService.check_goal_today(goal_id, request.user)
+        serializer = GoalCheckSerializer(result)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class GoalCheckedHistoryListView(APIView):
@@ -141,10 +139,7 @@ class GoalCheckedHistoryListView(APIView):
         target_date = request.query_params.get("date")
 
         if not target_date:
-            return Response(
-                {"error_detail": {"date": ["날짜(date) 쿼리 파라미터가 필요합니다. (예: ?date=2026-04-17)"]}},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValidationError({"date": ["날짜(date) 쿼리 파라미터가 필요합니다. (예: ?date=2026-04-17)"]})
 
         queryset = GoalCreateService.get_checked_goals_by_date(user=user, target_date=target_date)
 

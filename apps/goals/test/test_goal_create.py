@@ -117,7 +117,7 @@ class TestGoalAPI:
     def test_update_completed_goal_fails(self) -> None:
         data = {"title": "수정 시도"}
         response = self.client.patch(self.data["completed_detail_url"], data)
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.status_code == status.HTTP_409_CONFLICT
         assert "진행 중인 목표만 수정할 수 있습니다" in str(response.data["error_detail"])
 
     def test_update_goal_status_defensive_return(self) -> None:

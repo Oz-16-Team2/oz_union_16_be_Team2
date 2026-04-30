@@ -49,7 +49,7 @@ class TestGoalCheckAPI:
     def test_check_goal_already_checked_fail(self) -> None:
         self.client.post(self.data["check_url"])
         response = self.client.post(self.data["check_url"])
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.status_code == status.HTTP_409_CONFLICT
 
     def test_check_other_user_goal_fail(self) -> None:
         other_goal = Goal.objects.create(
@@ -91,5 +91,5 @@ class TestGoalCheckAPI:
         url = reverse("goal-check", kwargs={"goal_id": future_goal.id})
 
         response = self.client.post(url)
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.status_code == status.HTTP_409_CONFLICT
         assert "목표 기간이 아닙니다" in str(response.data["error_detail"])

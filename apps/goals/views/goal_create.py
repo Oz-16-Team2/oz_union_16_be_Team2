@@ -60,10 +60,10 @@ class GoalCreateView(APIView):
     )
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         serializer = GoalCreateSerializer(data=request.data)
-        if serializer.is_valid():
-            goal = GoalCreateService.create_goal(user=request.user, **serializer.validated_data)
-            return Response(GoalReadSerializer(goal).data, status=status.HTTP_201_CREATED)
-        return Response({"error_detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+
+        goal = GoalCreateService.create_goal(user=request.user, **serializer.validated_data)
+        return Response(GoalReadSerializer(goal).data, status=status.HTTP_201_CREATED)
 
     @extend_schema(
         tags=["Goals"],
@@ -200,13 +200,11 @@ class GoalDetailView(APIView):
     def patch(self, request: Request, goal_id: int) -> Response:
         goal = GoalCreateService.get_goal(goal_id, request.user)
         serializer = GoalUpdateSerializer(goal, data=request.data, partial=True)
-        if serializer.is_valid():
-            try:
-                updated_goal = GoalCreateService.update_goal(goal, **serializer.validated_data)
-                return Response(GoalReadSerializer(updated_goal).data, status=status.HTTP_200_OK)
-            except PermissionError as e:
-                return Response({"error_detail": {"detail": [str(e)]}}, status=status.HTTP_400_BAD_REQUEST)
-        return Response({"error_detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer.is_valid(raise_exception=True)
+
+        updated_goal = GoalCreateService.update_goal(goal, **serializer.validated_data)
+        return Response(GoalReadSerializer(updated_goal).data, status=status.HTTP_200_OK)
 
     @extend_schema(
         tags=["Goals"],
