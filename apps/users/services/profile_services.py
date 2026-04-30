@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from apps.users.models import User
-from apps.users.services.common_services import _build_user_profile, _count_completed_goals
+from apps.users.services.common_services import _build_user_profile, _count_completed_goals, _get_goals_manager
 
 
 def get_my_profile(user: User) -> dict[str, Any]:
@@ -27,7 +27,9 @@ def get_me_activity_summary_completed_goals(user: Any) -> dict[str, Any]:
 
 
 def get_me_activity_summary_achievement_rate(user: Any) -> dict[str, Any]:
-    total_goals_count = int(getattr(user, "total_goals_count", 0) or 0)
+    manager = _get_goals_manager(user)
+    total_goals_count = int(manager.all().count()) if manager is not None else 0
+
     completed_goals_count = _count_completed_goals(user)
     total_achievement_rate = round((completed_goals_count / total_goals_count) * 100, 1) if total_goals_count else 0.0
 
