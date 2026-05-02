@@ -50,7 +50,7 @@ def _get_or_create_social_user(
     email: str,
     nickname: str,
     social_profile_image_url: str | None = None,
-) -> User:
+) -> tuple[User, SocialLogin]:
     social_login = (
         SocialLogin.objects.select_related("user")
         .filter(
@@ -61,7 +61,13 @@ def _get_or_create_social_user(
     )
 
     if social_login is not None:
-        return _validate_login_user(social_login.user)
+        user = _validate_login_user(social_login.user)
+
+        social_login.social_nickname = nickname
+        social_login.social_profile_image_url = social_profile_image_url
+        social_login.save(update_fields=["social_nickname", "social_profile_image_url", "updated_at"])
+
+        return user, social_login
 
     user = User.objects.filter(email__iexact=email).first()
 
@@ -69,18 +75,19 @@ def _get_or_create_social_user(
         user = _create_social_user(
             email=email,
             nickname=nickname,
-            social_profile_image_url=social_profile_image_url,
         )
     else:
         user = _validate_login_user(user)
 
-    SocialLogin.objects.create(
+    social_login = SocialLogin.objects.create(
         user=user,
         provider=provider,
         provider_user_id=provider_user_id,
+        social_nickname=nickname,
+        social_profile_image_url=social_profile_image_url,
     )
 
-    return user
+    return user, social_login
 
 
 def _get_or_create_unique_nickname(base_nickname: str) -> str:
@@ -149,7 +156,7 @@ def google_social_login(*, code: str, redirect_uri: str) -> dict[str, str]:
     nickname = profile.get("name") or email.split("@")[0]
     social_profile_image_url = profile.get("picture")
 
-    user = _get_or_create_social_user(
+    user, social_login = _get_or_create_social_user(
         provider="google",
         provider_user_id=provider_user_id,
         email=email,
@@ -157,7 +164,11 @@ def google_social_login(*, code: str, redirect_uri: str) -> dict[str, str]:
         social_profile_image_url=social_profile_image_url,
     )
 
-    return _build_login_payload(user)
+    payload = _build_login_payload(user)
+    payload["nickname"] = social_login.social_nickname or user.nickname
+    payload["social_profile_image_url"] = social_login.social_profile_image_url
+
+    return payload
 
 
 def naver_social_login(*, code: str, redirect_uri: str, state: str) -> dict[str, str]:
@@ -193,7 +204,7 @@ def naver_social_login(*, code: str, redirect_uri: str, state: str) -> dict[str,
     nickname = response.get("nickname") or email.split("@")[0]
     social_profile_image_url = response.get("profile_image")
 
-    user = _get_or_create_social_user(
+    user, social_login = _get_or_create_social_user(
         provider="naver",
         provider_user_id=provider_user_id,
         email=email,
@@ -201,7 +212,11 @@ def naver_social_login(*, code: str, redirect_uri: str, state: str) -> dict[str,
         social_profile_image_url=social_profile_image_url,
     )
 
-    return _build_login_payload(user)
+    payload = _build_login_payload(user)
+    payload["nickname"] = social_login.social_nickname or user.nickname
+    payload["social_profile_image_url"] = social_login.social_profile_image_url
+
+    return payload
 
 
 def kakao_social_login(*, code: str, redirect_uri: str) -> dict[str, str]:
@@ -239,7 +254,7 @@ def kakao_social_login(*, code: str, redirect_uri: str) -> dict[str, str]:
     nickname = kakao_profile.get("nickname") or email.split("@")[0]
     social_profile_image_url = kakao_profile.get("profile_image_url")
 
-    user = _get_or_create_social_user(
+    user, social_login = _get_or_create_social_user(
         provider="kakao",
         provider_user_id=provider_user_id,
         email=email,
@@ -247,4 +262,8 @@ def kakao_social_login(*, code: str, redirect_uri: str) -> dict[str, str]:
         social_profile_image_url=social_profile_image_url,
     )
 
-    return _build_login_payload(user)
+    payload = _build_login_payload(user)
+    payload["nickname"] = social_login.social_nickname or user.nickname
+    payload["social_profile_image_url"] = social_login.social_profile_image_url
+
+    return payload
