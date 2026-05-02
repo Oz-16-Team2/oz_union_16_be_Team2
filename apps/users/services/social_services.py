@@ -69,15 +69,15 @@ def _get_or_create_social_user(
 
         return user, social_login
 
-    user = User.objects.filter(email__iexact=email).first()
+    existing_user = User.objects.filter(email__iexact=email).first()
 
-    if user is None:
+    if existing_user is None:
         user = _create_social_user(
             email=email,
             nickname=nickname,
         )
     else:
-        user = _validate_login_user(user)
+        user = _validate_login_user(existing_user)
 
     social_login = SocialLogin.objects.create(
         user=user,
