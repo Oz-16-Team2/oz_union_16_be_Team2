@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
 from apps.core.choices import Status
+from apps.core.exceptions import ConflictException
 from apps.goals.models import Goal
 
 
@@ -59,7 +60,7 @@ class GoalCreateService:
     @staticmethod
     def update_goal(goal: Goal, **update_data: Any) -> Goal:
         if goal.status != Status.IN_PROGRESS:
-            raise PermissionError("진행 중인 목표만 수정할 수 있습니다.")
+            raise ConflictException({"detail": ["진행 중인 목표만 수정할 수 있습니다."]})
 
         update_data.pop("start_date", None)
         update_data.pop("end_date", None)

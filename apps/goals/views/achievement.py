@@ -4,6 +4,7 @@ from typing import Any
 
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -57,12 +58,10 @@ class AchievementView(APIView):
     )
     def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         serializer = AchievementQuerySerializer(data=request.query_params)
-        if not serializer.is_valid():
-            print(serializer.errors)
-            return Response(
-                {"error_detail": "유효한 조회 기간이 필요합니다."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        try:
+            serializer.is_valid(raise_exception=True)
+        except Exception:
+            raise ValidationError({"detail": ["유효한 조회 기간이 필요합니다."]}) from None
 
         start = serializer.validated_data["start"]
         end = serializer.validated_data["end"]

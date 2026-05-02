@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
 from apps.core.choices import Status
+from apps.core.exceptions import ConflictException
 from apps.goals.models import CheckGoal, Goal, Ranking
 
 
@@ -36,10 +37,10 @@ class GoalCheckService:
         today = now.date()
 
         if not (goal.start_date <= today <= goal.end_date):
-            raise ValueError("목표 기간이 아닙니다.")
+            raise ConflictException({"detail": ["목표 기간이 아닙니다."]})
 
         if goal.checks.filter(created_at__date=today).exists():
-            raise ValueError("오늘 이미 인증을 완료했습니다.")
+            raise ConflictException({"detail": ["오늘 이미 인증을 완료했습니다."]})
 
         CheckGoal.objects.create(goal=goal, user=user)
 
