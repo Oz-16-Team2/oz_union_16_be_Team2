@@ -3,7 +3,6 @@ from __future__ import annotations
 from datetime import datetime, time
 from typing import Any
 
-from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone
 from rest_framework import serializers
@@ -11,6 +10,7 @@ from rest_framework import serializers
 from apps.core.choices import CommentStatus
 from apps.goals.models import Goal
 from apps.posts.models import Post, PostTag, Tag
+from apps.users.constants import PROFILE_IMAGE_URL_MAP
 from apps.votes.serializers import VoteCreateRequestSerializer, VoteUpdateSerializer
 
 MAX_TAGS = 3
@@ -275,11 +275,7 @@ def build_feed_item(
     return {
         "post_id": post.id,
         "images": post.images or [],
-        "profile_image_url": (
-            f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.{settings.AWS_REGION}.amazonaws.com/{post.user.profile_image}"
-            if post.user.profile_image
-            else None
-        ),
+        "profile_image_url": PROFILE_IMAGE_URL_MAP.get(post.user.profile_image),
         "nickname": post.user.nickname,
         "created_at": post.created_at,
         "title": post.title,
@@ -316,11 +312,7 @@ def build_post_detail(
     return {
         "post_id": post.id,
         "images": post.images or [],
-        "profile_image_url": (
-            f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.{settings.AWS_REGION}.amazonaws.com/{post.user.profile_image}"
-            if post.user.profile_image
-            else None
-        ),
+        "profile_image_url": PROFILE_IMAGE_URL_MAP.get(post.user.profile_image),
         "nickname": post.user.nickname,
         "created_at": post.created_at.date(),
         "title": post.title,
