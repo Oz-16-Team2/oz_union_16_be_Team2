@@ -38,7 +38,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     password = models.CharField(max_length=128)
     nickname = models.CharField(max_length=100, unique=True)
     profile_image = models.CharField(max_length=20, choices=ProfileImageCode, default=ProfileImageCode.AVATAR_01)
-    social_profile_image_url = models.URLField(null=True, blank=True)
+    social_profile_image_url = models.URLField(max_length=500, null=True, blank=True)
     total_goals_count = models.IntegerField(default=0)
     deleted_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
