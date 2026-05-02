@@ -3,7 +3,7 @@ from typing import cast
 from drf_spectacular.utils import OpenApiExample, extend_schema
 from rest_framework import parsers, status
 from rest_framework.exceptions import NotAuthenticated
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -204,7 +204,7 @@ class ChangePasswordAPIView(APIView):
 
 @extend_schema(tags=["Accounts"])
 class ProfileImageListAPIView(APIView):
-    permission_classes = []
+    permission_classes = [AllowAny]
 
     @extend_schema(
         summary="프로필 이미지 목록 조회",
