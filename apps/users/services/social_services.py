@@ -73,8 +73,8 @@ def _create_social_user(
         email=email,
         password=secrets.token_urlsafe(32),
         nickname=_get_or_create_unique_nickname(nickname),
-        profile_image=ProfileImageCode.AVATAR_01,
         social_profile_image_url=social_profile_image_url,
+        profile_image=ProfileImageCode.AVATAR_01,
     )
     user.set_unusable_password()
     user.save(update_fields=["password"])
