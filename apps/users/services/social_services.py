@@ -166,7 +166,7 @@ def google_social_login(*, code: str, redirect_uri: str) -> dict[str, str]:
 
     payload = _build_login_payload(user)
     payload["nickname"] = social_login.social_nickname or user.nickname
-    payload["social_profile_image_url"] = social_login.social_profile_image_url
+    payload["social_profile_image_url"] = social_login.social_profile_image_url or ""
 
     return payload
 
@@ -214,7 +214,7 @@ def naver_social_login(*, code: str, redirect_uri: str, state: str) -> dict[str,
 
     payload = _build_login_payload(user)
     payload["nickname"] = social_login.social_nickname or user.nickname
-    payload["social_profile_image_url"] = social_login.social_profile_image_url
+    payload["social_profile_image_url"] = social_login.social_profile_image_url or ""
 
     return payload
 
@@ -264,6 +264,6 @@ def kakao_social_login(*, code: str, redirect_uri: str) -> dict[str, str]:
 
     payload = _build_login_payload(user)
     payload["nickname"] = social_login.social_nickname or user.nickname
-    payload["social_profile_image_url"] = social_login.social_profile_image_url
+    payload["social_profile_image_url"] = social_login.social_profile_image_url or ""
 
     return payload
