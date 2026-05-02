@@ -63,12 +63,18 @@ def _normalize_social_email(provider: str, provider_user_id: str, email: str | N
     return f"{provider}_{provider_user_id}@social.local"
 
 
-def _create_social_user(*, email: str, nickname: str) -> User:
+def _create_social_user(
+    *,
+    email: str,
+    nickname: str,
+    social_profile_image_url: str | None = None,
+) -> User:
     user = User.objects.create_user(
         email=email,
         password=secrets.token_urlsafe(32),
         nickname=_get_or_create_unique_nickname(nickname),
         profile_image=ProfileImageCode.AVATAR_01,
+        social_profile_image_url=social_profile_image_url,
     )
     user.set_unusable_password()
     user.save(update_fields=["password"])
@@ -101,10 +107,15 @@ def google_social_login(*, code: str, redirect_uri: str) -> dict[str, str]:
     provider_user_id = str(profile.get("sub", ""))
     email = _normalize_social_email("google", provider_user_id, profile.get("email"))
     nickname = profile.get("name") or email.split("@")[0]
+    social_profile_image_url = profile.get("picture")
 
     user = User.objects.filter(email__iexact=email).first()
     if user is None:
-        user = _create_social_user(email=email, nickname=nickname)
+        user = _create_social_user(
+            email=email,
+            nickname=nickname,
+            social_profile_image_url=social_profile_image_url,
+        )
     else:
         user = _validate_login_user(user)
 
@@ -142,10 +153,15 @@ def naver_social_login(*, code: str, redirect_uri: str, state: str) -> dict[str,
     provider_user_id = str(response.get("id", ""))
     email = _normalize_social_email("naver", provider_user_id, response.get("email"))
     nickname = response.get("nickname") or email.split("@")[0]
+    social_profile_image_url = response.get("profile_image")
 
     user = User.objects.filter(email__iexact=email).first()
     if user is None:
-        user = _create_social_user(email=email, nickname=nickname)
+        user = _create_social_user(
+            email=email,
+            nickname=nickname,
+            social_profile_image_url=social_profile_image_url,
+        )
     else:
         user = _validate_login_user(user)
 
@@ -185,10 +201,15 @@ def kakao_social_login(*, code: str, redirect_uri: str) -> dict[str, str]:
     provider_user_id = str(profile.get("id", ""))
     email = _normalize_social_email("kakao", provider_user_id, kakao_account.get("email"))
     nickname = kakao_profile.get("nickname") or email.split("@")[0]
+    social_profile_image_url = kakao_profile.get("profile_image_url")
 
     user = User.objects.filter(email__iexact=email).first()
     if user is None:
-        user = _create_social_user(email=email, nickname=nickname)
+        user = _create_social_user(
+            email=email,
+            nickname=nickname,
+            social_profile_image_url=social_profile_image_url,
+        )
     else:
         user = _validate_login_user(user)
 
