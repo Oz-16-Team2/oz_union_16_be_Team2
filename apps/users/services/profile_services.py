@@ -18,7 +18,7 @@ def get_me_activity_summary_days(user: Any) -> dict[str, Any]:
     else:
         from django.utils import timezone
 
-        days_together = max((timezone.now().date() - created_at.date()).days, 0)
+        days_together = max((timezone.now().date() - created_at.date()).days + 1, 1)
 
     return {"detail": {"days_together": days_together}}
 

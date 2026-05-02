@@ -55,7 +55,12 @@ def test_google_social_login_creates_user(
 
     result = google_social_login(code="code", redirect_uri="http://callback")
 
-    assert result == {"access_token": "access", "refresh_token": "refresh"}
+    assert result == {
+        "access_token": "access",
+        "refresh_token": "refresh",
+        "nickname": "GoogleUser",
+        "social_profile_image_url": "",
+    }
     assert User.objects.filter(email="google@example.com").exists()
     mock_payload.assert_called_once()
 

@@ -28,7 +28,7 @@ def test_get_me_activity_summary_days_with_created_at() -> None:
 
     result = get_me_activity_summary_days(user)
 
-    assert result == {"detail": {"days_together": 3}}
+    assert result == {"detail": {"days_together": 4}}
 
 
 def test_get_me_activity_summary_days_without_created_at() -> None:
