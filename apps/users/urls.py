@@ -13,6 +13,7 @@ from apps.users.views.profile_views import (
     MeActivitySummaryCompletedGoalsAPIView,
     MeActivitySummaryDaysAPIView,
     MeAPIView,
+    ProfileImageListAPIView,
 )
 from apps.users.views.social_views import GoogleSocialLoginAPIView, KakaoSocialLoginAPIView, NaverSocialLoginAPIView
 
@@ -48,4 +49,5 @@ urlpatterns = [
     ),
     path("token/refresh", TokenRefreshAPIView.as_view(), name="token-refresh"),
     path("change-password", ChangePasswordAPIView.as_view(), name="change-password"),
+    path("profile-images", ProfileImageListAPIView.as_view(), name="profile-list"),
 ]

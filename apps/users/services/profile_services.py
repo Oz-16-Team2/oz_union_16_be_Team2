@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from apps.users.constants import PROFILE_IMAGE_URL_MAP
 from apps.users.models import User
 from apps.users.services.common_services import _build_user_profile, _count_completed_goals, _get_goals_manager
 
@@ -40,3 +41,9 @@ def get_me_activity_summary_achievement_rate(user: Any) -> dict[str, Any]:
             "total_achievement_rate": total_achievement_rate,
         }
     }
+
+
+class ProfileService:
+    @staticmethod
+    def get_profile_images() -> list[dict[str, str]]:
+        return [{"code": str(code), "image_url": image_url} for code, image_url in PROFILE_IMAGE_URL_MAP.items()]
