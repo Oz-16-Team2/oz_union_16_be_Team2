@@ -19,7 +19,7 @@ from apps.users.views.social_views import GoogleSocialLoginAPIView, KakaoSocialL
 
 urlpatterns = [
     path("signup", SignupAPIView.as_view(), name="signup"),
-    path("nickname/check-nickname", NicknameCheckAPIView.as_view(), name="check-nickname"),
+    path("check-nickname", NicknameCheckAPIView.as_view(), name="check-nickname"),
     path("verification/send-email", EmailVerificationSendAPIView.as_view(), name="verification-send-email"),
     path(
         "verification/verify-email",
