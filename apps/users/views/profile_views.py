@@ -8,6 +8,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.response import detail_response
 from apps.users.models import User
 from apps.users.serializers.auth_serializers import ChangePasswordSerializer
 from apps.users.serializers.common_serializers import (
@@ -19,10 +20,12 @@ from apps.users.serializers.profile_serializers import (
     MeActivitySummaryAchievementRateResponseSerializer,
     MeActivitySummaryCompletedGoalsResponseSerializer,
     MeActivitySummaryDaysResponseSerializer,
+    ProfileImageListResponseSerializer,
     UserProfileSerializer,
 )
 from apps.users.services.auth_services import change_password
 from apps.users.services.profile_services import (
+    ProfileService,
     get_me_activity_summary_achievement_rate,
     get_me_activity_summary_completed_goals,
     get_me_activity_summary_days,
@@ -197,3 +200,35 @@ class ChangePasswordAPIView(APIView):
             new_password=serializer.validated_data["new_password"],
         )
         return Response(result, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Accounts"])
+class ProfileImageListAPIView(APIView):
+    permission_classes = []
+
+    @extend_schema(
+        summary="프로필 이미지 목록 조회",
+        responses={200: ProfileImageListResponseSerializer},
+        examples=[
+            OpenApiExample(
+                "프로필 이미지 목록 조회 성공",
+                value={
+                    "detail": [
+                        {
+                            "code": "avatar_01",
+                            "image_url": "https://example.com/profile/avatar_01.png",
+                        },
+                        {
+                            "code": "avatar_02",
+                            "image_url": "https://example.com/profile/avatar_02.png",
+                        },
+                    ]
+                },
+                response_only=True,
+                status_codes=["200"],
+            ),
+        ],
+    )
+    def get(self, request: Request) -> Response:
+        data = ProfileService.get_profile_images()
+        return detail_response(data, status.HTTP_200_OK)

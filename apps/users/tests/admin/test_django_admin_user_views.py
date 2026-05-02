@@ -38,14 +38,16 @@ class TestDjangoAdminUserViews:
         assert "delete_selected" not in response.content.decode()
 
     def test_suspend_user_action(self, django_admin_client: Client, target_user: User) -> None:
+        future = timezone.now() + timedelta(days=7)
+
         response = django_admin_client.post(
             "/admin/users/user/",
             {
                 "action": "suspend_users",
                 "_selected_action": [str(target_user.id)],
                 "memo": "도배성 게시글 작성",
-                "status_expires_at_0": "2026-05-01",
-                "status_expires_at_1": "00:00:00",
+                "status_expires_at_0": future.strftime("%Y-%m-%d"),
+                "status_expires_at_1": future.strftime("%H:%M:%S"),
             },
             follow=True,
         )

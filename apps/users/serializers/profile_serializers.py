@@ -41,3 +41,12 @@ class MeActivitySummaryCompletedGoalsDetailSerializer(serializers.Serializer[Any
 
 class MeActivitySummaryCompletedGoalsResponseSerializer(serializers.Serializer[Any]):
     detail = MeActivitySummaryCompletedGoalsDetailSerializer()
+
+
+class ProfileImageSerializer(serializers.Serializer[Any]):
+    code = serializers.CharField()
+    image_url = serializers.CharField()
+
+
+class ProfileImageListResponseSerializer(serializers.Serializer[Any]):
+    detail = ProfileImageSerializer(many=True)
