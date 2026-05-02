@@ -13,7 +13,7 @@ from django.core.cache import cache  # noqa: F401  # keep parity if you later mo
 from rest_framework.exceptions import ValidationError
 
 from apps.core.choices import ProfileImageCode
-from apps.users.models import User
+from apps.users.models import SocialLogin, User
 from apps.users.services.common_services import _build_login_payload, _validate_login_user
 
 
@@ -41,6 +41,46 @@ def _http_json(
         raise ValidationError({"detail": f"소셜 로그인 요청에 실패했습니다. ({exc.code})", "raw": raw}) from exc
     except URLError as exc:
         raise ValidationError({"detail": "소셜 로그인 서버와 통신할 수 없습니다."}) from exc
+
+
+def _get_or_create_social_user(
+    *,
+    provider: str,
+    provider_user_id: str,
+    email: str,
+    nickname: str,
+    social_profile_image_url: str | None = None,
+) -> User:
+    social_login = (
+        SocialLogin.objects.select_related("user")
+        .filter(
+            provider=provider,
+            provider_user_id=provider_user_id,
+        )
+        .first()
+    )
+
+    if social_login is not None:
+        return _validate_login_user(social_login.user)
+
+    user = User.objects.filter(email__iexact=email).first()
+
+    if user is None:
+        user = _create_social_user(
+            email=email,
+            nickname=nickname,
+            social_profile_image_url=social_profile_image_url,
+        )
+    else:
+        user = _validate_login_user(user)
+
+    SocialLogin.objects.create(
+        user=user,
+        provider=provider,
+        provider_user_id=provider_user_id,
+    )
+
+    return user
 
 
 def _get_or_create_unique_nickname(base_nickname: str) -> str:
@@ -109,15 +149,13 @@ def google_social_login(*, code: str, redirect_uri: str) -> dict[str, str]:
     nickname = profile.get("name") or email.split("@")[0]
     social_profile_image_url = profile.get("picture")
 
-    user = User.objects.filter(email__iexact=email).first()
-    if user is None:
-        user = _create_social_user(
-            email=email,
-            nickname=nickname,
-            social_profile_image_url=social_profile_image_url,
-        )
-    else:
-        user = _validate_login_user(user)
+    user = _get_or_create_social_user(
+        provider="google",
+        provider_user_id=provider_user_id,
+        email=email,
+        nickname=nickname,
+        social_profile_image_url=social_profile_image_url,
+    )
 
     return _build_login_payload(user)
 
@@ -155,15 +193,13 @@ def naver_social_login(*, code: str, redirect_uri: str, state: str) -> dict[str,
     nickname = response.get("nickname") or email.split("@")[0]
     social_profile_image_url = response.get("profile_image")
 
-    user = User.objects.filter(email__iexact=email).first()
-    if user is None:
-        user = _create_social_user(
-            email=email,
-            nickname=nickname,
-            social_profile_image_url=social_profile_image_url,
-        )
-    else:
-        user = _validate_login_user(user)
+    user = _get_or_create_social_user(
+        provider="naver",
+        provider_user_id=provider_user_id,
+        email=email,
+        nickname=nickname,
+        social_profile_image_url=social_profile_image_url,
+    )
 
     return _build_login_payload(user)
 
@@ -203,14 +239,12 @@ def kakao_social_login(*, code: str, redirect_uri: str) -> dict[str, str]:
     nickname = kakao_profile.get("nickname") or email.split("@")[0]
     social_profile_image_url = kakao_profile.get("profile_image_url")
 
-    user = User.objects.filter(email__iexact=email).first()
-    if user is None:
-        user = _create_social_user(
-            email=email,
-            nickname=nickname,
-            social_profile_image_url=social_profile_image_url,
-        )
-    else:
-        user = _validate_login_user(user)
+    user = _get_or_create_social_user(
+        provider="kakao",
+        provider_user_id=provider_user_id,
+        email=email,
+        nickname=nickname,
+        social_profile_image_url=social_profile_image_url,
+    )
 
     return _build_login_payload(user)
