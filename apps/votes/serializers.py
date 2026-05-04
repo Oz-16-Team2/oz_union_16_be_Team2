@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from django.utils import timezone
 from rest_framework import serializers
 
 from apps.core.choices import VoteStatus
@@ -15,12 +16,11 @@ class VoteOptionDetailSerializer(serializers.Serializer[Any]):
 
 class VoteCreateRequestSerializer(serializers.Serializer[Any]):
     options = serializers.ListField(child=serializers.CharField(max_length=255), min_length=2, max_length=2)
-    start_at = serializers.DateField()
-    end_at = serializers.DateField()
+    end_at = serializers.DateTimeField()
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
-        if attrs.get("start_at") and attrs.get("end_at") and attrs["start_at"] >= attrs["end_at"]:
-            raise serializers.ValidationError("투표 입력값이 올바르지 않습니다.")
+        if attrs.get("end_at") and attrs["end_at"] <= timezone.now():
+            raise serializers.ValidationError("종료 시간은 현재 시간 이후여야 합니다.")
         return attrs
 
     def validate_options(self, value: list[str]) -> list[str]:
@@ -56,13 +56,12 @@ class VoteUpdateSerializer(serializers.Serializer[Any]):
         min_length=2,
         max_length=2,
     )
-    start_at = serializers.DateField()
-    end_at = serializers.DateField()
+    end_at = serializers.DateTimeField()
     is_ended = serializers.BooleanField(required=False)
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
-        if attrs.get("start_at") and attrs.get("end_at") and attrs["start_at"] >= attrs["end_at"]:
-            raise serializers.ValidationError("종료일이 생성일보다 빠릅니다.")
+        if attrs.get("end_at") and attrs["end_at"] <= timezone.now():
+            raise serializers.ValidationError("종료 시간은 현재 시간 이후여야 합니다.")
         return attrs
 
 

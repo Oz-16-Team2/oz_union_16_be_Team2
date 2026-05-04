@@ -71,24 +71,26 @@ class PostCollectionAPIView(APIView):
             OpenApiExample(
                 "200 OK",
                 value={
-                    "posts": [
-                        {
-                            "post_id": 301,
-                            "images": [],
-                            "profile_image_url": "https://cdn.example.com/profiles/user-10.jpg",
-                            "nickname": "user",
-                            "created_at": "2026-04-08T00:00:00Z",
-                            "title": "오늘의 운동",
-                            "tags": ["workout", "running"],
-                            "content_preview": "오늘 5km 뛰었습니다.",
-                            "like_count": 15,
-                            "comment_count": 4,
-                            "is_scrapped": True,
-                        }
-                    ],
-                    "page": 0,
-                    "size": 8,
-                    "total_count": 150,
+                    "detail": {
+                        "posts": [
+                            {
+                                "post_id": 301,
+                                "images": [],
+                                "profile_image_url": "https://cdn.example.com/profiles/user-10.jpg",
+                                "nickname": "user",
+                                "created_at": "2026-04-08T00:00:00Z",
+                                "title": "오늘의 운동",
+                                "tags": ["workout", "running"],
+                                "content_preview": "오늘 5km 뛰었습니다.",
+                                "like_count": 15,
+                                "comment_count": 4,
+                                "is_scrapped": True,
+                            }
+                        ],
+                        "page": 0,
+                        "size": 8,
+                        "total_count": 150,
+                    },
                 },
                 response_only=True,
                 status_codes=["200"],
@@ -129,7 +131,7 @@ class PostCollectionAPIView(APIView):
             return error_response(exc.detail, status.HTTP_400_BAD_REQUEST)
 
         response_serializer = PostFeedResponseSerializer(instance=body)
-        return Response(response_serializer.data, status=200)
+        return Response({"detail": response_serializer.data}, status=200)
 
     @extend_schema(
         tags=[TAG_POSTS],
@@ -409,7 +411,7 @@ class PostSearchAPIView(APIView):
             return error_response(exc.detail, 400)
 
         response_serializer = PostSearchResponseSerializer(instance=body)
-        return Response(response_serializer.data, status=200)
+        return Response({"detail": response_serializer.data}, status=200)
 
 
 class MyPostsAPIView(APIView):
@@ -436,27 +438,30 @@ class MyPostsAPIView(APIView):
             OpenApiExample(
                 "200 OK",
                 value={
-                    "posts": [
-                        {
-                            "post_id": 301,
-                            "images": [
-                                "https://cdn.example.com/posts/301-1.jpg",
-                                "https://cdn.example.com/posts/301-2.jpg",
-                            ],
-                            "profile_image_url": "https://cdn.example.com/profiles/user-10.jpg",
-                            "nickname": "유저",
-                            "created_at": "2026-04-08T00:00:00Z",
-                            "title": "오늘도 운동 완료!",
-                            "tags": ["운동", "러닝"],
-                            "content_preview": "오늘은 5km 러닝하고 왔어요.",
-                            "like_count": 15,
-                            "comment_count": 4,
-                            "is_scrapped": True,
-                        }
-                    ],
-                    "page": 0,
-                    "size": 8,
-                    "total_count": 150,
+                    "detail": {
+                        "posts": [
+                            {
+                                "post_id": 301,
+                                "images": [
+                                    "https://cdn.example.com/posts/301-1.jpg",
+                                    "https://cdn.example.com/posts/301-2.jpg",
+                                ],
+                                "profile_image_url": "https://cdn.example.com/profiles/user-10.jpg",
+                                "nickname": "유저",
+                                "created_at": "2026-04-08T00:00:00Z",
+                                "title": "오늘도 운동 완료!",
+                                "tags": ["운동", "러닝"],
+                                "content_preview": "오늘은 5km 러닝하고 왔어요.",
+                                "like_count": 15,
+                                "is_liked": True,
+                                "comment_count": 4,
+                                "is_scrapped": True,
+                            }
+                        ],
+                        "page": 0,
+                        "size": 8,
+                        "total_count": 150,
+                    },
                 },
                 response_only=True,
             )
@@ -485,4 +490,4 @@ class MyPostsAPIView(APIView):
             return error_response(exc.detail, 400)
 
         response_serializer = PostFeedResponseSerializer(instance=body)
-        return Response(response_serializer.data, 200)
+        return Response({"detail": response_serializer.data}, status=200)

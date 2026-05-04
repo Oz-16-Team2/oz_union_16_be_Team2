@@ -20,7 +20,6 @@ class TestPostSearch:
         return User.objects.create(email=f"search_test_{unique_id}@test.com", nickname=f"user_{unique_id}")
 
     def test_search_success(self, api_client: APIClient, user: User) -> None:
-
         p1 = Post(user_id=user.id, title="오늘도 운동 완료", content="운동 열심히 했습니다.")
         p1.save()
 
@@ -31,7 +30,7 @@ class TestPostSearch:
         response = api_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        body = response.data
+        body = response.data["detail"]
         assert body["keyword"] == "운동"
         assert body["total_count"] == 1
         first = body["search_results"][0]
@@ -40,7 +39,6 @@ class TestPostSearch:
         assert first["nickname"] == user.nickname
 
     def test_search_bad_keyword(self, api_client: APIClient) -> None:
-
         url = "/api/v1/posts/search?keyword=ㅇ"
         response = api_client.get(url)
 
@@ -48,11 +46,11 @@ class TestPostSearch:
         assert "keyword" in response.data["error_detail"]
 
     def test_search_no_match(self, api_client: APIClient, user: User) -> None:
-
         Post.objects.create(user_id=user.id, title="운동 아님", content="다른 내용")
         url = "/api/v1/posts/search?keyword=없는키워드"
         response = api_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["total_count"] == 0
-        assert len(response.data["search_results"]) == 0
+        body = response.data["detail"]
+        assert body["total_count"] == 0
+        assert len(body["search_results"]) == 0
