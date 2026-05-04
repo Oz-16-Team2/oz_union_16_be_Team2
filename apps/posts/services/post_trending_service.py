@@ -9,45 +9,29 @@ from django.utils import timezone
 from apps.posts.models import PostLike, Scrap
 from apps.posts.serializers.post_serializers import active_comment_q
 from apps.posts.services.post_service import _base_visible_posts, get_tags_by_post_id
+from apps.posts.services.recommendation_config import (
+    CONTENT_PREVIEW_LENGTH,
+    TRENDING_DEFAULT_PERIOD,
+    TRENDING_HOT_SCORE_GRAVITY,
+    TRENDING_PERIOD_DAYS,
+    TRENDING_WEEK_CANDIDATE_LIMIT,
+)
 from apps.users.constants import PROFILE_IMAGE_URL_MAP
 from apps.users.models import User
 
-_CONTENT_PREVIEW_LENGTH = 100
-
-# period 선택지 → 며칠 이내
-PERIOD_DAYS: dict[str, int] = {
-    "day": 1,  # 지금 핫한 글 (24시간)
-    "week": 7,  # 요즘 뜨는 글 (7일)
-}
-DEFAULT_PERIOD = "week"
+PERIOD_DAYS = TRENDING_PERIOD_DAYS
+DEFAULT_PERIOD = TRENDING_DEFAULT_PERIOD
 
 
-def get_trending_posts(*, user: User, page: int, size: int, period: str) -> dict[str, Any]:
-    days = PERIOD_DAYS.get(period, PERIOD_DAYS[DEFAULT_PERIOD])
-    since = timezone.now() - timedelta(days=days)
-    cq = active_comment_q()
+def _hot_score(like_count: int, age_seconds: float) -> float:
+    age_hours = max(0.0, age_seconds / 3600)  # 미래 날짜 게시글은 age=0으로 처리
+    return float(like_count / (age_hours + 2) ** TRENDING_HOT_SCORE_GRAVITY)
 
-    qs = (
-        _base_visible_posts()
-        .filter(is_private=False, created_at__gte=since)
-        .select_related("user")
-        .annotate(
-            like_count=Count("likes", distinct=True),
-            comment_count=Count("comments", filter=cq, distinct=True),
-            is_liked=Exists(PostLike.objects.filter(post_id=OuterRef("pk"), user_id=user.id)),
-            is_scrapped=Exists(Scrap.objects.filter(post_id=OuterRef("pk"), user_id=user.id)),
-        )
-        .order_by("-like_count", "-created_at")
-    )
 
-    total = qs.count()
-    chunk = list(qs[page * size : page * size + size])
-
-    tag_map = get_tags_by_post_id([p.id for p in chunk])
-
+def _build_posts_out(chunk: list[Any], tag_map: dict[int, list[str]]) -> list[dict[str, Any]]:
     posts_out: list[dict[str, Any]] = []
     for p in chunk:
-        preview = p.content[:_CONTENT_PREVIEW_LENGTH] if p.content else ""
+        preview = p.content[:CONTENT_PREVIEW_LENGTH] if p.content else ""
         posts_out.append(
             {
                 "post_id": p.id,
@@ -65,5 +49,56 @@ def get_trending_posts(*, user: User, page: int, size: int, period: str) -> dict
                 "is_scrapped": bool(p.is_scrapped),
             }
         )
+    return posts_out
 
-    return {"posts": posts_out, "page": page, "size": size, "total_count": total}
+
+def _get_base_qs(*, user: User, since: Any) -> Any:
+    cq = active_comment_q()
+    return (
+        _base_visible_posts()
+        .filter(is_private=False, created_at__gte=since)
+        .select_related("user")
+        .annotate(
+            like_count=Count("likes", distinct=True),
+            comment_count=Count("comments", filter=cq, distinct=True),
+            is_liked=Exists(PostLike.objects.filter(post_id=OuterRef("pk"), user_id=user.id)),
+            is_scrapped=Exists(Scrap.objects.filter(post_id=OuterRef("pk"), user_id=user.id)),
+        )
+    )
+
+
+def _trending_day(*, user: User, page: int, size: int, since: Any) -> dict[str, Any]:
+    """24시간 이내 글을 누적 좋아요 수 내림차순으로 반환 (DB 정렬)."""
+    qs = _get_base_qs(user=user, since=since).order_by("-like_count", "-created_at")
+    total = qs.count()
+    chunk = list(qs[page * size : page * size + size])
+    tag_map = get_tags_by_post_id([p.id for p in chunk])
+    return {"posts": _build_posts_out(chunk, tag_map), "page": page, "size": size, "total_count": total}
+
+
+def _trending_week(*, user: User, page: int, size: int, since: Any) -> dict[str, Any]:
+    """7일 이내 글을 Hot Score 기준으로 반환.
+    Hot Score = like_count / (age_hours + 2) ** gravity
+    좋아요가 많아도 오래될수록 점수 감소 → 기간 초반 글의 순위 독점 완화.
+    """
+    now = timezone.now()
+    # like_count 상위 후보를 먼저 DB에서 추려 메모리 부담 제한
+    candidates = list(_get_base_qs(user=user, since=since).order_by("-like_count")[:TRENDING_WEEK_CANDIDATE_LIMIT])
+    scored = sorted(
+        candidates,
+        key=lambda p: _hot_score(int(p.like_count), (now - p.created_at).total_seconds()),
+        reverse=True,
+    )
+    total = len(scored)
+    chunk = scored[page * size : page * size + size]
+    tag_map = get_tags_by_post_id([p.id for p in chunk])
+    return {"posts": _build_posts_out(chunk, tag_map), "page": page, "size": size, "total_count": total}
+
+
+def get_trending_posts(*, user: User, page: int, size: int, period: str) -> dict[str, Any]:
+    days = PERIOD_DAYS.get(period, PERIOD_DAYS[DEFAULT_PERIOD])
+    since = timezone.now() - timedelta(days=days)
+
+    if period == "day":
+        return _trending_day(user=user, page=page, size=size, since=since)
+    return _trending_week(user=user, page=page, size=size, since=since)

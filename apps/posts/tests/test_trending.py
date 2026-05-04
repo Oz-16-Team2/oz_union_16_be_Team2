@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import datetime
+from typing import Any
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -57,6 +58,14 @@ def _like(post: Post, n: int) -> None:
 # ============================================================
 
 
+def _posts(res: Any) -> list[Any]:
+    return list(res.json()["detail"]["posts"])
+
+
+def _data(res: Any) -> Any:
+    return res.json()["detail"]
+
+
 @pytest.mark.django_db
 def test_trending_returns_200_with_correct_schema(api_client: APIClient, user: User) -> None:  # type: ignore[valid-type]
     auth(api_client, user)
@@ -65,16 +74,40 @@ def test_trending_returns_200_with_correct_schema(api_client: APIClient, user: U
     res = api_client.get(TRENDING_URL)
 
     assert res.status_code == status.HTTP_200_OK
-    data = res.json()
-    assert "posts" in data
-    assert "page" in data
-    assert "size" in data
-    assert "total_count" in data
+    detail = _data(res)
+    assert "posts" in detail
+    assert "page" in detail
+    assert "size" in detail
+    assert "total_count" in detail
+
+
+@pytest.mark.django_db
+@freeze_time("2026-04-24 12:00:00")
+def test_trending_week_hot_score_favors_newer_post(api_client: APIClient, user: User) -> None:  # type: ignore[valid-type]
+    """새 글(좋아요 적음)이 오래된 글(좋아요 많음)보다 Hot Score가 높아야 한다.
+    오래된 글: 좋아요 20개, 6일 전 작성 → score ≈ 20 / (144+2)^1.7 ≈ 0.077
+    새 글:     좋아요 5개,  1시간 전 작성 → score ≈  5 / (1+2)^1.7  ≈ 1.14
+    """
+    auth(api_client, user)
+
+    old_post = PostFactory_create()
+    Post.objects.filter(pk=old_post.pk).update(created_at=timezone.now() - datetime.timedelta(days=6))
+    _like(old_post, 20)
+
+    new_post = PostFactory_create()
+    Post.objects.filter(pk=new_post.pk).update(created_at=timezone.now() - datetime.timedelta(hours=1))
+    _like(new_post, 5)
+
+    res = api_client.get(TRENDING_URL, {"period": "week", "size": "10"})
+
+    assert res.status_code == status.HTTP_200_OK
+    post_ids = [p["post_id"] for p in _posts(res)]
+    assert post_ids.index(new_post.id) < post_ids.index(old_post.id)
 
 
 @pytest.mark.django_db
 def test_trending_sorted_by_like_count_desc(api_client: APIClient, user: User) -> None:  # type: ignore[valid-type]
-    """좋아요 많은 게시글이 앞에 와야 한다."""
+    """나이 차이가 거의 없을 때 좋아요 많은 글이 앞에 와야 한다."""
     auth(api_client, user)
 
     low = PostFactory_create()
@@ -85,7 +118,7 @@ def test_trending_sorted_by_like_count_desc(api_client: APIClient, user: User) -
     res = api_client.get(TRENDING_URL, {"period": "week", "size": "10"})
 
     assert res.status_code == status.HTTP_200_OK
-    post_ids = [p["post_id"] for p in res.json()["posts"]]
+    post_ids = [p["post_id"] for p in _posts(res)]
     assert post_ids.index(high.id) < post_ids.index(low.id)
 
 
@@ -101,7 +134,7 @@ def test_trending_week_excludes_older_posts(api_client: APIClient, user: User) -
 
     res = api_client.get(TRENDING_URL, {"period": "week", "size": "10"})
 
-    post_ids = [p["post_id"] for p in res.json()["posts"]]
+    post_ids = [p["post_id"] for p in _posts(res)]
     assert recent.id in post_ids
     assert old.id not in post_ids
 
@@ -118,7 +151,7 @@ def test_trending_day_excludes_posts_older_than_24h(api_client: APIClient, user:
 
     res = api_client.get(TRENDING_URL, {"period": "day", "size": "10"})
 
-    post_ids = [p["post_id"] for p in res.json()["posts"]]
+    post_ids = [p["post_id"] for p in _posts(res)]
     assert recent.id in post_ids
     assert old.id not in post_ids
 
@@ -133,7 +166,7 @@ def test_trending_excludes_private_posts(api_client: APIClient, user: User) -> N
 
     res = api_client.get(TRENDING_URL, {"size": "50"})
 
-    post_ids = [p["post_id"] for p in res.json()["posts"]]
+    post_ids = [p["post_id"] for p in _posts(res)]
     assert public.id in post_ids
     assert private.id not in post_ids
 
@@ -149,7 +182,7 @@ def test_trending_excludes_deleted_posts(api_client: APIClient, user: User) -> N
 
     res = api_client.get(TRENDING_URL, {"size": "50"})
 
-    post_ids = [p["post_id"] for p in res.json()["posts"]]
+    post_ids = [p["post_id"] for p in _posts(res)]
     assert alive.id in post_ids
     assert dead.id not in post_ids
 
@@ -164,9 +197,9 @@ def test_trending_pagination(api_client: APIClient, user: User) -> None:  # type
 
     res = api_client.get(TRENDING_URL, {"size": "2", "page": "0"})
 
-    data = res.json()
-    assert len(data["posts"]) == 2
-    assert data["total_count"] >= 5
+    detail = _data(res)
+    assert len(detail["posts"]) == 2
+    assert detail["total_count"] >= 5
 
 
 @pytest.mark.django_db
@@ -177,7 +210,7 @@ def test_trending_response_item_fields(api_client: APIClient, user: User) -> Non
 
     res = api_client.get(TRENDING_URL)
 
-    item = res.json()["posts"][0]
+    item = _posts(res)[0]
     for field in (
         "post_id",
         "images",
