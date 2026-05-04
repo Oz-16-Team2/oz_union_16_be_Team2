@@ -245,6 +245,7 @@ class PostSuggestionResponseSerializer(serializers.Serializer[Any]):
 
 class PostDetailSerializer(serializers.Serializer[Any]):
     post_id = serializers.IntegerField()
+    is_owner = serializers.BooleanField()
     images = serializers.ListField(child=serializers.CharField(), allow_empty=True)
     profile_image_url = serializers.CharField(allow_null=True, required=False, allow_blank=True)
     nickname = serializers.CharField()
@@ -297,6 +298,7 @@ def build_post_detail(
     is_liked: bool,
     is_scrapped: bool,
     vote_payload: dict[str, Any] | None,
+    is_owner: bool,
 ) -> dict[str, Any]:
     has_goal = post.goal_id is not None
     goal_info = None
@@ -311,6 +313,7 @@ def build_post_detail(
     has_vote = vote_payload is not None
     return {
         "post_id": post.id,
+        "is_owner": is_owner,
         "images": post.images or [],
         "profile_image_url": PROFILE_IMAGE_URL_MAP.get(post.user.profile_image),
         "nickname": post.user.nickname,

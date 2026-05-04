@@ -174,6 +174,7 @@ def get_post_detail(*, post_id: int, user: Any) -> dict[str, Any]:
         like_count=Count("likes", distinct=True),
         comment_count=Count("comments", filter=cq, distinct=True),
     )
+    is_owner = bool(user.is_authenticated and post.user_id == user.id)
     is_liked = False
     is_scrapped = False
     if user.is_authenticated:
@@ -199,6 +200,7 @@ def get_post_detail(*, post_id: int, user: Any) -> dict[str, Any]:
         is_liked=is_liked,
         is_scrapped=is_scrapped,
         vote_payload=vote_payload,
+        is_owner=is_owner,
     )
 
 

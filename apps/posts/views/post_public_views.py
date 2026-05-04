@@ -426,9 +426,10 @@ class MyPostsAPIView(APIView):
                 location=OpenApiParameter.QUERY,
                 required=False,
                 description="LATEST (기본값) 또는 POPULAR",
+                default="LATEST",
             ),
             OpenApiParameter(name="page", type=int, location=OpenApiParameter.QUERY, required=False, default=0),
-            OpenApiParameter(name="size", type=int, location=OpenApiParameter.QUERY, required=False, default=20),
+            OpenApiParameter(name="size", type=int, location=OpenApiParameter.QUERY, required=False, default=8),
         ],
         responses={200: PostFeedResponseSerializer},
         examples=[
