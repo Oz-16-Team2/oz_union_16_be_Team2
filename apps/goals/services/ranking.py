@@ -24,7 +24,8 @@ def get_weekly_ranking() -> list[dict[str, object]]:
             {
                 "user_id": row.user.id,
                 "nickname": row.user.nickname,
-                "profile_img_url": PROFILE_IMAGE_URL_MAP.get(row.user.profile_image, ""),
+                "profile_img_url": row.user.social_profile_image_url
+                or PROFILE_IMAGE_URL_MAP.get(row.user.profile_image, ""),
                 "rank": index,
                 "week_cert_count": row.weekly_cert_count,
             }
@@ -48,7 +49,8 @@ def get_monthly_ranking() -> list[dict[str, object]]:
             {
                 "user_id": row.user.id,
                 "nickname": row.user.nickname,
-                "profile_img_url": PROFILE_IMAGE_URL_MAP.get(row.user.profile_image, ""),
+                "profile_img_url": row.user.social_profile_image_url
+                or PROFILE_IMAGE_URL_MAP.get(row.user.profile_image, ""),
                 "rank": index,
                 "month_cert_count": row.monthly_cert_count,
             }
@@ -69,7 +71,8 @@ def get_total_ranking() -> list[dict[str, object]]:
             {
                 "user_id": row.user.id,
                 "nickname": row.user.nickname,
-                "profile_img_url": PROFILE_IMAGE_URL_MAP.get(row.user.profile_image, ""),
+                "profile_img_url": row.user.social_profile_image_url
+                or PROFILE_IMAGE_URL_MAP.get(row.user.profile_image, ""),
                 "rank": index,
                 "total_cert_count": row.total_cert_count,
             }

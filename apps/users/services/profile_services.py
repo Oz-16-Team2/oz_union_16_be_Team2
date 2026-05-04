@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any, cast
 
+from rest_framework.exceptions import APIException
 from rest_framework.request import Request
 
 from apps.users.constants import PROFILE_IMAGE_URL_MAP
@@ -69,3 +70,21 @@ class ProfileService:
     @staticmethod
     def get_profile_images() -> list[dict[str, str]]:
         return [{"code": str(code), "image_url": image_url} for code, image_url in PROFILE_IMAGE_URL_MAP.items()]
+
+
+class NicknameConflictException(APIException):
+    status_code = 409
+    default_detail = {"nickname": ["이미 사용 중인 닉네임입니다."]}
+
+
+def change_nickname(*, user: User, nickname: str) -> dict[str, str]:
+    if User.objects.filter(nickname=nickname).exclude(id=user.id).exists():
+        raise NicknameConflictException
+
+    user.nickname = nickname
+    user.save(update_fields=["nickname"])
+
+    return {
+        "message": "닉네임 수정이 완료되었습니다.",
+        "nickname": user.nickname,
+    }

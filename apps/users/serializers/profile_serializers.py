@@ -75,3 +75,7 @@ class ProfileImageSerializer(serializers.Serializer[Any]):
 
 class ProfileImageListResponseSerializer(serializers.Serializer[Any]):
     detail = ProfileImageSerializer(many=True)
+
+
+class ChangeNicknameSerializer(serializers.Serializer[Any]):
+    nickname = serializers.CharField(max_length=30)

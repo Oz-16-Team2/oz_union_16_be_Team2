@@ -8,6 +8,7 @@ from apps.users.views.account_views import (
 )
 from apps.users.views.auth_views import LoginAPIView, LogoutAPIView, TokenRefreshAPIView
 from apps.users.views.profile_views import (
+    ChangeNicknameAPIView,
     ChangePasswordAPIView,
     MeActivitySummaryAchievementRateAPIView,
     MeActivitySummaryCompletedGoalsAPIView,
@@ -50,4 +51,5 @@ urlpatterns = [
     path("token/refresh", TokenRefreshAPIView.as_view(), name="token-refresh"),
     path("change-password", ChangePasswordAPIView.as_view(), name="change-password"),
     path("profile-images", ProfileImageListAPIView.as_view(), name="profile-list"),
+    path("me/change-nickname", ChangeNicknameAPIView.as_view(), name="me-change-nickname"),
 ]

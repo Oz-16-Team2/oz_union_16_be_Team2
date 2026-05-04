@@ -1,6 +1,6 @@
-from typing import cast
+from typing import Any, cast
 
-from drf_spectacular.utils import OpenApiExample, extend_schema
+from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
 from rest_framework import parsers, status
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -17,6 +17,7 @@ from apps.users.serializers.common_serializers import (
     MessageResponseSerializer,
 )
 from apps.users.serializers.profile_serializers import (
+    ChangeNicknameSerializer,
     MeActivitySummaryAchievementRateResponseSerializer,
     MeActivitySummaryCompletedGoalsResponseSerializer,
     MeActivitySummaryDaysResponseSerializer,
@@ -26,6 +27,7 @@ from apps.users.serializers.profile_serializers import (
 from apps.users.services.auth_services import change_password
 from apps.users.services.profile_services import (
     ProfileService,
+    change_nickname,
     get_me_activity_summary_achievement_rate,
     get_me_activity_summary_completed_goals,
     get_me_activity_summary_days,
@@ -232,3 +234,71 @@ class ProfileImageListAPIView(APIView):
     def get(self, request: Request) -> Response:
         data = ProfileService.get_profile_images()
         return detail_response(data, status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Accounts"])
+class ChangeNicknameAPIView(APIView):
+    serializer_class = ChangeNicknameSerializer
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="닉네임 변경 API",
+        request=ChangeNicknameSerializer,
+        responses={
+            200: OpenApiResponse(
+                response=ChangeNicknameSerializer,
+                description="닉네임 변경 성공",
+                examples=[
+                    OpenApiExample(
+                        "닉네임 변경 성공",
+                        value={
+                            "detail": {
+                                "message": "닉네임 수정이 완료되었습니다.",
+                                "nickname": "새닉네임",
+                            }
+                        },
+                    )
+                ],
+            ),
+            400: OpenApiResponse(
+                response=ChangeNicknameSerializer,
+                description="요청값 검증 실패",
+                examples=[
+                    OpenApiExample(
+                        "닉네임 필수값 누락",
+                        value={"error_detail": {"nickname": ["이 필드는 필수 항목입니다."]}},
+                    )
+                ],
+            ),
+            401: OpenApiResponse(
+                response=ChangeNicknameSerializer,
+                description="인증 실패",
+                examples=[
+                    OpenApiExample(
+                        "인증 토큰 오류",
+                        value={"error_detail": {"Authorization": ["인증 토큰이 올바르지 않습니다."]}},
+                    )
+                ],
+            ),
+            409: OpenApiResponse(
+                response=ChangeNicknameSerializer,
+                description="닉네임 중복",
+                examples=[
+                    OpenApiExample(
+                        "닉네임 중복",
+                        value={"error_detail": {"nickname": ["이미 사용 중인 닉네임입니다."]}},
+                    )
+                ],
+            ),
+        },
+    )
+    def patch(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        detail = change_nickname(
+            user=cast(User, request.user),
+            nickname=serializer.validated_data["nickname"],
+        )
+
+        return Response({"detail": detail}, status=status.HTTP_200_OK)
