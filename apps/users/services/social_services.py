@@ -154,7 +154,7 @@ def google_social_login(*, code: str, redirect_uri: str) -> dict[str, str]:
     provider_user_id = str(profile.get("sub", ""))
     email = _normalize_social_email("google", provider_user_id, profile.get("email"))
     nickname = profile.get("name") or email.split("@")[0]
-    social_profile_image_url = profile.get("picture")
+    social_profile_image_url = profile.get("picture") or None
 
     user, _ = _get_or_create_social_user(
         provider="google",
@@ -198,7 +198,12 @@ def naver_social_login(*, code: str, redirect_uri: str, state: str) -> dict[str,
     provider_user_id = str(response.get("id", ""))
     email = _normalize_social_email("naver", provider_user_id, response.get("email"))
     nickname = response.get("nickname") or email.split("@")[0]
-    social_profile_image_url = response.get("profile_image")
+    profile_image = response.get("profile_image")
+
+    if profile_image == "https://ssl.pstatic.net/static/pwe/address/img_profile.png":
+        social_profile_image_url = None
+    else:
+        social_profile_image_url = profile_image
 
     user, _ = _get_or_create_social_user(
         provider="naver",
@@ -244,7 +249,12 @@ def kakao_social_login(*, code: str, redirect_uri: str) -> dict[str, str]:
     provider_user_id = str(profile.get("id", ""))
     email = _normalize_social_email("kakao", provider_user_id, kakao_account.get("email"))
     nickname = kakao_profile.get("nickname") or email.split("@")[0]
-    social_profile_image_url = kakao_profile.get("profile_image_url")
+    profile_image = kakao_profile.get("profile_image_url")
+
+    if profile_image and "default_profile.jpeg" in profile_image:
+        social_profile_image_url = None
+    else:
+        social_profile_image_url = profile_image
 
     user, _ = _get_or_create_social_user(
         provider="kakao",

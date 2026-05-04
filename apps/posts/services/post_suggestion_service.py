@@ -65,7 +65,8 @@ def _enrich_posts(posts: list[Post], *, user: User) -> list[dict[str, Any]]:
             {
                 "post_id": p.pk,
                 "images": p.images or [],
-                "profile_image_url": PROFILE_IMAGE_URL_MAP.get(p.user.profile_image),
+                "profile_image_url": p.user.social_profile_image_url
+                or PROFILE_IMAGE_URL_MAP.get(p.user.profile_image, ""),
                 "nickname": p.user.nickname,
                 "created_at": p.created_at,
                 "title": p.title,

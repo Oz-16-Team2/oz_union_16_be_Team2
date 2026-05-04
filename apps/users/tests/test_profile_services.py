@@ -4,8 +4,11 @@ from unittest.mock import Mock, patch
 
 import pytest
 from django.utils import timezone
+from rest_framework.exceptions import APIException
 
+from apps.users.models import User
 from apps.users.services.profile_services import (
+    change_nickname,
     get_me_activity_summary_achievement_rate,
     get_me_activity_summary_completed_goals,
     get_me_activity_summary_days,
@@ -80,3 +83,31 @@ def test_get_me_activity_summary_achievement_rate_without_goals() -> None:
 
     assert result["detail"]["total_goals_count"] == 0
     assert result["detail"]["total_achievement_rate"] == 0.0
+
+
+@pytest.mark.django_db
+def test_change_nickname_success(user: User) -> None:
+    result = change_nickname(user=user, nickname="새닉네임")
+
+    user.refresh_from_db()
+
+    assert user.nickname == "새닉네임"
+    assert result == {
+        "message": "닉네임 수정이 완료되었습니다.",
+        "nickname": "새닉네임",
+    }
+
+
+@pytest.mark.django_db
+def test_change_nickname_duplicate(user: User) -> None:
+    User.objects.create_user(
+        email="other@example.com",
+        password="password123",
+        nickname="중복닉네임",
+    )
+
+    with pytest.raises(APIException) as exc_info:
+        change_nickname(user=user, nickname="중복닉네임")
+
+    assert exc_info.value.status_code == 409
+    assert exc_info.value.detail == {"nickname": ["이미 사용 중인 닉네임입니다."]}
