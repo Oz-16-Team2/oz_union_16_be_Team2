@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import timedelta
 from typing import Any
 
 from django.db import transaction
@@ -231,7 +230,7 @@ def _create_vote_for_post(post: Post, vote_data: dict[str, Any]) -> None:
     vote = Vote.objects.create(
         post=post,
         start_at=now,
-        end_at=now + timedelta(days=7),
+        end_at=vote_data["end_at"],
         status=VoteStatus.IN_PROGRESS,
     )
     VoteOption.objects.bulk_create(

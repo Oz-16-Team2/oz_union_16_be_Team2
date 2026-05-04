@@ -52,7 +52,7 @@ class TestPosts:
 
         assert res.status_code == 200
 
-        body = res.data
+        body = res.data["detail"]  # ← detail 래퍼 추가
         assert "posts" in body
         assert "page" in body
         assert "size" in body
