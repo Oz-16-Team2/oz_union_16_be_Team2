@@ -10,14 +10,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.exceptions import ResourceNotFoundException
-from apps.core.response import detail_response, error_response
+from apps.core.response import error_response
 from apps.posts.serializers.post_serializers import PostSuggestionResponseSerializer
 from apps.posts.services.post_trending_service import DEFAULT_PERIOD, PERIOD_DAYS, get_trending_posts
 from apps.users.models import User
 
 
 class _TrendingQuerySerializer(serializers.Serializer[Any]):
-    page = serializers.IntegerField(required=False, min_value=1, default=1)
+    page = serializers.IntegerField(required=False, min_value=0, default=0)
     size = serializers.IntegerField(required=False, min_value=1, max_value=100, default=8)
     period = serializers.ChoiceField(
         choices=list(PERIOD_DAYS.keys()),
@@ -82,4 +82,4 @@ class PostTrendingAPIView(APIView):
             return error_response(e.detail, status.HTTP_404_NOT_FOUND)
 
         response_serializer = PostSuggestionResponseSerializer(instance=data)
-        return detail_response(response_serializer.data, status.HTTP_200_OK)
+        return Response(response_serializer.data, status.HTTP_200_OK)

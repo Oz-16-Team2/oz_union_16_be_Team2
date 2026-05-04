@@ -1,6 +1,6 @@
 from typing import cast
 
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.exceptions import NotFound
 from rest_framework.permissions import IsAuthenticated
@@ -10,7 +10,9 @@ from rest_framework.views import APIView
 
 from apps.core.exceptions import ConflictException
 from apps.posts.models import Post, Scrap
-from apps.posts.serializers.scrap_serializers import ScrapListSerializer
+from apps.posts.serializers.post_serializers import PostFeedResponseSerializer
+from apps.posts.serializers.scrap_serializers import ScrapListQuerySerializer
+from apps.posts.services import list_scrapped_posts
 
 
 class PostScrapView(APIView):
@@ -52,15 +54,25 @@ class UserScrapListView(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    @extend_schema(summary="내 스크랩 목록 조회", responses=ScrapListSerializer(many=True), tags=["스크랩 (Scraps)"])
+    @extend_schema(
+        summary="내 스크랩 목록 조회",
+        parameters=[
+            OpenApiParameter(name="page", type=int, location=OpenApiParameter.QUERY, required=False, default=0),
+            OpenApiParameter(name="size", type=int, location=OpenApiParameter.QUERY, required=False, default=20),
+        ],
+        responses={200: PostFeedResponseSerializer},
+        tags=["스크랩 (Scraps)"],
+    )
     def get(self, request: Request) -> Response:
-        user_id = cast(int, request.user.id)
+        query_serializer = ScrapListQuerySerializer(data=request.query_params)
+        query_serializer.is_valid(raise_exception=True)
+        validated = query_serializer.validated_data
 
-        # select_related('post'), N+1 방지
-        scraps = Scrap.objects.filter(user_id=user_id).select_related("post").order_by("-created_at")
+        body = list_scrapped_posts(
+            page=validated["page"],
+            size=validated["size"],
+            user=request.user,
+        )
 
-        # TODO: 페이지네이션(Pagination) 처리가 필요하다면 이 부분에 추가
-        total_count = scraps.count()
-        serializer = ScrapListSerializer(scraps, many=True)
-
-        return Response({"total_count": total_count, "results": serializer.data}, status=status.HTTP_200_OK)
+        response_serializer = PostFeedResponseSerializer(instance=body)
+        return Response(response_serializer.data, status=status.HTTP_200_OK)

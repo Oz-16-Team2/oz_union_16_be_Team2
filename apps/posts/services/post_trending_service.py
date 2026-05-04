@@ -41,7 +41,7 @@ def get_trending_posts(*, user: User, page: int, size: int, period: str) -> dict
     )
 
     total = qs.count()
-    chunk = list(qs[(page - 1) * size : page * size])
+    chunk = list(qs[page * size : page * size + size])
 
     tag_map = get_tags_by_post_id([p.id for p in chunk])
 

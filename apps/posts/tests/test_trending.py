@@ -65,7 +65,7 @@ def test_trending_returns_200_with_correct_schema(api_client: APIClient, user: U
     res = api_client.get(TRENDING_URL)
 
     assert res.status_code == status.HTTP_200_OK
-    data = res.json()["detail"]
+    data = res.json()
     assert "posts" in data
     assert "page" in data
     assert "size" in data
@@ -85,7 +85,7 @@ def test_trending_sorted_by_like_count_desc(api_client: APIClient, user: User) -
     res = api_client.get(TRENDING_URL, {"period": "week", "size": "10"})
 
     assert res.status_code == status.HTTP_200_OK
-    post_ids = [p["post_id"] for p in res.json()["detail"]["posts"]]
+    post_ids = [p["post_id"] for p in res.json()["posts"]]
     assert post_ids.index(high.id) < post_ids.index(low.id)
 
 
@@ -101,7 +101,7 @@ def test_trending_week_excludes_older_posts(api_client: APIClient, user: User) -
 
     res = api_client.get(TRENDING_URL, {"period": "week", "size": "10"})
 
-    post_ids = [p["post_id"] for p in res.json()["detail"]["posts"]]
+    post_ids = [p["post_id"] for p in res.json()["posts"]]
     assert recent.id in post_ids
     assert old.id not in post_ids
 
@@ -118,7 +118,7 @@ def test_trending_day_excludes_posts_older_than_24h(api_client: APIClient, user:
 
     res = api_client.get(TRENDING_URL, {"period": "day", "size": "10"})
 
-    post_ids = [p["post_id"] for p in res.json()["detail"]["posts"]]
+    post_ids = [p["post_id"] for p in res.json()["posts"]]
     assert recent.id in post_ids
     assert old.id not in post_ids
 
@@ -133,7 +133,7 @@ def test_trending_excludes_private_posts(api_client: APIClient, user: User) -> N
 
     res = api_client.get(TRENDING_URL, {"size": "50"})
 
-    post_ids = [p["post_id"] for p in res.json()["detail"]["posts"]]
+    post_ids = [p["post_id"] for p in res.json()["posts"]]
     assert public.id in post_ids
     assert private.id not in post_ids
 
@@ -149,7 +149,7 @@ def test_trending_excludes_deleted_posts(api_client: APIClient, user: User) -> N
 
     res = api_client.get(TRENDING_URL, {"size": "50"})
 
-    post_ids = [p["post_id"] for p in res.json()["detail"]["posts"]]
+    post_ids = [p["post_id"] for p in res.json()["posts"]]
     assert alive.id in post_ids
     assert dead.id not in post_ids
 
@@ -162,9 +162,9 @@ def test_trending_pagination(api_client: APIClient, user: User) -> None:  # type
     for _ in range(5):
         PostFactory_create()
 
-    res = api_client.get(TRENDING_URL, {"size": "2", "page": "1"})
+    res = api_client.get(TRENDING_URL, {"size": "2", "page": "0"})
 
-    data = res.json()["detail"]
+    data = res.json()
     assert len(data["posts"]) == 2
     assert data["total_count"] >= 5
 
@@ -177,7 +177,7 @@ def test_trending_response_item_fields(api_client: APIClient, user: User) -> Non
 
     res = api_client.get(TRENDING_URL)
 
-    item = res.json()["detail"]["posts"][0]
+    item = res.json()["posts"][0]
     for field in (
         "post_id",
         "images",
@@ -189,6 +189,7 @@ def test_trending_response_item_fields(api_client: APIClient, user: User) -> Non
         "content_preview",
         "like_count",
         "comment_count",
+        "is_liked",
         "is_scrapped",
     ):
         assert field in item, f"응답에 '{field}' 필드가 없습니다"
