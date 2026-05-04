@@ -23,8 +23,12 @@ def _build_user_profile(user: User) -> dict[str, Any]:
     }
 
 
-def _build_login_payload(user: User) -> dict[str, str]:
+def _build_login_payload(user: User, provider: str | None = None) -> dict[str, str]:
     refresh = RefreshToken.for_user(user)
+
+    if provider is not None:
+        refresh["provider"] = provider
+
     return {
         "access_token": str(refresh.access_token),
         "refresh_token": str(refresh),
