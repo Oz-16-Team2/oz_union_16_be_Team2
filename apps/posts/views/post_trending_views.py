@@ -4,7 +4,7 @@ from typing import Any, cast
 
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import serializers, status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -30,7 +30,7 @@ class _TrendingQuerySerializer(serializers.Serializer[Any]):
 class PostTrendingAPIView(APIView):
     """인기순 추천 — 요즘 뜨는 글 / 지금 핫한 글"""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     @extend_schema(
         summary="인기 게시글 조회",

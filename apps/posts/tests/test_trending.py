@@ -201,9 +201,9 @@ def test_trending_response_item_fields(api_client: APIClient, user: User) -> Non
 
 
 @pytest.mark.django_db
-def test_trending_unauthenticated_returns_401(api_client: APIClient) -> None:
+def test_trending_unauthenticated_returns_200(api_client: APIClient) -> None:
     res = api_client.get(TRENDING_URL)
-    assert res.status_code == status.HTTP_401_UNAUTHORIZED
+    assert res.status_code == status.HTTP_200_OK
 
 
 @pytest.mark.django_db
