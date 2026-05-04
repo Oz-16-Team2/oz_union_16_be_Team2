@@ -4,7 +4,7 @@ from datetime import timedelta
 from typing import Any
 
 from django.db import transaction
-from django.db.models import BooleanField, Count, Exists, OuterRef, Q, Value
+from django.db.models import BooleanField, Count, Exists, OuterRef, Q, Subquery, Value
 from django.utils import timezone
 from rest_framework import serializers
 
@@ -90,6 +90,28 @@ def _build_feed_from_qs(qs: Any, page: int, size: int, user: Any) -> tuple[list[
 def list_posts(*, scope: str, sort_by: str, page: int, size: int, user: Any) -> dict[str, Any]:
     qs = feed_queryset(scope=scope, sort_by=sort_by, user=user)
     posts_out, total = _build_feed_from_qs(qs, page, size, user)
+    return {"posts": posts_out, "page": page, "size": size, "total_count": total}
+
+
+def list_scrapped_posts(*, page: int, size: int, user: Any) -> dict[str, Any]:
+    active_comment_filter = active_comment_q()
+    scrap_created_at_subquery = Subquery(
+        Scrap.objects.filter(user_id=user.id, post_id=OuterRef("pk")).values("created_at")[:1]
+    )
+    scrapped_posts_queryset = (
+        _base_visible_posts()
+        .filter(scraps__user_id=user.id)
+        .select_related("user")
+        .annotate(
+            like_count=Count("likes", distinct=True),
+            comment_count=Count("comments", filter=active_comment_filter, distinct=True),
+            is_liked=Exists(PostLike.objects.filter(post_id=OuterRef("pk"), user_id=user.id)),
+            is_scrapped=Value(True, output_field=BooleanField()),
+            scrap_created_at=scrap_created_at_subquery,
+        )
+        .order_by("-scrap_created_at")
+    )
+    posts_out, total = _build_feed_from_qs(scrapped_posts_queryset, page, size, user)
     return {"posts": posts_out, "page": page, "size": size, "total_count": total}
 
 

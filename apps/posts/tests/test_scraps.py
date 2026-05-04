@@ -128,7 +128,63 @@ class TestScrapViews:
 
         data = response.data
         assert data["total_count"] == 2  # 내 스크랩 2개만 카운트되어야 함 (남의 것 1개는 무시)
-        assert len(data["results"]) == 2
+        assert data["page"] == 0
+        assert data["size"] == 20
+        assert len(data["posts"]) == 2
+
+        post_item = data["posts"][0]
+        assert "post_id" in post_item
+        assert "images" in post_item
+        assert "profile_image_url" in post_item
+        assert "nickname" in post_item
+        assert "created_at" in post_item
+        assert "title" in post_item
+        assert "tags" in post_item
+        assert "content_preview" in post_item
+        assert "like_count" in post_item
+        assert "comment_count" in post_item
+        assert post_item["is_scrapped"] is True
+        assert post_item["is_liked"] is False
+
+    def test_get_scrap_list_pagination(self, api_client: APIClient, user: User) -> None:
+        """[기능] page/size 쿼리 파라미터로 페이지네이션 동작 확인 (200 OK)"""
+        for i in range(3):
+            p = Post(user_id=user.id, title=f"글 {i}")
+            p.save()
+            Scrap.objects.create(user_id=user.id, post_id=p.id)
+
+        api_client.force_authenticate(user=user)
+        response = api_client.get("/api/v1/posts/scraps", {"page": 0, "size": 2})
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.data
+        assert data["total_count"] == 3
+        assert data["page"] == 0
+        assert data["size"] == 2
+        assert len(data["posts"]) == 2
+
+    def test_get_scrap_list_excludes_soft_deleted_post(self, api_client: APIClient, user: User) -> None:
+        """[기능] 스크랩한 게시글이 삭제(soft delete)되면 스크랩 목록에서 제외되어야 함"""
+        from django.utils import timezone
+
+        active_post = Post(user_id=user.id, title="살아있는 글")
+        active_post.save()
+        Scrap.objects.create(user_id=user.id, post_id=active_post.id)
+
+        deleted_post = Post(user_id=user.id, title="삭제된 글")
+        deleted_post.save()
+        Scrap.objects.create(user_id=user.id, post_id=deleted_post.id)
+        deleted_post.deleted_at = timezone.now()
+        deleted_post.save()
+
+        api_client.force_authenticate(user=user)
+        response = api_client.get("/api/v1/posts/scraps")
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.data
+        assert data["total_count"] == 1
+        assert len(data["posts"]) == 1
+        assert data["posts"][0]["post_id"] == active_post.id
 
     def test_get_scrap_list_unauthorized(self, api_client: APIClient) -> None:
         """[예외] 비로그인 유저가 스크랩 목록 조회 시도 (401 Unauthorized)"""

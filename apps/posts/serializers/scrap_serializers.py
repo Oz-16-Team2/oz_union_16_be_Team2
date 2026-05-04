@@ -2,12 +2,7 @@ from typing import Any
 
 from rest_framework import serializers
 
-from apps.posts.models import Scrap
 
-
-class ScrapListSerializer(serializers.ModelSerializer[Any]):
-    title = serializers.CharField(source="post.title", read_only=True)
-
-    class Meta:
-        model = Scrap
-        fields = ["id", "post_id", "title", "created_at"]
+class ScrapListQuerySerializer(serializers.Serializer[Any]):
+    page = serializers.IntegerField(required=False, min_value=0, default=0)
+    size = serializers.IntegerField(required=False, min_value=1, max_value=100, default=20)
