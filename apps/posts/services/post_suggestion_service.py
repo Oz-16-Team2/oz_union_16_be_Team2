@@ -8,21 +8,22 @@ from django.utils import timezone
 
 from apps.posts.models import Post, PostLike, PostTag, Scrap
 from apps.posts.serializers.post_serializers import active_comment_q
+from apps.posts.services.recommendation_config import (
+    CONTENT_PREVIEW_LENGTH,
+    SUGGESTION_AUTHORED_WEIGHT,
+    SUGGESTION_CANDIDATE_LIMIT,
+    SUGGESTION_LIKED_WEIGHT,
+    SUGGESTION_TIME_DECAY_MAX_DAYS,
+)
 from apps.users.constants import PROFILE_IMAGE_URL_MAP
 from apps.users.models import User
 
 logger = logging.getLogger(__name__)
 
-_CONTENT_PREVIEW_LENGTH: int = 100
-_AUTHORED_WEIGHT: float = 5.0
-_LIKED_WEIGHT: float = 3.0
-_MAX_DAYS: float = 20.0
-_CANDIDATE_LIMIT: int = 100
 
-
-def _time_decay(age_days: float, max_days: float) -> float:
-    """게시글 나이에 따른 감가율. 최소 0.1 보장 (완전히 묻히지 않도록)."""
-    return max(0.1, 1.0 - age_days / max_days)
+def _time_decay(age_days: float) -> float:
+    """게시글 나이에 따른 감가율. 최소 0.1 보장."""
+    return max(0.1, 1.0 - age_days / SUGGESTION_TIME_DECAY_MAX_DAYS)
 
 
 def get_recommended_posts(user: User, page: int = 1, size: int = 8) -> tuple[list[Post], int]:
@@ -60,7 +61,7 @@ def _enrich_posts(posts: list[Post], *, user: User) -> list[dict[str, Any]]:
     items: list[dict[str, Any]] = []
     for p in posts:
         c = counts.get(p.pk, {})
-        preview = p.content[:_CONTENT_PREVIEW_LENGTH] if p.content else ""
+        preview = p.content[:CONTENT_PREVIEW_LENGTH] if p.content else ""
         items.append(
             {
                 "post_id": p.pk,
@@ -92,71 +93,38 @@ def get_recommendation_feed(*, user: User, page: int = 0, size: int = 8) -> dict
 
 
 class PostSuggestionService:
-    def get_recommendations(self, user: User, exclude_test_data: bool = False) -> list[Post]:
+    def get_recommendations(self, user: User) -> list[Post]:
         queryset: QuerySet[Post] = Post.objects.all()
 
-        if exclude_test_data or getattr(settings, "ENVIRONMENT", None) == "production":
+        if getattr(settings, "ENVIRONMENT", None) == "production":
             queryset = queryset.exclude(user__email__endswith="@test.com")
 
         return self._apply_recommendation_algorithm(user, queryset)
-
-    def get_test_recommendations(self, user: User) -> list[Post]:
-        test_posts: QuerySet[Post] = Post.objects.filter(user__email__endswith="@test.com")
-        return self._apply_recommendation_algorithm(user, test_posts)
-
-    def analyze_by_persona(
-        self,
-        persona_interested_tags: dict[str, list[str]] | None = None,
-    ) -> dict[str, dict[int, dict[str, Any]]]:
-        """
-        페르소나별 추천 지표 분석.
-
-        persona_interested_tags: persona 이름 → 관심 태그 목록 매핑.
-          제공하면 tag_precision(추천 중 관심 태그 포함 비율)이 함께 집계된다.
-        """
-        results: dict[str, dict[int, dict[str, Any]]] = defaultdict(dict)
-
-        # 봇 유저 이메일 형식: {persona_prefix}_{i}@test.com
-        persona_groups: dict[str, list[User]] = defaultdict(list)
-        for user in User.objects.filter(email__endswith="@test.com"):
-            local = user.email.split("@")[0]
-            parts = local.rsplit("_", 1)
-            persona = parts[0] if len(parts) == 2 and parts[1].isdigit() else local
-            persona_groups[persona].append(user)
-
-        for persona, users in persona_groups.items():
-            interested = (persona_interested_tags or {}).get(persona)
-            for user in users:
-                recommendations = self.get_recommendations(user)
-                metrics = self._calculate_metrics(user, recommendations)
-                metrics["tag_precision"] = self._tag_precision(recommendations, interested)
-                results[persona][user.pk] = metrics
-
-        return results
 
     def _apply_recommendation_algorithm(self, user: User, queryset: QuerySet[Post]) -> list[Post]:
         tag_scores: dict[int, float] = defaultdict(float)
 
         for tag_id in PostTag.objects.filter(post__user=user).values_list("tag_id", flat=True):
-            tag_scores[tag_id] += _AUTHORED_WEIGHT
+            tag_scores[tag_id] += SUGGESTION_AUTHORED_WEIGHT
 
         for tag_id in PostTag.objects.filter(post__likes__user=user).values_list("tag_id", flat=True):
-            tag_scores[tag_id] += _LIKED_WEIGHT
+            tag_scores[tag_id] += SUGGESTION_LIKED_WEIGHT
 
         if not tag_scores:
-            return list(queryset.exclude(user=user).select_related("user").order_by("-created_at")[:_CANDIDATE_LIMIT])
+            return list(
+                queryset.exclude(user=user).select_related("user").order_by("-created_at")[:SUGGESTION_CANDIDATE_LIMIT]
+            )
 
         now = timezone.now()
         interested_tag_ids = list(tag_scores.keys())
 
-        # 태그가 겹치는 게시글만 먼저 필터링 후 최신순으로 후보 추출
         candidates = (
             queryset.exclude(user=user)
             .filter(post_tags__tag_id__in=interested_tag_ids)
             .distinct()
             .select_related("user")
             .prefetch_related("post_tags")
-            .order_by("-created_at")[: _CANDIDATE_LIMIT * 3]
+            .order_by("-created_at")[: SUGGESTION_CANDIDATE_LIMIT * 3]
         )
 
         scored: list[tuple[float, Post]] = []
@@ -167,11 +135,11 @@ class PostSuggestionService:
                 continue
 
             age_days = (now - post.created_at).total_seconds() / 86400
-            decay = _time_decay(age_days, _MAX_DAYS)
+            decay = _time_decay(age_days)
             scored.append((score * decay, post))
 
         scored.sort(key=lambda x: x[0], reverse=True)
-        return [post for _, post in scored[:_CANDIDATE_LIMIT]]
+        return [post for _, post in scored[:SUGGESTION_CANDIDATE_LIMIT]]
 
     def _calculate_metrics(self, user: User, recommendations: list[Post]) -> dict[str, Any]:
         if not recommendations:
@@ -194,7 +162,6 @@ class PostSuggestionService:
         }
 
     def _tag_precision(self, recommendations: list[Post], interested_tags: list[str] | None) -> float | None:
-        """추천 중 관심 태그가 포함된 게시글 비율. interested_tags가 없거나 'all'이면 None."""
         if not recommendations or not interested_tags or "all" in interested_tags:
             return None
         tag_set = set(interested_tags)

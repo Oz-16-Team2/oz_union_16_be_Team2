@@ -19,7 +19,7 @@ from typing import Any
 
 from django.core.management.base import BaseCommand
 
-from apps.posts.services.post_suggestion_service import PostSuggestionService
+from apps.posts.services.persona_analysis_service import analyze_by_persona
 from apps.posts.tests.suggestion.engagement_profiles import ENGAGEMENT_PROFILES
 
 
@@ -47,7 +47,7 @@ class Command(BaseCommand):
         self.stdout.write("\n추천 품질 분석 중...\n")
 
         persona_tags = {k: v.interested_tags for k, v in ENGAGEMENT_PROFILES.items()}
-        results = PostSuggestionService().analyze_by_persona(persona_interested_tags=persona_tags)
+        results = analyze_by_persona(persona_interested_tags=persona_tags)
 
         if not results:
             self.stdout.write(self.style.WARNING("봇 데이터가 없습니다. seed_persona_bots를 먼저 실행하세요."))
