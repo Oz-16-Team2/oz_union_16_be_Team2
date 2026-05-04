@@ -34,7 +34,13 @@ def logout_user(*, refresh_token: str) -> dict[str, str]:
 def refresh_token(*, refresh_token: str) -> dict[str, str]:
     try:
         token = RefreshToken(cast(Token, refresh_token))
-        return {"access_token": str(token.access_token)}
+        access_token = token.access_token
+
+        provider = token.get("provider")
+        if isinstance(provider, str) and provider:
+            access_token["provider"] = provider
+
+        return {"access_token": str(access_token)}
     except TokenError as exc:
         raise PermissionDenied({"detail": "로그인 세션이 만료되었습니다."}) from exc
 
