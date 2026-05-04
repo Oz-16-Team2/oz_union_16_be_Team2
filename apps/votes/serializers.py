@@ -90,3 +90,5 @@ class VoteDetailSerializer(serializers.Serializer[Any]):
     status = serializers.CharField()
     total_count = serializers.IntegerField(min_value=0)
     options = VoteResultOptionSerializer(many=True)
+    is_voted = serializers.BooleanField()
+    voted_option_id = serializers.IntegerField(allow_null=True, required=False)
