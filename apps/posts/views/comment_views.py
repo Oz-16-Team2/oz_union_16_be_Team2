@@ -41,7 +41,11 @@ class PostCommentListCreateView(generics.ListCreateAPIView):  # type: ignore[typ
         if not Post.objects.filter(id=post_id, deleted_at__isnull=True).exists():
             raise NotFound("게시글을 찾을 수 없습니다.")
 
-        qs = Comment.objects.filter(post_id=post_id, deleted_at__isnull=True)
+        qs = (
+            Comment.objects.filter(post_id=post_id, deleted_at__isnull=True)
+            .select_related("user")
+            .prefetch_related("user__social_logins")
+        )
         qs = qs.annotate(like_count=Count("likes"))
 
         user = self.request.user
