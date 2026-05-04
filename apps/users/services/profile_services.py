@@ -1,13 +1,35 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
+
+from rest_framework.request import Request
 
 from apps.users.constants import PROFILE_IMAGE_URL_MAP
 from apps.users.models import User
 from apps.users.services.common_services import _build_user_profile, _count_completed_goals, _get_goals_manager
 
 
-def get_my_profile(user: User) -> dict[str, Any]:
+def get_my_profile(user: User, request: Request | None = None) -> dict[str, Any]:
+    provider = None
+
+    if request is not None and request.auth is not None:
+        auth = cast(dict[str, Any], request.auth)
+        provider_value = auth.get("provider")
+
+        if isinstance(provider_value, str):
+            provider = provider_value
+
+    if isinstance(provider, str) and provider:
+        social_login = user.social_logins.filter(provider=provider).first()
+
+        if social_login is not None:
+            return {
+                "id": user.id,
+                "nickname": social_login.social_nickname or user.nickname,
+                "profile_image_url": social_login.social_profile_image_url
+                or _build_user_profile(user)["profile_image_url"],
+            }
+
     return _build_user_profile(user)
 
 
@@ -32,7 +54,7 @@ def get_me_activity_summary_achievement_rate(user: Any) -> dict[str, Any]:
     total_goals_count = int(manager.all().count()) if manager is not None else 0
 
     completed_goals_count = _count_completed_goals(user)
-    total_achievement_rate = round((completed_goals_count / total_goals_count) * 100, 1) if total_goals_count else 0.0
+    total_achievement_rate = int((completed_goals_count / total_goals_count) * 100) if total_goals_count else 0.0
 
     return {
         "detail": {
