@@ -53,7 +53,7 @@ class MeActivitySummaryDaysResponseSerializer(serializers.Serializer[Any]):
 class MeActivitySummaryAchievementRateDetailSerializer(serializers.Serializer[Any]):
     total_goals_count = serializers.IntegerField()
     completed_goals_count = serializers.IntegerField()
-    total_achievement_rate = serializers.FloatField()
+    total_achievement_rate = serializers.IntegerField()
 
 
 class MeActivitySummaryAchievementRateResponseSerializer(serializers.Serializer[Any]):
