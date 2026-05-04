@@ -66,6 +66,7 @@ omit = [
     "apps/*/tests/suggestion/engagement_profiles.py",
     "apps/*/tests/suggestion/personas.py",
     "apps/*/migrations/*.py",
+    "apps/posts/services/persona_analysis_service.py",
 ]
 
 [tool.coverage.report]

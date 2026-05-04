@@ -7,7 +7,8 @@ from rest_framework.test import APIClient
 
 # 💡 [수정1] CommentLike 모델을 import 에 추가했습니다.
 from apps.posts.models import Comment, CommentLike, Post
-from apps.users.models import User
+from apps.users.constants import PROFILE_IMAGE_URL_MAP
+from apps.users.models import SocialLogin, User
 
 
 # ==========================================
@@ -116,6 +117,94 @@ class TestPostCommentListCreateView:
         assert results[0]["like_count"] == 1
         assert results[0]["is_liked"] is True
         assert results[0]["user_id"] == user.id
+
+    def test_profile_image_url_for_normal_user(self, api_client: APIClient, user: User, post: Post) -> None:
+        """일반 유저 댓글 조회 시 profile_image_url은 아바타 URL이어야 한다."""
+        Comment.objects.create(user_id=user.id, post_id=post.id, content="일반 유저 댓글")
+
+        response = api_client.get(f"/api/v1/posts/{post.id}/comments")
+
+        assert response.status_code == status.HTTP_200_OK
+        result = response.data["results"][0]
+        expected_url = PROFILE_IMAGE_URL_MAP.get(user.profile_image)
+        assert result["profile_image_url"] == expected_url
+
+    def test_profile_image_url_for_social_user(self, api_client: APIClient, post: Post) -> None:
+        """소셜 로그인 유저 댓글 조회 시 profile_image_url은 소셜 프로바이더 이미지여야 한다."""
+        unique_id = uuid.uuid4().hex[:8]
+        social_user = User.objects.create_user(
+            email=f"social_{unique_id}@test.com",
+            nickname=f"social_{unique_id}",
+            password="unused",
+        )
+        social_image_url = "https://lh3.googleusercontent.com/a/test_profile_image"
+        SocialLogin.objects.create(
+            user=social_user,
+            provider="google",
+            provider_user_id=f"google_{unique_id}",
+            social_profile_image_url=social_image_url,
+        )
+        Comment.objects.create(user_id=social_user.id, post_id=post.id, content="소셜 유저 댓글")
+
+        response = api_client.get(f"/api/v1/posts/{post.id}/comments")
+
+        assert response.status_code == status.HTTP_200_OK
+        result = response.data["results"][0]
+        assert result["profile_image_url"] == social_image_url
+
+    def test_profile_image_url_for_social_user_without_social_image(self, api_client: APIClient, post: Post) -> None:
+        """소셜 로그인 유저지만 소셜 이미지가 없으면 아바타 URL을 반환해야 한다."""
+        unique_id = uuid.uuid4().hex[:8]
+        social_user = User.objects.create_user(
+            email=f"social_{unique_id}@test.com",
+            nickname=f"social_{unique_id}",
+            password="unused",
+        )
+        SocialLogin.objects.create(
+            user=social_user,
+            provider="kakao",
+            provider_user_id=f"kakao_{unique_id}",
+            social_profile_image_url=None,
+        )
+        Comment.objects.create(user_id=social_user.id, post_id=post.id, content="소셜 유저 댓글 (이미지 없음)")
+
+        response = api_client.get(f"/api/v1/posts/{post.id}/comments")
+
+        assert response.status_code == status.HTTP_200_OK
+        result = response.data["results"][0]
+        expected_url = PROFILE_IMAGE_URL_MAP.get(social_user.profile_image)
+        assert result["profile_image_url"] == expected_url
+
+    def test_profile_image_url_for_social_user_with_multiple_providers(self, api_client: APIClient, post: Post) -> None:
+        """여러 소셜 로그인이 연결된 유저의 경우 이미지가 있는 소셜 로그인 URL을 반환해야 한다."""
+        unique_id = uuid.uuid4().hex[:8]
+        social_user = User.objects.create_user(
+            email=f"social_{unique_id}@test.com",
+            nickname=f"social_{unique_id}",
+            password="unused",
+        )
+        # 이미지 없는 소셜 로그인
+        SocialLogin.objects.create(
+            user=social_user,
+            provider="naver",
+            provider_user_id=f"naver_{unique_id}",
+            social_profile_image_url=None,
+        )
+        # 이미지 있는 소셜 로그인
+        google_image_url = "https://lh3.googleusercontent.com/a/multi_provider_test"
+        SocialLogin.objects.create(
+            user=social_user,
+            provider="google",
+            provider_user_id=f"google_{unique_id}",
+            social_profile_image_url=google_image_url,
+        )
+        Comment.objects.create(user_id=social_user.id, post_id=post.id, content="멀티 소셜 유저 댓글")
+
+        response = api_client.get(f"/api/v1/posts/{post.id}/comments")
+
+        assert response.status_code == status.HTTP_200_OK
+        result = response.data["results"][0]
+        assert result["profile_image_url"] == google_image_url
 
 
 # ==========================================
