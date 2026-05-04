@@ -181,7 +181,7 @@ class VoteDetailAPIView(APIView):
     )
     def get(self, request: Request, vote_id: int) -> Response:
         try:
-            body = get_vote_detail(vote_id=vote_id)
+            body = get_vote_detail(vote_id=vote_id, user=request.user)
         except NotFound:
             return error_response("해당 투표를 찾을 수 없습니다.", 404)
 

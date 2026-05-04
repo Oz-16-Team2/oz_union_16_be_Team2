@@ -181,7 +181,7 @@ def delete_vote(*, vote_id: int, user: Any) -> None:
     return None
 
 
-def get_vote_detail(*, vote_id: int) -> dict[str, Any]:
+def get_vote_detail(*, vote_id: int, user: Any) -> dict[str, Any]:
     vote = Vote.objects.filter(id=vote_id).prefetch_related("participations", "options__participations").first()
     if vote is None:
         raise NotFound("해당 투표를 찾을 수 없습니다.")
@@ -200,9 +200,21 @@ def get_vote_detail(*, vote_id: int) -> dict[str, Any]:
                 "rate": rate,
             }
         )
+
+    is_voted = False
+    voted_option_id = None
+
+    if user and user.is_authenticated:
+        participation = VoteParticipation.objects.filter(vote=vote, user=user).first()
+        if participation:
+            is_voted = True
+            voted_option_id = participation.vote_option_id
+
     return {
         "vote_id": vote.id,
         "status": vote.status,
         "total_count": total_count,
         "options": options_payload,
+        "is_voted": is_voted,
+        "voted_option_id": voted_option_id,
     }
