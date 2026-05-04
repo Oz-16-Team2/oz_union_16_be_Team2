@@ -34,12 +34,16 @@ class GoalCheckService:
         goal = get_object_or_404(Goal, id=goal_id, user=user)
 
         now = timezone.now()
-        today = now.date()
+        local_now = timezone.localtime(now)
+        today = local_now.date()
+
+        start_of_day = local_now.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_of_day = start_of_day + datetime.timedelta(days=1)
 
         if not (goal.start_date <= today <= goal.end_date):
             raise ConflictException({"detail": ["목표 기간이 아닙니다."]})
 
-        if goal.checks.filter(created_at__date=today).exists():
+        if goal.checks.filter(created_at__range=(start_of_day, end_of_day)).exists():
             raise ConflictException({"detail": ["오늘 이미 인증을 완료했습니다."]})
 
         CheckGoal.objects.create(goal=goal, user=user)
