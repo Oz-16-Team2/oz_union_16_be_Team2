@@ -56,6 +56,7 @@ class VoteUpdateSerializer(serializers.Serializer[Any]):
         min_length=2,
         max_length=2,
     )
+    start_at = serializers.DateTimeField(required=False)
     end_at = serializers.DateTimeField()
     is_ended = serializers.BooleanField(required=False)
 
