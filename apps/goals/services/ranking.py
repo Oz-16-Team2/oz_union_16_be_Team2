@@ -1,28 +1,11 @@
 from __future__ import annotations
 
 import datetime
-from typing import Any
 
 from django.utils import timezone
 
 from apps.goals.models import Ranking
-from apps.users.constants import PROFILE_IMAGE_URL_MAP
-
-
-def _get_user_display_info(user: Any) -> tuple[str, str]:
-    social_info = user.social_logins.first()
-
-    display_nickname = user.nickname
-    if social_info and social_info.social_nickname:
-        display_nickname = social_info.social_nickname
-
-    display_profile_url = PROFILE_IMAGE_URL_MAP.get(user.profile_image, "")
-    if social_info and social_info.social_profile_image_url:
-        display_profile_url = social_info.social_profile_image_url
-    elif user.social_profile_image_url:
-        display_profile_url = user.social_profile_image_url
-
-    return display_nickname, display_profile_url
+from apps.users.utils import get_user_display_info
 
 
 def get_weekly_ranking() -> list[dict[str, object]]:
@@ -38,7 +21,7 @@ def get_weekly_ranking() -> list[dict[str, object]]:
 
     result = []
     for index, row in enumerate(rows, start=1):
-        nickname, profile_url = _get_user_display_info(row.user)
+        nickname, profile_url = get_user_display_info(row.user)
         result.append(
             {
                 "user_id": row.user.id,
@@ -64,7 +47,7 @@ def get_monthly_ranking() -> list[dict[str, object]]:
 
     result = []
     for index, row in enumerate(rows, start=1):
-        nickname, profile_url = _get_user_display_info(row.user)
+        nickname, profile_url = get_user_display_info(row.user)
         result.append(
             {
                 "user_id": row.user.id,
@@ -87,7 +70,7 @@ def get_total_ranking() -> list[dict[str, object]]:
 
     result = []
     for index, row in enumerate(rows, start=1):
-        nickname, profile_url = _get_user_display_info(row.user)
+        nickname, profile_url = get_user_display_info(row.user)
         result.append(
             {
                 "user_id": row.user.id,
