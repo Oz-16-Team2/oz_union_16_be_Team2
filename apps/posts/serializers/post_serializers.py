@@ -10,7 +10,7 @@ from rest_framework import serializers
 from apps.core.choices import CommentStatus
 from apps.goals.models import Goal
 from apps.posts.models import Post, PostTag, Tag
-from apps.users.constants import PROFILE_IMAGE_URL_MAP
+from apps.users.utils import get_user_display_info
 from apps.votes.serializers import VoteCreateRequestSerializer, VoteUpdateSerializer
 
 MAX_TAGS = 3
@@ -272,12 +272,13 @@ def build_feed_item(
     is_liked: bool,
     is_scrapped: bool,
 ) -> dict[str, Any]:
+    nickname, profile_url = get_user_display_info(post.user)
     preview = post.content[:CONTENT_PREVIEW_LENGTH] if post.content else ""
     return {
         "post_id": post.id,
         "images": post.images or [],
-        "profile_image_url": PROFILE_IMAGE_URL_MAP.get(post.user.profile_image),
-        "nickname": post.user.nickname,
+        "profile_image_url": profile_url,
+        "nickname": nickname,
         "created_at": post.created_at,
         "title": post.title,
         "tags": tags,
@@ -311,12 +312,13 @@ def build_post_detail(
             "goal_progress": post.goal_progress,
         }
     has_vote = vote_payload is not None
+    nickname, profile_url = get_user_display_info(post.user)
     return {
         "post_id": post.id,
         "is_owner": is_owner,
         "images": post.images or [],
-        "profile_image_url": PROFILE_IMAGE_URL_MAP.get(post.user.profile_image),
-        "nickname": post.user.nickname,
+        "profile_image_url": profile_url,
+        "nickname": nickname,
         "created_at": post.created_at.date(),
         "title": post.title,
         "content": post.content,

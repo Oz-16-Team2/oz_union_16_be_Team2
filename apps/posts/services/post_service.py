@@ -38,7 +38,7 @@ def _base_visible_posts() -> Any:
 
 
 def feed_queryset(*, scope: str, sort_by: str, user: Any) -> Any:
-    qs = _base_visible_posts().select_related("user", "goal")
+    qs = _base_visible_posts().select_related("user", "goal").prefetch_related("user__social_logins")
     if scope == SCOPE_FEED:
         qs = qs.filter(is_private=False)
     elif scope == SCOPE_MY:
@@ -101,6 +101,7 @@ def list_scrapped_posts(*, page: int, size: int, user: Any) -> dict[str, Any]:
         _base_visible_posts()
         .filter(scraps__user_id=user.id)
         .select_related("user")
+        .prefetch_related("user__social_logins")
         .annotate(
             like_count=Count("likes", distinct=True),
             comment_count=Count("comments", filter=active_comment_filter, distinct=True),
@@ -116,7 +117,7 @@ def list_scrapped_posts(*, page: int, size: int, user: Any) -> dict[str, Any]:
 
 def search_posts(*, keyword: str, type: str | None, page: int, size: int, user: Any) -> dict[str, Any]:
 
-    qs = _base_visible_posts().filter(is_private=False).select_related("user")
+    qs = _base_visible_posts().filter(is_private=False).select_related("user").prefetch_related("user__social_logins")
 
     if type == "title":
         qs = qs.filter(title__icontains=keyword)
@@ -172,7 +173,7 @@ def _get_post_for_detail(post_id: int) -> Post:
     post = (
         Post.objects.filter(id=post_id, deleted_at__isnull=True)
         .select_related("user", "goal")
-        .prefetch_related("post_tags__tag")
+        .prefetch_related("post_tags__tag", "user__social_logins")
         .first()
     )
     if post is None:
