@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from drf_spectacular.utils import OpenApiParameter, extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
 from rest_framework import serializers, status
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
@@ -61,7 +61,10 @@ class PostTrendingAPIView(APIView):
         ],
         tags=["추천 (Suggestions)"],
         responses={
-            200: PostFeedResponseSerializer,
+            200: inline_serializer(
+                name="TrendingDetailResponse",
+                fields={"detail": PostFeedResponseSerializer()},
+            ),
             400: dict,
             401: dict,
         },

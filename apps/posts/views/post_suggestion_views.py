@@ -1,7 +1,7 @@
 import logging
 from typing import cast
 
-from drf_spectacular.utils import OpenApiParameter, extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
@@ -48,7 +48,10 @@ class PostSuggestionAPIView(APIView):
         ],
         tags=["추천 (Suggestions)"],
         responses={
-            200: PostSuggestionResponseSerializer,
+            200: inline_serializer(
+                name="SuggestionDetailResponse",
+                fields={"detail": PostSuggestionResponseSerializer()},
+            ),
             400: dict,
             401: dict,
             500: dict,
