@@ -204,8 +204,8 @@ class VoteOptionDetailSerializer(serializers.Serializer[Any]):
 
 class VoteInfoSerializer(serializers.Serializer[Any]):
     vote_id = serializers.IntegerField()
-    start_at = serializers.DateTimeField(format="%Y-%m-%d")
-    end_at = serializers.DateTimeField(format="%Y-%m-%d")
+    start_at = serializers.DateField(format="%Y-%m-%d")
+    end_at = serializers.DateField(format="%Y-%m-%d")
     status = serializers.CharField()
     options = VoteOptionDetailSerializer(many=True)
 
@@ -253,7 +253,10 @@ class PostDetailSerializer(serializers.Serializer[Any]):
     images = serializers.ListField(child=serializers.CharField(), allow_empty=True)
     profile_image_url = serializers.CharField(allow_null=True, required=False, allow_blank=True)
     nickname = serializers.CharField()
-    created_at = serializers.DateField(format="%Y-%m-%d")
+    created_at = serializers.DateTimeField(
+        format="%Y-%m-%d %H:%M:%S",
+        default_timezone=timezone.get_current_timezone(),
+    )
     title = serializers.CharField()
     content = serializers.CharField()
     tags = serializers.ListField(child=serializers.CharField())
@@ -323,7 +326,7 @@ def build_post_detail(
         "images": post.images or [],
         "profile_image_url": profile_url,
         "nickname": nickname,
-        "created_at": post.created_at.date(),
+        "created_at": post.created_at,
         "title": post.title,
         "content": post.content,
         "tags": tags,
