@@ -313,22 +313,18 @@ class CurrentPasswordCheckAPIView(APIView):
         tags=["Accounts"],
         summary="현재 비밀번호 일치 여부 확인 API",
         request=CurrentPasswordCheckSerializer,
-        responses={
-            200: {
-                "type": "object",
-                "properties": {
-                    "is_match": {"type": "boolean"},
-                },
-            },
-        },
     )
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        is_match = request.user.check_password(serializer.validated_data["current_password"])
+        if not request.user.check_password(serializer.validated_data["password"]):
+            return Response(
+                {"error_detail": "기존 비밀번호가 일치하지 않습니다."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         return Response(
-            {"is_match": is_match},
+            {"detail": {"current_password_match": True}},
             status=status.HTTP_200_OK,
         )

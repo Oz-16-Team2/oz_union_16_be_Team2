@@ -82,4 +82,4 @@ class ChangeNicknameSerializer(serializers.Serializer[Any]):
 
 
 class CurrentPasswordCheckSerializer(serializers.Serializer[Any]):
-    current_password = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True)
