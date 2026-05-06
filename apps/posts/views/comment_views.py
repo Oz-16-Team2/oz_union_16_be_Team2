@@ -25,6 +25,32 @@ class _CommentQuerySerializer(serializers.Serializer[Any]):
 
 
 @extend_schema_view(
+    get=extend_schema(
+        summary="REQ-COMM-002: 댓글 목록 조회",
+        tags=["댓글 (Comments)"],
+        parameters=[
+            OpenApiParameter(
+                name="page",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                description="페이지 번호 (1부터 시작)",
+                required=False,
+            ),
+            OpenApiParameter(
+                name="size",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                description=f"페이지 크기 (기본: {_DEFAULT_COMMENT_PAGE_SIZE})",
+                required=False,
+            ),
+        ],
+        responses={
+            200: inline_serializer(
+                name="CommentListResponse",
+                fields={"results": CommentListSerializer(many=True)},
+            )
+        },
+    ),
     post=extend_schema(summary="REQ-COMM-001: 댓글 작성", tags=["댓글 (Comments)"]),
 )
 class PostCommentListCreateView(generics.ListCreateAPIView):  # type: ignore[type-arg]
@@ -66,32 +92,6 @@ class PostCommentListCreateView(generics.ListCreateAPIView):  # type: ignore[typ
 
         return qs.order_by("-created_at")
 
-    @extend_schema(
-        summary="REQ-COMM-002: 댓글 목록 조회",
-        tags=["댓글 (Comments)"],
-        parameters=[
-            OpenApiParameter(
-                name="page",
-                type=int,
-                location=OpenApiParameter.QUERY,
-                description="페이지 번호 (1부터 시작)",
-                required=False,
-            ),
-            OpenApiParameter(
-                name="size",
-                type=int,
-                location=OpenApiParameter.QUERY,
-                description=f"페이지 크기 (기본: {_DEFAULT_COMMENT_PAGE_SIZE})",
-                required=False,
-            ),
-        ],
-        responses={
-            200: inline_serializer(
-                name="CommentListResponse",
-                fields={"results": CommentListSerializer(many=True)},
-            )
-        },
-    )
     def list(self, request: Any, *args: Any, **kwargs: Any) -> Response:
         query_serializer = _CommentQuerySerializer(data=request.query_params)
         query_serializer.is_valid(raise_exception=True)
