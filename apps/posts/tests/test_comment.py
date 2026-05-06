@@ -135,7 +135,7 @@ class TestPostCommentListCreateView:
         social_user = User.objects.create_user(
             email=f"social_{unique_id}@test.com",
             nickname=f"social_{unique_id}",
-            password="unused",
+            password=None,
         )
         social_image_url = "https://lh3.googleusercontent.com/a/test_profile_image"
         SocialLogin.objects.create(
@@ -176,21 +176,20 @@ class TestPostCommentListCreateView:
         assert result["profile_image_url"] == expected_url
 
     def test_profile_image_url_for_social_user_with_multiple_providers(self, api_client: APIClient, post: Post) -> None:
-        """여러 소셜 로그인이 연결된 유저의 경우 이미지가 있는 소셜 로그인 URL을 반환해야 한다."""
         unique_id = uuid.uuid4().hex[:8]
         social_user = User.objects.create_user(
             email=f"social_{unique_id}@test.com",
             nickname=f"social_{unique_id}",
-            password="unused",
+            password=None,
         )
-        # 이미지 없는 소셜 로그인
+
         SocialLogin.objects.create(
             user=social_user,
             provider="naver",
             provider_user_id=f"naver_{unique_id}",
             social_profile_image_url=None,
         )
-        # 이미지 있는 소셜 로그인
+
         google_image_url = "https://lh3.googleusercontent.com/a/multi_provider_test"
         SocialLogin.objects.create(
             user=social_user,
@@ -198,13 +197,16 @@ class TestPostCommentListCreateView:
             provider_user_id=f"google_{unique_id}",
             social_profile_image_url=google_image_url,
         )
+
         Comment.objects.create(user_id=social_user.id, post_id=post.id, content="멀티 소셜 유저 댓글")
 
         response = api_client.get(f"/api/v1/posts/{post.id}/comments")
 
         assert response.status_code == status.HTTP_200_OK
         result = response.data["results"][0]
-        assert result["profile_image_url"] == google_image_url
+
+        expected_avatar_url = PROFILE_IMAGE_URL_MAP.get(social_user.profile_image)
+        assert result["profile_image_url"] == expected_avatar_url
 
 
 # ==========================================

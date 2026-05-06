@@ -17,8 +17,8 @@ from apps.posts.services.recommendation_config import (
     TRENDING_PERIOD_DAYS,
     TRENDING_WEEK_CANDIDATE_LIMIT,
 )
-from apps.users.constants import PROFILE_IMAGE_URL_MAP
 from apps.users.models import User
+from apps.users.utils import get_user_display_info
 
 PERIOD_DAYS = TRENDING_PERIOD_DAYS
 DEFAULT_PERIOD = TRENDING_DEFAULT_PERIOD
@@ -33,13 +33,15 @@ def _build_posts_out(chunk: list[Any], tag_map: dict[int, list[str]]) -> list[di
     posts_out: list[dict[str, Any]] = []
     for p in chunk:
         preview = p.content[:CONTENT_PREVIEW_LENGTH] if p.content else ""
+
+        nickname, profile_url = get_user_display_info(p.user)
+
         posts_out.append(
             {
                 "post_id": p.id,
                 "images": p.images or [],
-                "profile_image_url": p.user.social_profile_image_url
-                or PROFILE_IMAGE_URL_MAP.get(p.user.profile_image, ""),
-                "nickname": p.user.nickname,
+                "profile_image_url": profile_url,
+                "nickname": nickname,
                 "created_at": p.created_at,
                 "title": p.title,
                 "tags": tag_map.get(p.id, []),
