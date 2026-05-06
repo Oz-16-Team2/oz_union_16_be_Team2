@@ -138,7 +138,7 @@ class TestPosts:
         assert detail_res.status_code == 200
         assert detail_res.data["goal_info"]["goal_progress"] == 33
 
-    def test_post_detail_with_goal_uses_current_progress(self, client: APIClient, user: UserType) -> None:
+    def test_post_detail_with_goal_uses_snapshot_progress(self, client: APIClient, user: UserType) -> None:
         today = timezone.localdate()
         goal = Goal.objects.create(
             user=user,
@@ -146,22 +146,25 @@ class TestPosts:
             start_date=today,
             end_date=today + timedelta(days=2),
         )
+
         post = Post.objects.create(
             user=user,
             goal=goal,
             goal_title=goal.title,
             goal_start_date=timezone.make_aware(datetime.combine(goal.start_date, time.min)),
             goal_end_date=timezone.make_aware(datetime.combine(goal.end_date, time.max)),
-            goal_progress=0,
+            goal_progress=25,
             title="목표 포함 게시글",
             content="내용",
         )
+
         CheckGoal.objects.create(user=user, goal=goal)
 
         res: Response = client.get(f"{BASE_URL}{post.id}/")
 
         assert res.status_code == 200
-        assert res.data["goal_info"]["goal_progress"] == 33
+
+        assert res.data["goal_info"]["goal_progress"] == 25
 
     def test_post_detail(self, client: APIClient, post: Post) -> None:
         res: Response = client.get(f"{BASE_URL}{post.id}/")
