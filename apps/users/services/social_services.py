@@ -75,6 +75,7 @@ def _get_or_create_social_user(
         user = _create_social_user(
             email=email,
             nickname=nickname,
+            social_profile_image_url=social_profile_image_url,
         )
     else:
         user = _validate_login_user(existing_user)

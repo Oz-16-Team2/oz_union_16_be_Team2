@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any
 
 from rest_framework.exceptions import APIException
 from rest_framework.request import Request
@@ -11,26 +11,6 @@ from apps.users.services.common_services import _build_user_profile, _count_comp
 
 
 def get_my_profile(user: User, request: Request | None = None) -> dict[str, Any]:
-    provider = None
-
-    if request is not None and request.auth is not None:
-        auth = cast(dict[str, Any], request.auth)
-        provider_value = auth.get("provider")
-
-        if isinstance(provider_value, str):
-            provider = provider_value
-
-    if isinstance(provider, str) and provider:
-        social_login = user.social_logins.filter(provider=provider).first()
-
-        if social_login is not None:
-            return {
-                "id": user.id,
-                "nickname": social_login.social_nickname or user.nickname,
-                "profile_image_url": social_login.social_profile_image_url
-                or _build_user_profile(user)["profile_image_url"],
-            }
-
     return _build_user_profile(user)
 
 
