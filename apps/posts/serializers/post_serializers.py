@@ -54,7 +54,10 @@ class PostFeedItemSerializer(serializers.Serializer[Any]):
     images = serializers.ListField(child=serializers.CharField(), allow_empty=True)
     profile_image_url = serializers.CharField(max_length=255, allow_null=True, required=False, allow_blank=True)
     nickname = serializers.CharField()
-    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S")
+    created_at = serializers.DateTimeField(
+        format="%Y-%m-%d %H:%M:%S",
+        default_timezone=timezone.get_current_timezone(),
+    )
     title = serializers.CharField()
     tags = serializers.ListField(child=serializers.CharField())
     content_preview = serializers.CharField()
@@ -262,7 +265,6 @@ class PostDetailSerializer(serializers.Serializer[Any]):
     goal_info = GoalInfoSerializer(allow_null=True, required=False)
     has_vote = serializers.BooleanField()
     vote_info = VoteInfoSerializer(allow_null=True, required=False)
-
 
 def build_feed_item(
     post: Post,
