@@ -26,6 +26,9 @@ TRENDING_HOT_SCORE_GRAVITY: float = 1.7
 # week 모드: like_count 상위 N개만 Python으로 hot score 계산 (메모리 제한)
 TRENDING_WEEK_CANDIDATE_LIMIT: int = 500
 
+# trending 글이 이 수보다 적으면 최신순으로 보충
+TRENDING_FALLBACK_THRESHOLD: int = 16
+
 TRENDING_PERIOD_DAYS: dict[str, int] = {
     "day": 1,  # 지금 핫한 글 (24시간) — DB 정렬
     "week": 7,  # 요즘 뜨는 글 (7일)   — Hot Score 정렬
