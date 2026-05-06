@@ -266,6 +266,7 @@ class PostDetailSerializer(serializers.Serializer[Any]):
     has_vote = serializers.BooleanField()
     vote_info = VoteInfoSerializer(allow_null=True, required=False)
 
+
 def build_feed_item(
     post: Post,
     *,
