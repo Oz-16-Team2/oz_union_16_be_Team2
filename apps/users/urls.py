@@ -54,7 +54,7 @@ urlpatterns = [
     path("profile-images", ProfileImageListAPIView.as_view(), name="profile-list"),
     path("me/change-nickname", ChangeNicknameAPIView.as_view(), name="me-change-nickname"),
     path(
-        "password/check",
+        "change-password/check",
         CurrentPasswordCheckAPIView.as_view(),
         name="password-check",
     ),
