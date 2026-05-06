@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 from typing import TYPE_CHECKING
 
 import pytest
@@ -7,6 +7,7 @@ from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.test import APIClient
 
+from apps.goals.models import CheckGoal, Goal
 from apps.posts.models import Post
 from apps.votes.models import Vote
 
@@ -105,6 +106,62 @@ class TestPosts:
 
         vote = Vote.objects.get(post_id=res.data["post_id"])
         assert list(vote.options.order_by("sort_order").values_list("content", flat=True)) == ["예", "아니오"]
+
+    def test_post_create_with_goal_returns_current_progress_in_detail(self, client: APIClient, user: UserType) -> None:
+        client.force_authenticate(user)
+        today = timezone.localdate()
+        goal = Goal.objects.create(
+            user=user,
+            title="3일 목표",
+            start_date=today,
+            end_date=today + timedelta(days=2),
+        )
+        CheckGoal.objects.create(user=user, goal=goal)
+
+        res: Response = client.post(
+            BASE_URL,
+            {
+                "title": "목표 포함 게시글",
+                "content": "내용",
+                "has_goal": True,
+                "goal_id": goal.id,
+                "has_vote": False,
+            },
+            format="json",
+        )
+
+        assert res.status_code == 201
+
+        post = Post.objects.get(id=res.data["post_id"])
+        detail_res: Response = client.get(f"{BASE_URL}{post.id}/")
+
+        assert detail_res.status_code == 200
+        assert detail_res.data["goal_info"]["goal_progress"] == 33
+
+    def test_post_detail_with_goal_uses_current_progress(self, client: APIClient, user: UserType) -> None:
+        today = timezone.localdate()
+        goal = Goal.objects.create(
+            user=user,
+            title="3일 목표",
+            start_date=today,
+            end_date=today + timedelta(days=2),
+        )
+        post = Post.objects.create(
+            user=user,
+            goal=goal,
+            goal_title=goal.title,
+            goal_start_date=timezone.make_aware(datetime.combine(goal.start_date, time.min)),
+            goal_end_date=timezone.make_aware(datetime.combine(goal.end_date, time.max)),
+            goal_progress=0,
+            title="목표 포함 게시글",
+            content="내용",
+        )
+        CheckGoal.objects.create(user=user, goal=goal)
+
+        res: Response = client.get(f"{BASE_URL}{post.id}/")
+
+        assert res.status_code == 200
+        assert res.data["goal_info"]["goal_progress"] == 33
 
     def test_post_detail(self, client: APIClient, post: Post) -> None:
         res: Response = client.get(f"{BASE_URL}{post.id}/")
