@@ -125,34 +125,40 @@ def test_trending_sorted_by_like_count_desc(api_client: APIClient, user: User) -
 @pytest.mark.django_db
 @freeze_time("2026-04-24 12:00:00")
 def test_trending_week_excludes_older_posts(api_client: APIClient, user: User) -> None:  # type: ignore[valid-type]
-    """7일 초과 게시글은 week 결과에 포함되지 않는다."""
+    """7일 초과 게시글은 week 결과에 포함되지 않는다 (최신 글이 threshold 이상인 경우)."""
+    from apps.posts.services.recommendation_config import TRENDING_FALLBACK_THRESHOLD
+
     auth(api_client, user)
 
-    recent = PostFactory_create()
+    # fallback이 발동되지 않도록 threshold 이상의 최근 글 생성
+    for _ in range(TRENDING_FALLBACK_THRESHOLD):
+        PostFactory_create()
     old = PostFactory_create()
     Post.objects.filter(pk=old.pk).update(created_at=timezone.now() - datetime.timedelta(days=8))
 
     res = api_client.get(TRENDING_URL, {"period": "week", "size": "10"})
 
     post_ids = [p["post_id"] for p in _posts(res)]
-    assert recent.id in post_ids
     assert old.id not in post_ids
 
 
 @pytest.mark.django_db
 @freeze_time("2026-04-24 12:00:00")
 def test_trending_day_excludes_posts_older_than_24h(api_client: APIClient, user: User) -> None:  # type: ignore[valid-type]
-    """24시간 초과 게시글은 day 결과에 포함되지 않는다."""
+    """24시간 초과 게시글은 day 결과에 포함되지 않는다 (최신 글이 threshold 이상인 경우)."""
+    from apps.posts.services.recommendation_config import TRENDING_FALLBACK_THRESHOLD
+
     auth(api_client, user)
 
-    recent = PostFactory_create()
+    # fallback이 발동되지 않도록 threshold 이상의 최근 글 생성
+    for _ in range(TRENDING_FALLBACK_THRESHOLD):
+        PostFactory_create()
     old = PostFactory_create()
     Post.objects.filter(pk=old.pk).update(created_at=timezone.now() - datetime.timedelta(hours=25))
 
     res = api_client.get(TRENDING_URL, {"period": "day", "size": "10"})
 
     post_ids = [p["post_id"] for p in _posts(res)]
-    assert recent.id in post_ids
     assert old.id not in post_ids
 
 

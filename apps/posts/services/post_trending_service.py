@@ -12,6 +12,7 @@ from apps.posts.services.post_service import _base_visible_posts, get_tags_by_po
 from apps.posts.services.recommendation_config import (
     CONTENT_PREVIEW_LENGTH,
     TRENDING_DEFAULT_PERIOD,
+    TRENDING_FALLBACK_THRESHOLD,
     TRENDING_HOT_SCORE_GRAVITY,
     TRENDING_PERIOD_DAYS,
     TRENDING_WEEK_CANDIDATE_LIMIT,
@@ -97,10 +98,52 @@ def _trending_week(*, user: User, page: int, size: int, since: Any) -> dict[str,
     return {"posts": _build_posts_out(chunk, tag_map), "page": page, "size": size, "total_count": total}
 
 
+def _get_latest_fallback(*, user: User, exclude_ids: list[int]) -> list[Any]:
+    """trending 글이 부족할 때 최신순으로 보충할 후보를 반환."""
+    active_comment_filter = active_comment_q()
+    return list(
+        _base_visible_posts()
+        .filter(is_private=False)
+        .exclude(id__in=exclude_ids)
+        .select_related("user")
+        .annotate(
+            like_count=Count("likes", distinct=True),
+            comment_count=Count("comments", filter=active_comment_filter, distinct=True),
+            is_liked=Exists(PostLike.objects.filter(post_id=OuterRef("pk"), user_id=user.id)),
+            is_scrapped=Exists(Scrap.objects.filter(post_id=OuterRef("pk"), user_id=user.id)),
+        )
+        .order_by("-created_at")[:TRENDING_WEEK_CANDIDATE_LIMIT]
+    )
+
+
 def get_trending_posts(*, user: User, page: int, size: int, period: str) -> dict[str, Any]:
     days = PERIOD_DAYS.get(period, PERIOD_DAYS[DEFAULT_PERIOD])
     since = timezone.now() - timedelta(days=days)
 
     if period == "day":
-        return _trending_day(user=user, page=page, size=size, since=since)
-    return _trending_week(user=user, page=page, size=size, since=since)
+        result = _trending_day(user=user, page=page, size=size, since=since)
+    else:
+        result = _trending_week(user=user, page=page, size=size, since=since)
+
+    if result["total_count"] >= TRENDING_FALLBACK_THRESHOLD:
+        return result
+
+    # trending 글이 부족하면 최신순으로 보충하여 재페이지네이션
+    if period == "day":
+        all_trending = _trending_day(user=user, page=1, size=TRENDING_WEEK_CANDIDATE_LIMIT, since=since)
+    else:
+        all_trending = _trending_week(user=user, page=1, size=TRENDING_WEEK_CANDIDATE_LIMIT, since=since)
+
+    all_trending_posts = all_trending["posts"]
+    all_trending_ids = [post["post_id"] for post in all_trending_posts]
+
+    fallback = _get_latest_fallback(user=user, exclude_ids=all_trending_ids)
+    fallback_tag_map = get_tags_by_post_id([post.id for post in fallback])
+    fallback_posts = _build_posts_out(fallback, fallback_tag_map)
+
+    combined = all_trending_posts + fallback_posts
+    total = len(combined)
+    offset = (page - 1) * size
+    chunk = combined[offset : offset + size]
+
+    return {"posts": chunk, "page": page, "size": size, "total_count": total}
