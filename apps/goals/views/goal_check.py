@@ -147,8 +147,10 @@ class GoalCheckedHistoryListView(APIView):
         paginated_queryset = paginator.paginate_queryset(queryset, request, view=self)
 
         if paginated_queryset is not None:
-            serializer = GoalReadSerializer(paginated_queryset, many=True, context={"request": request})
+            serializer = GoalReadSerializer(
+                paginated_queryset, many=True, context={"request": request, "target_date": target_date}
+            )
             return paginator.get_paginated_response(serializer.data)
 
-        serializer = GoalReadSerializer(queryset, many=True, context={"request": request})
+        serializer = GoalReadSerializer(queryset, many=True, context={"request": request, "target_date": target_date})
         return Response(serializer.data, status=status.HTTP_200_OK)

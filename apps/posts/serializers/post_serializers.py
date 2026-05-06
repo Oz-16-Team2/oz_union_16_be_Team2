@@ -347,6 +347,18 @@ def snapshot_goal_on_post(post: Post, goal: Goal) -> None:
     post.goal_start_date = _date_start_datetime(goal.start_date)
     post.goal_end_date = _date_end_datetime(goal.end_date)
 
+    delta = goal.end_date - goal.start_date
+    target_count = max(0, delta.days + 1)
+
+    current_count = goal.checks.count()
+
+    if target_count > 0:
+        progress_rate = int((current_count / target_count) * 100)
+    else:
+        progress_rate = 0
+
+    post.goal_progress = progress_rate
+
 
 def _date_start_datetime(d: Any) -> Any:
 
