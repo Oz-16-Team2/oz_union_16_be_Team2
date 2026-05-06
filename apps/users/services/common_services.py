@@ -19,7 +19,7 @@ def _build_user_profile(user: User) -> dict[str, Any]:
     return {
         "id": user.id,
         "nickname": user.nickname,
-        "profile_image_url": PROFILE_IMAGE_URL_MAP.get(user.profile_image, ""),
+        "profile_image_url": user.social_profile_image_url or PROFILE_IMAGE_URL_MAP.get(user.profile_image, ""),
     }
 
 
