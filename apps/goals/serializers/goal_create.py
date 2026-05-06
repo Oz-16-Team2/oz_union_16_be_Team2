@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from typing import Any
 
 from django.utils import timezone
@@ -49,15 +49,28 @@ class GoalReadSerializer(serializers.ModelSerializer[Any]):
         delta = obj.end_date - obj.start_date
         target = max(0, delta.days + 1)
 
-        current = len(obj.checks.all())
-
         if target <= 0:
             return 0
+
+        target_date_str = self.context.get("target_date")
+
+        if target_date_str:
+            target_date = datetime.strptime(target_date_str, "%Y-%m-%d").date()
+            current = sum(1 for check in obj.checks.all() if check.created_at.date() <= target_date)
+        else:
+            current = len(obj.checks.all())
+
         return int(round((current / target) * 100, 0))
 
     def get_is_checked_today(self, obj: Goal) -> bool:
-        today = timezone.now().date()
-        return any(check.created_at.date() == today for check in obj.checks.all())
+        target_date_str = self.context.get("target_date")
+
+        if target_date_str:
+            check_date = datetime.strptime(target_date_str, "%Y-%m-%d").date()
+        else:
+            check_date = timezone.localtime(timezone.now()).date()
+
+        return any(check.created_at.date() == check_date for check in obj.checks.all())
 
 
 class GoalUpdateSerializer(serializers.ModelSerializer[Any]):
