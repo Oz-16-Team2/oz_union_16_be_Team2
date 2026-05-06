@@ -9,6 +9,7 @@ from rest_framework import serializers
 
 from apps.core.choices import CommentStatus
 from apps.goals.models import Goal
+from apps.goals.serializers.goal_create import GoalReadSerializer
 from apps.posts.models import Post, PostTag, Tag
 from apps.users.utils import get_user_display_info
 from apps.votes.serializers import VoteCreateRequestSerializer, VoteUpdateSerializer
@@ -53,7 +54,10 @@ class PostFeedItemSerializer(serializers.Serializer[Any]):
     images = serializers.ListField(child=serializers.CharField(), allow_empty=True)
     profile_image_url = serializers.CharField(max_length=255, allow_null=True, required=False, allow_blank=True)
     nickname = serializers.CharField()
-    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S")
+    created_at = serializers.DateTimeField(
+        format="%Y-%m-%d %H:%M:%S",
+        default_timezone=timezone.get_current_timezone(),
+    )
     title = serializers.CharField()
     tags = serializers.ListField(child=serializers.CharField())
     content_preview = serializers.CharField()
@@ -309,7 +313,7 @@ def build_post_detail(
             "goal_title": post.goal_title or "",
             "goal_start_date": post.goal_start_date,
             "goal_end_date": post.goal_end_date,
-            "goal_progress": post.goal_progress,
+            "goal_progress": GoalReadSerializer().get_progress_rate(post.goal) if post.goal else post.goal_progress,
         }
     has_vote = vote_payload is not None
     nickname, profile_url = get_user_display_info(post.user)
