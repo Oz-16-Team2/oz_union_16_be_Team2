@@ -16,8 +16,8 @@ from apps.posts.services.recommendation_config import (
     SUGGESTION_LIKED_WEIGHT,
     SUGGESTION_TIME_DECAY_MAX_DAYS,
 )
-from apps.users.constants import PROFILE_IMAGE_URL_MAP
 from apps.users.models import User
+from apps.users.utils import get_user_display_info
 
 logger = logging.getLogger(__name__)
 
@@ -63,13 +63,15 @@ def _enrich_posts(posts: list[Post], *, user: User) -> list[dict[str, Any]]:
     for p in posts:
         c = counts.get(p.pk, {})
         preview = p.content[:CONTENT_PREVIEW_LENGTH] if p.content else ""
+
+        nickname, profile_url = get_user_display_info(p.user)
+
         items.append(
             {
                 "post_id": p.pk,
                 "images": p.images or [],
-                "profile_image_url": p.user.social_profile_image_url
-                or PROFILE_IMAGE_URL_MAP.get(p.user.profile_image, ""),
-                "nickname": p.user.nickname,
+                "profile_image_url": profile_url,
+                "nickname": nickname,
                 "created_at": p.created_at,
                 "title": p.title,
                 "tags": tag_map.get(p.pk, []),
