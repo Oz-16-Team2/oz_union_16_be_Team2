@@ -41,8 +41,8 @@ class VoteCreateAPIView(APIView):
                     "detail": {
                         "vote_id": 1,
                         "post_id": 10,
-                        "start_at": "2026-04-20T09:00:00+09:00",
-                        "end_at": "2026-04-27T09:00:00+09:00",
+                        "start_at": "2026-04-20",
+                        "end_at": "2026-04-27",
                         "status": "in_progress",
                         "options": [
                             {"vote_option_id": 1, "content": "예", "sort_order": 1},
@@ -200,8 +200,8 @@ class VoteDetailAPIView(APIView):
                 value={
                     "detail": {
                         "vote_id": 1,
-                        "start_at": "2026-04-20T09:00:00+09:00",
-                        "end_at": "2026-04-27T09:00:00+09:00",
+                        "start_at": "2026-04-20",
+                        "end_at": "2026-04-27",
                         "status": "in_progress",
                         "options": [
                             {"vote_option_id": 1, "content": "예", "sort_order": 1},
@@ -243,7 +243,8 @@ class VoteDetailAPIView(APIView):
                 return error_response("이미 참여자가 있는 투표는 수정할 수 없습니다.", 409)
             return error_response(msg, 400)
 
-        return detail_response(body, 200)
+        response_serializer = VoteUpdateResponseSerializer(body)
+        return detail_response(response_serializer.data, 200)
 
     @extend_schema(
         tags=["Votes"],

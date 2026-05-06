@@ -158,8 +158,8 @@ def update_vote(
 
     return {
         "vote_id": vote.id,
-        "start_at": vote.start_at,
-        "end_at": vote.end_at,
+        "start_at": timezone.localtime(vote.start_at).date(),
+        "end_at": timezone.localtime(vote.end_at).date(),
         "status": vote.status,
         "options": options_payload,
     }

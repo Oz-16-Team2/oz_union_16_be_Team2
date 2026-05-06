@@ -16,11 +16,23 @@ class VoteOptionDetailSerializer(serializers.Serializer[Any]):
 
 class VoteCreateRequestSerializer(serializers.Serializer[Any]):
     options = serializers.ListField(child=serializers.CharField(max_length=255), min_length=2, max_length=2)
-    end_at = serializers.DateTimeField()
+    start_at = serializers.DateField(required=False)
+    end_at = serializers.DateField()
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
-        if attrs.get("end_at") and attrs["end_at"] <= timezone.now():
-            raise serializers.ValidationError("종료 시간은 현재 시간 이후여야 합니다.")
+        end_at = attrs.get("end_at")
+        start_at = attrs.get("start_at")
+        today = timezone.localdate()
+
+        if end_at and end_at < today:
+            raise serializers.ValidationError("종료일은 오늘 이후여야 합니다.")
+
+        if start_at and end_at and end_at < start_at:
+            raise serializers.ValidationError("종료일은 시작일보다 빠를 수 없습니다.")
+
+        if not start_at:
+            attrs["start_at"] = today
+
         return attrs
 
     def validate_options(self, value: list[str]) -> list[str]:
@@ -56,20 +68,28 @@ class VoteUpdateSerializer(serializers.Serializer[Any]):
         min_length=2,
         max_length=2,
     )
-    start_at = serializers.DateTimeField(required=False)
-    end_at = serializers.DateTimeField()
+    start_at = serializers.DateField(required=False)
+    end_at = serializers.DateField()
     is_ended = serializers.BooleanField(required=False)
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
-        if attrs.get("end_at") and attrs["end_at"] <= timezone.now():
-            raise serializers.ValidationError("종료 시간은 현재 시간 이후여야 합니다.")
+        end_at = attrs.get("end_at")
+        start_at = attrs.get("start_at")
+        today = timezone.localdate()
+
+        if end_at and end_at < today:
+            raise serializers.ValidationError("종료일은 오늘 이후여야 합니다.")
+
+        if start_at and end_at and end_at < start_at:
+            raise serializers.ValidationError("종료일은 시작일보다 빠를 수 없습니다.")
+
         return attrs
 
 
 class VoteUpdateResponseSerializer(serializers.Serializer[Any]):
     vote_id = serializers.IntegerField()
-    start_at = serializers.DateTimeField(format="%Y-%m-%d")
-    end_at = serializers.DateTimeField(format="%Y-%m-%d")
+    start_at = serializers.DateField(format="%Y-%m-%d")
+    end_at = serializers.DateField(format="%Y-%m-%d")
     status = serializers.ChoiceField(choices=VoteStatus.choices)
     options = VoteOptionDetailSerializer(many=True)
 
