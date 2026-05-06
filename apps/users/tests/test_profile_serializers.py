@@ -56,20 +56,19 @@ def test_user_profile_serializer_returns_default_when_provider_is_invalid(user: 
 
 
 @pytest.mark.django_db
-def test_user_profile_serializer_returns_social_profile(user: User) -> None:
+def test_user_profile_serializer_returns_user_profile(user: User) -> None:
     SocialLogin.objects.create(
         user=user,
         provider="kakao",
-        provider_user_id="kakao-user-id",
+        provider_user_id="123",
         social_nickname="카카오닉네임",
-        social_profile_image_url="https://example.com/kakao-profile.png",
+        social_profile_image_url="https://example.com/kakao.png",
     )
-    request = DummyRequest(auth={"provider": "kakao"})
 
-    serializer = UserProfileSerializer(user, context={"request": request})
+    serializer = UserProfileSerializer(user)
 
-    assert serializer.data["nickname"] == "카카오닉네임"
-    assert serializer.data["profile_image_url"] == "https://example.com/kakao-profile.png"
+    assert serializer.data["nickname"] == user.nickname
+    assert serializer.data["profile_image_url"] == PROFILE_IMAGE_URL_MAP[user.profile_image]
 
 
 @pytest.mark.django_db

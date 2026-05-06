@@ -3,41 +3,19 @@ from typing import Any
 from rest_framework import serializers
 
 from apps.users.constants import PROFILE_IMAGE_URL_MAP
-from apps.users.models import SocialLogin, User
+from apps.users.models import User
 
 
 class UserProfileSerializer(serializers.ModelSerializer[Any]):
-    nickname = serializers.SerializerMethodField()
     profile_image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = ["id", "nickname", "profile_image_url"]
 
-    def _get_social_login(self, obj: User) -> SocialLogin | None:
-        request = self.context.get("request")
-        if request is None or request.auth is None:
-            return None
-
-        provider = request.auth.get("provider")
-        if not isinstance(provider, str) or not provider:
-            return None
-
-        return obj.social_logins.filter(provider=provider).first()
-
-    def get_nickname(self, obj: User) -> str:
-        social_login = self._get_social_login(obj)
-
-        if social_login is not None and social_login.social_nickname:
-            return str(social_login.social_nickname)
-
-        return str(obj.nickname)
-
     def get_profile_image_url(self, obj: User) -> str:
-        social_login = self._get_social_login(obj)
-
-        if social_login is not None and social_login.social_profile_image_url:
-            return str(social_login.social_profile_image_url)
+        if obj.social_profile_image_url:
+            return str(obj.social_profile_image_url)
 
         return str(PROFILE_IMAGE_URL_MAP.get(obj.profile_image, ""))
 
