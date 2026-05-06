@@ -1,21 +1,26 @@
 import logging
-from typing import cast
+from typing import Any, cast
 
 from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core import detail_response, error_response
-from apps.posts.serializers.post_serializers import PostListQuerySerializer, PostSuggestionResponseSerializer
+from apps.posts.serializers.post_serializers import PostSuggestionResponseSerializer
 from apps.posts.services.post_suggestion_service import get_recommendation_feed
 from apps.users.models import User
 
 logger = logging.getLogger(__name__)
 
 _DEFAULT_PAGE_SIZE = 8
+
+
+class _SuggestionQuerySerializer(serializers.Serializer[Any]):
+    page = serializers.IntegerField(required=False, min_value=1, default=1)
+    size = serializers.IntegerField(required=False, min_value=1, max_value=100, default=_DEFAULT_PAGE_SIZE)
 
 
 class PostSuggestionAPIView(APIView):
@@ -35,7 +40,7 @@ class PostSuggestionAPIView(APIView):
                 name="page",
                 type=int,
                 location=OpenApiParameter.QUERY,
-                description="페이지 번호 (0부터 시작)",
+                description="페이지 번호 (1부터 시작)",
                 required=False,
             ),
             OpenApiParameter(
@@ -61,12 +66,12 @@ class PostSuggestionAPIView(APIView):
         try:
             user = cast(User, request.user)
 
-            query_serializer = PostListQuerySerializer(data=request.query_params)
+            query_serializer = _SuggestionQuerySerializer(data=request.query_params)
             if not query_serializer.is_valid():
                 return error_response(query_serializer.errors, status.HTTP_400_BAD_REQUEST)
 
-            page: int = query_serializer.validated_data.get("page", 0)
-            size: int = query_serializer.validated_data.get("size", _DEFAULT_PAGE_SIZE)
+            page: int = query_serializer.validated_data["page"]
+            size: int = query_serializer.validated_data["size"]
 
             data = get_recommendation_feed(user=user, page=page, size=size)
             response_serializer = PostSuggestionResponseSerializer(instance=data)
