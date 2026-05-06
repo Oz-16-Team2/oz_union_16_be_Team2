@@ -83,8 +83,8 @@ def _enrich_posts(posts: list[Post], *, user: User) -> list[dict[str, Any]]:
     return items
 
 
-def get_recommendation_feed(*, user: User, page: int = 0, size: int = 8) -> dict[str, Any]:
-    chunk, total = get_recommended_posts(user=user, page=page + 1, size=size)
+def get_recommendation_feed(*, user: User, page: int = 1, size: int = 8) -> dict[str, Any]:
+    chunk, total = get_recommended_posts(user=user, page=page, size=size)
     return {
         "posts": _enrich_posts(chunk, user=user),
         "page": page,
