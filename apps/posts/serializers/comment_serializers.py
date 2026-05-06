@@ -47,6 +47,9 @@ class CommentListSerializer(serializers.ModelSerializer[Any]):
         fields = ["id", "user_id", "nickname", "content", "created_at", "like_count", "is_liked", "profile_image_url"]
 
     def get_profile_image_url(self, obj: Comment) -> str | None:
+        for social in obj.user.social_logins.all():
+            if social.social_profile_image_url:
+                return social.social_profile_image_url
         return PROFILE_IMAGE_URL_MAP.get(obj.user.profile_image)
 
 

@@ -9,9 +9,10 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core import detail_response
 from apps.core.exceptions import ResourceNotFoundException
 from apps.core.response import error_response
-from apps.posts.serializers.post_serializers import PostSuggestionResponseSerializer
+from apps.posts.serializers.post_serializers import PostFeedResponseSerializer
 from apps.posts.services.post_trending_service import DEFAULT_PERIOD, PERIOD_DAYS, get_trending_posts
 from apps.users.models import User
 
@@ -58,9 +59,9 @@ class PostTrendingAPIView(APIView):
                 required=False,
             ),
         ],
-        tags=["게시글 (Posts)"],
+        tags=["추천 (Suggestions)"],
         responses={
-            200: PostSuggestionResponseSerializer,
+            200: PostFeedResponseSerializer,
             400: dict,
             401: dict,
         },
@@ -81,5 +82,5 @@ class PostTrendingAPIView(APIView):
         except ResourceNotFoundException as e:
             return error_response(e.detail, status.HTTP_404_NOT_FOUND)
 
-        response_serializer = PostSuggestionResponseSerializer(instance=data)
-        return Response(response_serializer.data, status.HTTP_200_OK)
+        response_serializer = PostFeedResponseSerializer(instance=data)
+        return detail_response(response_serializer.data, status.HTTP_200_OK)

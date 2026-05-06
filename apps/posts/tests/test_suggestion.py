@@ -17,11 +17,17 @@ from freezegun import freeze_time
 
 from apps.posts.models import Post
 from apps.posts.services.post_suggestion_service import (
-    _AUTHORED_WEIGHT,
-    _LIKED_WEIGHT,
-    _MAX_DAYS,
     _time_decay,
     get_recommended_posts,
+)
+from apps.posts.services.recommendation_config import (
+    SUGGESTION_AUTHORED_WEIGHT as _AUTHORED_WEIGHT,
+)
+from apps.posts.services.recommendation_config import (
+    SUGGESTION_LIKED_WEIGHT as _LIKED_WEIGHT,
+)
+from apps.posts.services.recommendation_config import (
+    SUGGESTION_TIME_DECAY_MAX_DAYS as _MAX_DAYS,
 )
 from apps.posts.tests.factories import (
     PostFactory_create,
@@ -37,34 +43,35 @@ from apps.posts.tests.factories import (
 
 
 class TestTimeDecayFormula:
-    """_time_decay(age_days, max_days) 공식의 수학적 정확도."""
+    """_time_decay(age_days) 공식의 수학적 정확도. MAX_DAYS = 20.0"""
 
     def test_day_zero_is_full_weight(self) -> None:
-        assert _time_decay(0.0, 30.0) == 1.0
+        assert _time_decay(0.0) == 1.0
 
     def test_half_life_returns_half_weight(self) -> None:
-        assert _time_decay(15.0, 30.0) == pytest.approx(0.5)
+        # 10일 경과, max_days=20 → 1 - 10/20 = 0.5
+        assert _time_decay(10.0) == pytest.approx(0.5)
 
     def test_near_expiry_returns_tenth(self) -> None:
-        # 27일 경과, max_days=30 → 1 - 27/30 = 0.1
-        assert _time_decay(27.0, 30.0) == pytest.approx(0.1, abs=1e-9)
+        # 18일 경과, max_days=20 → 1 - 18/20 = 0.1
+        assert _time_decay(18.0) == pytest.approx(0.1, abs=1e-9)
 
     def test_floor_applied_at_max_days(self) -> None:
-        # 30일 = 한계치 → max(0.1, 0.0) = 0.1
-        assert _time_decay(30.0, 30.0) == pytest.approx(0.1)
+        # 20일 = 한계치 → max(0.1, 0.0) = 0.1
+        assert _time_decay(20.0) == pytest.approx(0.1)
 
     def test_floor_applied_beyond_max_days(self) -> None:
         # 100일이 지나도 음수가 되지 않고 0.1 유지
-        assert _time_decay(100.0, 30.0) == pytest.approx(0.1)
+        assert _time_decay(100.0) == pytest.approx(0.1)
 
     def test_never_returns_negative(self) -> None:
-        assert _time_decay(999.0, 1.0) >= 0.0
+        assert _time_decay(999.0) >= 0.0
 
     def test_proportional_over_service_max_days(self) -> None:
-        # 서비스 상수 _MAX_DAYS를 기준으로 중간 시점이 선형적으로 작동하는지 확인
+        # _MAX_DAYS(20.0)를 기준으로 중간 시점이 선형적으로 작동하는지 확인
         for days in [1.0, 5.0, 10.0, 15.0]:
             expected = max(0.1, 1.0 - days / _MAX_DAYS)
-            assert _time_decay(days, _MAX_DAYS) == pytest.approx(expected)
+            assert _time_decay(days) == pytest.approx(expected)
 
 
 # ============================================================
