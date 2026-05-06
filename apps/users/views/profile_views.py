@@ -18,6 +18,7 @@ from apps.users.serializers.common_serializers import (
 )
 from apps.users.serializers.profile_serializers import (
     ChangeNicknameSerializer,
+    CurrentPasswordCheckSerializer,
     MeActivitySummaryAchievementRateResponseSerializer,
     MeActivitySummaryCompletedGoalsResponseSerializer,
     MeActivitySummaryDaysResponseSerializer,
@@ -302,3 +303,28 @@ class ChangeNicknameAPIView(APIView):
         )
 
         return Response({"detail": detail}, status=status.HTTP_200_OK)
+
+
+class CurrentPasswordCheckAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = CurrentPasswordCheckSerializer
+
+    @extend_schema(
+        tags=["Accounts"],
+        summary="현재 비밀번호 일치 여부 확인 API",
+        request=CurrentPasswordCheckSerializer,
+    )
+    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        if not request.user.check_password(serializer.validated_data["password"]):
+            return Response(
+                {"error_detail": "기존 비밀번호가 일치하지 않습니다."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        return Response(
+            {"detail": {"current_password_match": True}},
+            status=status.HTTP_200_OK,
+        )

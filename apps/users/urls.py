@@ -10,6 +10,7 @@ from apps.users.views.auth_views import LoginAPIView, LogoutAPIView, TokenRefres
 from apps.users.views.profile_views import (
     ChangeNicknameAPIView,
     ChangePasswordAPIView,
+    CurrentPasswordCheckAPIView,
     MeActivitySummaryAchievementRateAPIView,
     MeActivitySummaryCompletedGoalsAPIView,
     MeActivitySummaryDaysAPIView,
@@ -52,4 +53,9 @@ urlpatterns = [
     path("change-password", ChangePasswordAPIView.as_view(), name="change-password"),
     path("profile-images", ProfileImageListAPIView.as_view(), name="profile-list"),
     path("me/change-nickname", ChangeNicknameAPIView.as_view(), name="me-change-nickname"),
+    path(
+        "change-password/check",
+        CurrentPasswordCheckAPIView.as_view(),
+        name="password-check",
+    ),
 ]
