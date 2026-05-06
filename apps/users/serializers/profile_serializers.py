@@ -79,3 +79,7 @@ class ProfileImageListResponseSerializer(serializers.Serializer[Any]):
 
 class ChangeNicknameSerializer(serializers.Serializer[Any]):
     nickname = serializers.CharField(max_length=30)
+
+
+class CurrentPasswordCheckSerializer(serializers.Serializer[Any]):
+    current_password = serializers.CharField(write_only=True)
