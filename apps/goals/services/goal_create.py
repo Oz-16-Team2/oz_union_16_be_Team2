@@ -29,7 +29,7 @@ class GoalCreateService:
         start_date_filter: str | None = None,
         end_date_filter: str | None = None,
     ) -> QuerySet[Goal]:
-        today = timezone.now().date()
+        today = timezone.localtime(timezone.now()).date()
 
         expired_goals = Goal.objects.filter(user=user, status=Status.IN_PROGRESS, end_date__lt=today)
         for goal in expired_goals:
@@ -59,6 +59,8 @@ class GoalCreateService:
 
     @staticmethod
     def update_goal(goal: Goal, **update_data: Any) -> Goal:
+        GoalCreateService.update_goal_status(goal)
+
         if goal.status != Status.IN_PROGRESS:
             raise ConflictException({"detail": ["진행 중인 목표만 수정할 수 있습니다."]})
 
@@ -77,7 +79,7 @@ class GoalCreateService:
 
     @staticmethod
     def update_goal_status(goal: Goal) -> None:
-        today = timezone.now().date()
+        today = timezone.localtime(timezone.now()).date()
 
         if goal.end_date >= today:
             return
