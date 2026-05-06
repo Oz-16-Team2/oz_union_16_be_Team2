@@ -68,10 +68,11 @@ def _get_base_qs(*, user: User, since: Any) -> Any:
 
 
 def _trending_day(*, user: User, page: int, size: int, since: Any) -> dict[str, Any]:
-    """24시간 이내 글을 누적 좋아요 수 내림차순으로 반환 (DB 정렬)."""
+    """24시간 이내 글을 누적 좋아요 수 내림차순으로 반환 (DB 정렬). page는 1-indexed."""
     qs = _get_base_qs(user=user, since=since).order_by("-like_count", "-created_at")
     total = qs.count()
-    chunk = list(qs[page * size : page * size + size])
+    offset = (page - 1) * size
+    chunk = list(qs[offset : offset + size])
     tag_map = get_tags_by_post_id([p.id for p in chunk])
     return {"posts": _build_posts_out(chunk, tag_map), "page": page, "size": size, "total_count": total}
 
@@ -90,7 +91,8 @@ def _trending_week(*, user: User, page: int, size: int, since: Any) -> dict[str,
         reverse=True,
     )
     total = len(scored)
-    chunk = scored[page * size : page * size + size]
+    offset = (page - 1) * size
+    chunk = scored[offset : offset + size]
     tag_map = get_tags_by_post_id([p.id for p in chunk])
     return {"posts": _build_posts_out(chunk, tag_map), "page": page, "size": size, "total_count": total}
 

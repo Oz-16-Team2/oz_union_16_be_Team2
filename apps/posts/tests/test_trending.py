@@ -195,7 +195,7 @@ def test_trending_pagination(api_client: APIClient, user: User) -> None:  # type
     for _ in range(5):
         PostFactory_create()
 
-    res = api_client.get(TRENDING_URL, {"size": "2", "page": "0"})
+    res = api_client.get(TRENDING_URL, {"size": "2", "page": "1"})
 
     detail = _data(res)
     assert len(detail["posts"]) == 2

@@ -8,6 +8,7 @@ from django.utils import timezone
 
 from apps.posts.models import Post, PostLike, PostTag, Scrap
 from apps.posts.serializers.post_serializers import active_comment_q
+from apps.posts.services.post_service import _base_visible_posts
 from apps.posts.services.recommendation_config import (
     CONTENT_PREVIEW_LENGTH,
     SUGGESTION_AUTHORED_WEIGHT,
@@ -94,7 +95,7 @@ def get_recommendation_feed(*, user: User, page: int = 0, size: int = 8) -> dict
 
 class PostSuggestionService:
     def get_recommendations(self, user: User) -> list[Post]:
-        queryset: QuerySet[Post] = Post.objects.all()
+        queryset: QuerySet[Post] = _base_visible_posts().filter(is_private=False)
 
         if getattr(settings, "ENVIRONMENT", None) == "production":
             queryset = queryset.exclude(user__email__endswith="@test.com")
