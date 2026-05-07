@@ -27,9 +27,6 @@ def _get_aware_end_of_day(date_val: Any) -> datetime:
 
 
 def _get_current_status(vote: Vote) -> str:
-    if vote.status == VoteStatus.CLOSED:
-        return VoteStatus.CLOSED.value
-
     if vote.end_at and timezone.now() > vote.end_at:
         return VoteStatus.CLOSED.value
 
