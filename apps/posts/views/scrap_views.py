@@ -57,7 +57,7 @@ class UserScrapListView(APIView):
     @extend_schema(
         summary="내 스크랩 목록 조회",
         parameters=[
-            OpenApiParameter(name="page", type=int, location=OpenApiParameter.QUERY, required=False, default=0),
+            OpenApiParameter(name="page", type=int, location=OpenApiParameter.QUERY, required=False, default=1),
             OpenApiParameter(name="size", type=int, location=OpenApiParameter.QUERY, required=False, default=20),
         ],
         responses={200: PostFeedResponseSerializer},

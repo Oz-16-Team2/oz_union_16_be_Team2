@@ -62,13 +62,13 @@ class TestMyPosts:
 
         api_client.force_authenticate(user=user)
 
-        url = "/api/v1/posts/me?page=0&size=2"
+        url = "/api/v1/posts/me?page=1&size=2"
         response = api_client.get(url)
         assert response.status_code == status.HTTP_200_OK
         body = response.data["detail"]
         assert len(body["posts"]) == 2
         assert body["total_count"] == 5
 
-        url = "/api/v1/posts/me?page=2&size=2"
+        url = "/api/v1/posts/me?page=3&size=2"
         response = api_client.get(url)
         assert len(response.data["detail"]["posts"]) == 1

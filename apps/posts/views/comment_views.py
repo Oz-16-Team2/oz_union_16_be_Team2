@@ -16,7 +16,7 @@ from apps.posts.serializers.comment_serializers import (
     CommentListSerializer,
 )
 
-_DEFAULT_COMMENT_PAGE_SIZE = 10
+_DEFAULT_COMMENT_PAGE_SIZE = 8
 
 
 class _CommentQuerySerializer(serializers.Serializer[Any]):
@@ -47,7 +47,17 @@ class _CommentQuerySerializer(serializers.Serializer[Any]):
         responses={
             200: inline_serializer(
                 name="CommentListResponse",
-                fields={"results": CommentListSerializer(many=True)},
+                fields={
+                    "results": inline_serializer(
+                        name="CommentListResults",
+                        fields={
+                            "comments": CommentListSerializer(many=True),
+                            "page": serializers.IntegerField(),
+                            "size": serializers.IntegerField(),
+                            "total_count": serializers.IntegerField(),
+                        },
+                    )
+                },
             )
         },
     ),
@@ -100,10 +110,20 @@ class PostCommentListCreateView(generics.ListCreateAPIView):  # type: ignore[typ
         size: int = query_serializer.validated_data["size"]
 
         queryset = self.filter_queryset(self.get_queryset())
+        total_count: int = queryset.count()
         offset = (page - 1) * size
         chunk = queryset[offset : offset + size]
         serializer = self.get_serializer(chunk, many=True)
-        return Response({"results": serializer.data})
+        return Response(
+            {
+                "results": {
+                    "comments": serializer.data,
+                    "page": page,
+                    "size": size,
+                    "total_count": total_count,
+                }
+            }
+        )
 
     def perform_create(self, serializer: BaseSerializer[Any]) -> None:
         post_id: Any = self.kwargs.get("post_id")

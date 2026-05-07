@@ -92,7 +92,7 @@ class TestPostCommentListCreateView:
         assert response.status_code == status.HTTP_200_OK
         assert "results" in response.data
 
-        results = response.data["results"]
+        results = response.data["results"]["comments"]
 
         assert len(results) == 1
         assert results[0]["content"] == "테스트 댓글"
@@ -112,7 +112,7 @@ class TestPostCommentListCreateView:
         assert response.status_code == status.HTTP_200_OK
         assert "results" in response.data
 
-        results = response.data["results"]
+        results = response.data["results"]["comments"]
 
         assert results[0]["like_count"] == 1
         assert results[0]["is_liked"] is True
@@ -125,7 +125,7 @@ class TestPostCommentListCreateView:
         response = api_client.get(f"/api/v1/posts/{post.id}/comments")
 
         assert response.status_code == status.HTTP_200_OK
-        result = response.data["results"][0]
+        result = response.data["results"]["comments"][0]
         expected_url = PROFILE_IMAGE_URL_MAP.get(user.profile_image)
         assert result["profile_image_url"] == expected_url
 
@@ -149,7 +149,7 @@ class TestPostCommentListCreateView:
         response = api_client.get(f"/api/v1/posts/{post.id}/comments")
 
         assert response.status_code == status.HTTP_200_OK
-        result = response.data["results"][0]
+        result = response.data["results"]["comments"][0]
         assert result["profile_image_url"] == social_image_url
 
     def test_profile_image_url_for_social_user_without_social_image(self, api_client: APIClient, post: Post) -> None:
@@ -171,7 +171,7 @@ class TestPostCommentListCreateView:
         response = api_client.get(f"/api/v1/posts/{post.id}/comments")
 
         assert response.status_code == status.HTTP_200_OK
-        result = response.data["results"][0]
+        result = response.data["results"]["comments"][0]
         expected_url = PROFILE_IMAGE_URL_MAP.get(social_user.profile_image)
         assert result["profile_image_url"] == expected_url
 
@@ -203,7 +203,7 @@ class TestPostCommentListCreateView:
         response = api_client.get(f"/api/v1/posts/{post.id}/comments")
 
         assert response.status_code == status.HTTP_200_OK
-        result = response.data["results"][0]
+        result = response.data["results"]["comments"][0]
 
         expected_avatar_url = PROFILE_IMAGE_URL_MAP.get(social_user.profile_image)
         assert result["profile_image_url"] == expected_avatar_url
@@ -305,7 +305,7 @@ class TestPostCommentDetailView:
         # 2. 목록 조회 시 더 이상 안 보이는지 이중 검증
         list_url = f"/api/v1/posts/{post.id}/comments"
         list_response = api_client.get(list_url)
-        assert len(list_response.data["results"]) == 0
+        assert len(list_response.data["results"]["comments"]) == 0
 
     def test_delete_comment_forbidden(
         self, api_client: APIClient, user_other: User, post: Post, comment: Comment
