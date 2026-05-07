@@ -115,21 +115,33 @@ class VoteDetailSerializer(serializers.Serializer[Any]):
     voted_option_id = serializers.IntegerField(allow_null=True, required=False)
 
     def get_status(self, obj: Any) -> str:
-        end_at = getattr(obj, "end_at", None) if not isinstance(obj, dict) else obj.get("end_at")
-
-        if end_at:
-            now = timezone.now()
-            if isinstance(end_at, datetime):
-                if end_at < now:
-                    return VoteStatus.CLOSED.value
-            elif isinstance(end_at, date):
-                if end_at < now.date():
-                    return VoteStatus.CLOSED.value
-
         raw_status = getattr(obj, "status", None) if not isinstance(obj, dict) else obj.get("status")
         status = raw_status.lower() if raw_status else None
+        end_at = getattr(obj, "end_at", None) if not isinstance(obj, dict) else obj.get("end_at")
 
         if status == VoteStatus.CLOSED.value:
             return VoteStatus.CLOSED.value
+
+        if end_at:
+            now = timezone.now()
+            target_end_at = end_at
+
+            if isinstance(target_end_at, str):
+                try:
+                    target_end_at = datetime.fromisoformat(target_end_at.replace("Z", "+00:00"))
+                except ValueError:
+                    target_end_at = timezone.make_aware(datetime.strptime(target_end_at[:10], "%Y-%m-%d"))
+
+            if isinstance(target_end_at, date) and not isinstance(target_end_at, datetime):
+                if target_end_at < now.date():
+                    return VoteStatus.CLOSED.value
+                return VoteStatus.IN_PROGRESS.value
+
+            if isinstance(target_end_at, datetime):
+                if timezone.is_naive(target_end_at):
+                    target_end_at = timezone.make_aware(target_end_at)
+
+                if target_end_at < now:
+                    return VoteStatus.CLOSED.value
 
         return VoteStatus.IN_PROGRESS.value
