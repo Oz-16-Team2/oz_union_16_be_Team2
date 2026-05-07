@@ -63,7 +63,7 @@ class TestVoteServices:
         )
 
         assert result["post_id"] == vote_post.id
-        assert result["status"] == VoteStatus.IN_PROGRESS.upper()
+        assert result["status"] == VoteStatus.IN_PROGRESS
 
     def test_update_vote_response_matches_serializer_contract(
         self,
@@ -96,7 +96,7 @@ class TestVoteServices:
         )
 
         assert result["vote_id"] == vote.id
-        assert result["status"] == VoteStatus.IN_PROGRESS.upper()
+        assert result["status"] == VoteStatus.IN_PROGRESS
 
     def test_get_vote_detail_status_closed_after_end_at(
         self,
@@ -113,7 +113,7 @@ class TestVoteServices:
 
         result = get_vote_detail(vote_id=vote.id, user=vote_owner)
 
-        assert result["status"] == VoteStatus.CLOSED.upper()
+        assert result["status"] == VoteStatus.CLOSED
 
     def test_participate_vote_fails_after_end_at(
         self,
