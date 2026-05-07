@@ -18,14 +18,11 @@ from apps.votes.models import Vote, VoteOption, VoteParticipation
 def _get_aware_end_of_day(date_val: Any) -> datetime:
     if isinstance(date_val, str):
         date_val = datetime.strptime(date_val[:10], "%Y-%m-%d").date()
-
-    if isinstance(date_val, datetime):
-        if timezone.is_aware(date_val):
-            date_val = timezone.localtime(date_val).date()
-        else:
-            date_val = date_val.date()
+    elif isinstance(date_val, datetime):
+        date_val = timezone.localtime(date_val).date()
 
     combined = datetime.combine(date_val, time.max)
+
     return timezone.make_aware(combined)
 
 
@@ -247,6 +244,7 @@ def get_vote_detail(*, vote_id: int, user: Any) -> dict[str, Any]:
     return {
         "vote_id": vote.id,
         "status": _get_current_status(vote),
+        "end_at": vote.end_at,
         "total_count": total_count,
         "options": options_payload,
         "is_voted": is_voted,
