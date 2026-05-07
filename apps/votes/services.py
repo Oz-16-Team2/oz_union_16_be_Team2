@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Any
 
 from django.db import transaction
@@ -48,12 +49,16 @@ def create_vote(
         for opt in vote.options.all().order_by("sort_order")
     ]
 
+    status = "IN_PROGRESS"
+    if timezone.now() > (vote.end_at + timedelta(days=1)):
+        status = "CLOSED"
+
     return {
         "vote_id": vote.id,
         "post_id": post.id,
         "start_at": vote.start_at,
         "end_at": vote.end_at,
-        "status": vote.status.upper(),
+        "status": status,
         "options": options_payload,
     }
 
@@ -86,11 +91,8 @@ def participate_vote(
     if vote is None:
         raise NotFound("해당 투표를 찾을 수 없습니다.")
 
-    if vote.end_at < timezone.now():
+    if timezone.now() > (vote.end_at + timedelta(days=1)):
         raise ValidationError("종료된 투표입니다.")
-
-    if vote.status != VoteStatus.IN_PROGRESS:
-        raise ValidationError("진행 중인 투표가 아닙니다.")
 
     option = VoteOption.objects.filter(id=option_id, vote=vote).first()
     if option is None:
@@ -132,7 +134,7 @@ def update_vote(
     if vote.participations.exists():
         raise ValidationError("이미 참여자가 있는 투표는 수정할 수 없습니다.")
 
-    if vote.status != VoteStatus.IN_PROGRESS:
+    if timezone.now() > (vote.end_at + timedelta(days=1)):
         raise ValidationError("진행 중인 투표만 수정할 수 있습니다.")
 
     vote.start_at = start_at
@@ -159,11 +161,15 @@ def update_vote(
         for o in vote.options.all().order_by("sort_order")
     ]
 
+    status = "IN_PROGRESS"
+    if timezone.now() > (vote.end_at + timedelta(days=1)):
+        status = "CLOSED"
+
     return {
         "vote_id": vote.id,
         "start_at": timezone.localtime(vote.start_at).date(),
         "end_at": timezone.localtime(vote.end_at).date(),
-        "status": vote.status.upper(),
+        "status": status,
         "options": options_payload,
     }
 
@@ -213,13 +219,13 @@ def get_vote_detail(*, vote_id: int, user: Any) -> dict[str, Any]:
             is_voted = True
             voted_option_id = participation.vote_option_id
 
-    status = vote.status
-    if status == VoteStatus.IN_PROGRESS and vote.end_at < timezone.now():
-        status = VoteStatus.CLOSED
+    status = "IN_PROGRESS"
+    if timezone.now() > (vote.end_at + timedelta(days=1)):
+        status = "CLOSED"
 
     return {
         "vote_id": vote.id,
-        "status": status.upper(),
+        "status": status,
         "total_count": total_count,
         "options": options_payload,
         "is_voted": is_voted,

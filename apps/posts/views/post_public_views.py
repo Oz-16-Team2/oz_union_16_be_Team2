@@ -227,7 +227,7 @@ class PostDetailAPIView(APIView):
                     "vote_info": {
                         "vote_id": 41,
                         "end_at": "2026-04-10T09:00:00Z",
-                        "status": "in_progress",
+                        "status": "IN_PROGRESS",
                         "options": [
                             {"option_id": 101, "content": "처음 1km", "sort_order": 1},
                             {"option_id": 102, "content": "중간 언덕", "sort_order": 2},

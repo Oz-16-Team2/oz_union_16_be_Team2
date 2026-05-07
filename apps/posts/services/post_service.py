@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Any
 
 from django.db import transaction
@@ -207,11 +208,16 @@ def get_post_detail(*, post_id: int, user: Any) -> dict[str, Any]:
     vote_obj = Vote.objects.filter(post=post).prefetch_related("options").first()
     if vote_obj is not None:
         opts = sorted(vote_obj.options.all(), key=lambda o: o.sort_order)
+
+        status = "IN_PROGRESS"
+        if timezone.now() > (vote_obj.end_at + timedelta(days=1)):
+            status = "CLOSED"
+
         vote_payload = {
             "vote_id": vote_obj.id,
             "start_at": timezone.localtime(vote_obj.start_at).date(),
             "end_at": timezone.localtime(vote_obj.end_at).date(),
-            "status": vote_obj.status,
+            "status": status,
             "options": [{"option_id": o.id, "content": o.content, "sort_order": o.sort_order} for o in opts],
         }
     return build_post_detail(
