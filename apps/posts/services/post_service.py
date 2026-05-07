@@ -23,6 +23,7 @@ from apps.posts.serializers.post_serializers import (
     snapshot_goal_on_post,
 )
 from apps.votes.models import Vote, VoteOption
+from apps.votes.services import _get_aware_end_of_day
 
 
 def get_tags_by_post_id(post_ids: list[int]) -> dict[int, list[str]]:
@@ -237,7 +238,7 @@ def _create_vote_for_post(post: Post, vote_data: dict[str, Any]) -> None:
     vote = Vote.objects.create(
         post=post,
         start_at=now,
-        end_at=vote_data["end_at"],
+        end_at=_get_aware_end_of_day(vote_data["end_at"]),
         status=VoteStatus.IN_PROGRESS,
     )
     VoteOption.objects.bulk_create(
