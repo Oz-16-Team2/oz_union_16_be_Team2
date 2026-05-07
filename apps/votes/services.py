@@ -48,12 +48,16 @@ def create_vote(
         for opt in vote.options.all().order_by("sort_order")
     ]
 
+    status = vote.status.upper()
+    if timezone.localdate() > vote.end_at.date():
+        status = "CLOSED"
+
     return {
         "vote_id": vote.id,
         "post_id": post.id,
         "start_at": vote.start_at,
         "end_at": vote.end_at,
-        "status": vote.status.upper(),
+        "status": status,
         "options": options_payload,
     }
 
@@ -86,7 +90,7 @@ def participate_vote(
     if vote is None:
         raise NotFound("해당 투표를 찾을 수 없습니다.")
 
-    if vote.end_at < timezone.now():
+    if timezone.localdate() > vote.end_at.date():
         raise ValidationError("종료된 투표입니다.")
 
     if vote.status != VoteStatus.IN_PROGRESS:
@@ -159,11 +163,15 @@ def update_vote(
         for o in vote.options.all().order_by("sort_order")
     ]
 
+    status = vote.status.upper()
+    if timezone.localdate() > vote.end_at.date():
+        status = "CLOSED"
+
     return {
         "vote_id": vote.id,
         "start_at": timezone.localtime(vote.start_at).date(),
         "end_at": timezone.localtime(vote.end_at).date(),
-        "status": vote.status.upper(),
+        "status": status,
         "options": options_payload,
     }
 
@@ -213,13 +221,13 @@ def get_vote_detail(*, vote_id: int, user: Any) -> dict[str, Any]:
             is_voted = True
             voted_option_id = participation.vote_option_id
 
-    status = vote.status
-    if status == VoteStatus.IN_PROGRESS and vote.end_at < timezone.now():
-        status = VoteStatus.CLOSED
+    status = vote.status.upper()
+    if timezone.localdate() > vote.end_at.date():
+        status = "CLOSED"
 
     return {
         "vote_id": vote.id,
-        "status": status.upper(),
+        "status": status,
         "total_count": total_count,
         "options": options_payload,
         "is_voted": is_voted,
