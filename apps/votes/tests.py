@@ -15,19 +15,21 @@ from apps.votes.services import create_vote, get_vote_detail, participate_vote, 
 
 @pytest.fixture
 def other_user(db: None) -> User:
+    unique_id = timezone.now().timestamp()
     return User.objects.create_user(
-        email="other@test.com",
+        email=f"other-{unique_id}@test.com",
         password="1234",
-        nickname="other",
+        nickname=f"other-{unique_id}",
     )
 
 
 @pytest.fixture
 def vote_owner(db: None) -> User:
+    unique_id = timezone.now().timestamp()
     return User.objects.create_user(
-        email="vote-owner@test.com",
+        email=f"owner-{unique_id}@test.com",
         password="1234",
-        nickname="vote-owner",
+        nickname=f"owner-{unique_id}",
     )
 
 
@@ -61,6 +63,7 @@ class TestVoteServices:
         )
 
         assert result["post_id"] == vote_post.id
+        assert result["status"] == VoteStatus.IN_PROGRESS.upper()
 
     def test_update_vote_response_matches_serializer_contract(
         self,
@@ -93,13 +96,13 @@ class TestVoteServices:
         )
 
         assert result["vote_id"] == vote.id
+        assert result["status"] == VoteStatus.IN_PROGRESS.upper()
 
     def test_get_vote_detail_status_closed_after_end_at(
         self,
         vote_post: Post,
         vote_owner: User,
     ) -> None:
-        # 이미 종료된 투표 생성
         yesterday = timezone.now() - timedelta(days=1)
         vote = Vote.objects.create(
             post=vote_post,
@@ -110,15 +113,13 @@ class TestVoteServices:
 
         result = get_vote_detail(vote_id=vote.id, user=vote_owner)
 
-        # DB에는 in_progress여도 반환값은 closed여야 함
-        assert result["status"] == VoteStatus.CLOSED
+        assert result["status"] == VoteStatus.CLOSED.upper()
 
     def test_participate_vote_fails_after_end_at(
         self,
         vote_post: Post,
         other_user: User,
     ) -> None:
-        # 이미 종료된 투표 생성
         yesterday = timezone.now() - timedelta(days=1)
         vote = Vote.objects.create(
             post=vote_post,
@@ -128,7 +129,6 @@ class TestVoteServices:
         )
         option = VoteOption.objects.create(vote=vote, content="옵션", sort_order=1)
 
-        # 종료된 투표에 참여 시도 시 ValidationError 발생해야 함
         with pytest.raises(ValidationError) as excinfo:
             participate_vote(
                 vote_id=vote.id,
