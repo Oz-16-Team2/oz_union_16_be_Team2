@@ -115,18 +115,20 @@ class VoteDetailSerializer(serializers.Serializer[Any]):
     voted_option_id = serializers.IntegerField(allow_null=True, required=False)
 
     def get_status(self, obj: Any) -> str:
-        status = getattr(obj, "status", None) if not isinstance(obj, dict) else obj.get("status")
+        raw_status = getattr(obj, "status", None) if not isinstance(obj, dict) else obj.get("status")
+        status = raw_status.lower() if raw_status else None
+
         end_at = getattr(obj, "end_at", None) if not isinstance(obj, dict) else obj.get("end_at")
 
-        if status == VoteStatus.CLOSED:
-            return VoteStatus.CLOSED
+        if status == VoteStatus.CLOSED.value:
+            return VoteStatus.CLOSED.value
 
         if end_at:
             if isinstance(end_at, datetime):
                 if end_at < timezone.now():
-                    return VoteStatus.CLOSED
+                    return VoteStatus.CLOSED.value
             elif isinstance(end_at, date):
                 if end_at < timezone.localdate():
-                    return VoteStatus.CLOSED
+                    return VoteStatus.CLOSED.value
 
-        return status or VoteStatus.IN_PROGRESS
+        return status or VoteStatus.IN_PROGRESS.value
