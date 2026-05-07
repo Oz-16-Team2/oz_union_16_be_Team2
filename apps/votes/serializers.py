@@ -17,22 +17,36 @@ class VoteOptionDetailSerializer(serializers.Serializer[Any]):
 
 class VoteCreateRequestSerializer(serializers.Serializer[Any]):
     options = serializers.ListField(child=serializers.CharField(max_length=255), min_length=2, max_length=2)
-    start_at = serializers.DateField(required=False)
-    end_at = serializers.DateField()
+    start_at = serializers.CharField(required=False)
+    end_at = serializers.CharField()
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
-        end_at = attrs.get("end_at")
-        start_at = attrs.get("start_at")
+        try:
+            end_at_str: str | None = attrs.get("end_at")
+            start_at_str: str | None = attrs.get("start_at")
+
+            if not end_at_str:
+                raise serializers.ValidationError("종료일은 필수 항목입니다.")
+
+            end_at_date = datetime.strptime(end_at_str[:10], "%Y-%m-%d").date()
+
+            if start_at_str:
+                start_at_date = datetime.strptime(start_at_str[:10], "%Y-%m-%d").date()
+            else:
+                start_at_date = timezone.localdate()
+
+                attrs["start_at"] = start_at_date
+
+        except (ValueError, TypeError) as e:
+            raise serializers.ValidationError("날짜 형식이 올바르지 않습니다. (YYYY-MM-DD)") from e
+
         today = timezone.localdate()
 
-        if end_at and end_at < today:
+        if end_at_date < today:
             raise serializers.ValidationError("종료일은 오늘 이후여야 합니다.")
 
-        if start_at and end_at and end_at < start_at:
+        if start_at_date and end_at_date < start_at_date:
             raise serializers.ValidationError("종료일은 시작일보다 빠를 수 없습니다.")
-
-        if not start_at:
-            attrs["start_at"] = today
 
         return attrs
 
