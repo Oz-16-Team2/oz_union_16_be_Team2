@@ -56,7 +56,7 @@ class GoalReadSerializer(serializers.ModelSerializer[Any]):
 
         if target_date_str:
             target_date = datetime.strptime(target_date_str, "%Y-%m-%d").date()
-            current = sum(1 for check in obj.checks.all() if check.created_at.date() <= target_date)
+            current = sum(1 for check in obj.checks.all() if timezone.localtime(check.created_at).date() <= target_date)
         else:
             current = len(obj.checks.all())
 
@@ -70,7 +70,7 @@ class GoalReadSerializer(serializers.ModelSerializer[Any]):
         else:
             check_date = timezone.localtime(timezone.now()).date()
 
-        return any(check.created_at.date() == check_date for check in obj.checks.all())
+        return any(timezone.localtime(check.created_at).date() == check_date for check in obj.checks.all())
 
 
 class GoalUpdateSerializer(serializers.ModelSerializer[Any]):
