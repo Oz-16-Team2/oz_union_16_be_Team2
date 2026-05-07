@@ -3,8 +3,8 @@ from typing import Any, cast
 from django.db.models import BooleanField, Count, Exists, OuterRef, Value
 from django.db.models.query import QuerySet
 from django.utils import timezone
-from drf_spectacular.utils import extend_schema, extend_schema_view
-from rest_framework import generics, status
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view, inline_serializer
+from rest_framework import generics, serializers, status
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
@@ -16,9 +16,41 @@ from apps.posts.serializers.comment_serializers import (
     CommentListSerializer,
 )
 
+_DEFAULT_COMMENT_PAGE_SIZE = 10
+
+
+class _CommentQuerySerializer(serializers.Serializer[Any]):
+    page = serializers.IntegerField(required=False, min_value=1, default=1)
+    size = serializers.IntegerField(required=False, min_value=1, max_value=100, default=_DEFAULT_COMMENT_PAGE_SIZE)
+
 
 @extend_schema_view(
-    get=extend_schema(summary="REQ-COMM-002: 댓글 목록 조회", tags=["댓글 (Comments)"]),
+    get=extend_schema(
+        summary="REQ-COMM-002: 댓글 목록 조회",
+        tags=["댓글 (Comments)"],
+        parameters=[
+            OpenApiParameter(
+                name="page",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                description="페이지 번호 (1부터 시작)",
+                required=False,
+            ),
+            OpenApiParameter(
+                name="size",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                description=f"페이지 크기 (기본: {_DEFAULT_COMMENT_PAGE_SIZE})",
+                required=False,
+            ),
+        ],
+        responses={
+            200: inline_serializer(
+                name="CommentListResponse",
+                fields={"results": CommentListSerializer(many=True)},
+            )
+        },
+    ),
     post=extend_schema(summary="REQ-COMM-001: 댓글 작성", tags=["댓글 (Comments)"]),
 )
 class PostCommentListCreateView(generics.ListCreateAPIView):  # type: ignore[type-arg]
@@ -35,11 +67,13 @@ class PostCommentListCreateView(generics.ListCreateAPIView):  # type: ignore[typ
             return cast(type[BaseSerializer[Any]], CommentCreateSerializer)
         return cast(type[BaseSerializer[Any]], CommentListSerializer)
 
-    def get_queryset(self) -> QuerySet[Comment]:
-        post_id: int = self.kwargs.get("post_id")
-
+    def _validate_post_exists(self, post_id: int) -> None:
         if not Post.objects.filter(id=post_id, deleted_at__isnull=True).exists():
             raise NotFound("게시글을 찾을 수 없습니다.")
+
+    def get_queryset(self) -> QuerySet[Comment]:
+        post_id: int = self.kwargs.get("post_id")
+        self._validate_post_exists(post_id)
 
         qs = (
             Comment.objects.filter(post_id=post_id, deleted_at__isnull=True)
@@ -59,16 +93,21 @@ class PostCommentListCreateView(generics.ListCreateAPIView):  # type: ignore[typ
         return qs.order_by("-created_at")
 
     def list(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        query_serializer = _CommentQuerySerializer(data=request.query_params)
+        query_serializer.is_valid(raise_exception=True)
+
+        page: int = query_serializer.validated_data["page"]
+        size: int = query_serializer.validated_data["size"]
+
         queryset = self.filter_queryset(self.get_queryset())
-        serializer = self.get_serializer(queryset, many=True)
+        offset = (page - 1) * size
+        chunk = queryset[offset : offset + size]
+        serializer = self.get_serializer(chunk, many=True)
         return Response({"results": serializer.data})
 
     def perform_create(self, serializer: BaseSerializer[Any]) -> None:
         post_id: Any = self.kwargs.get("post_id")
-
-        if not Post.objects.filter(id=post_id, deleted_at__isnull=True).exists():
-            raise NotFound("게시글을 찾을 수 없습니다.")
-
+        self._validate_post_exists(post_id)
         serializer.save(user_id=self.request.user.id, post_id=post_id)
 
 
