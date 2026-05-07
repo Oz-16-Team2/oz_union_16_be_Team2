@@ -43,7 +43,7 @@ class VoteCreateAPIView(APIView):
                         "post_id": 10,
                         "start_at": "2026-04-20",
                         "end_at": "2026-04-27",
-                        "status": "in_progress",
+                        "status": "IN_PROGRESS",
                         "options": [
                             {"vote_option_id": 1, "content": "예", "sort_order": 1},
                             {"vote_option_id": 2, "content": "아니오", "sort_order": 2},
@@ -75,7 +75,8 @@ class VoteCreateAPIView(APIView):
         except ValidationError:
             return error_response("투표 입력값이 올바르지 않습니다.", 400)
 
-        return detail_response(body, 200)
+        response_serializer = VoteCreateResponseSerializer(body)
+        return detail_response(response_serializer.data, 200)
 
 
 class VoteParticipateAPIView(APIView):
@@ -121,14 +122,19 @@ class VoteParticipateAPIView(APIView):
         except NotFound:
             return error_response("해당 투표를 찾을 수 없습니다.", 404)
         except ValidationError as e:
-            msg = str(e)
-            if "이미 참여한 투표입니다." in msg:
-                return error_response("이미 참여한 투표입니다.", 409)
-            if "유효한 투표 옵션이 필요합니다." in msg:
-                return error_response("유효한 투표 옵션이 필요합니다.", 400)
-            return error_response(msg, 400)
+            msg = e.detail[0] if isinstance(e.detail, list) else e.detail
+            msg_str = str(msg)
 
-        return detail_response(body, 200)
+            if "이미 참여한 투표입니다." in msg_str:
+                return error_response("이미 참여한 투표입니다.", 409)
+            if "유효한 투표 옵션이 필요합니다." in msg_str:
+                return error_response("유효한 투표 옵션이 필요합니다.", 400)
+            if "종료된 투표입니다." in msg_str:
+                return error_response("종료된 투표입니다.", 400)
+            return error_response(msg_str, 400)
+
+        response_serializer = VoteParticipateResponseSerializer(body)
+        return detail_response(response_serializer.data, 200)
 
 
 class VoteDetailAPIView(APIView):
@@ -185,7 +191,8 @@ class VoteDetailAPIView(APIView):
         except NotFound:
             return error_response("해당 투표를 찾을 수 없습니다.", 404)
 
-        return detail_response(body, 200)
+        response_serializer = VoteDetailSerializer(body)
+        return detail_response(response_serializer.data, 200)
 
     @extend_schema(
         tags=["Votes"],
@@ -202,7 +209,7 @@ class VoteDetailAPIView(APIView):
                         "vote_id": 1,
                         "start_at": "2026-04-20",
                         "end_at": "2026-04-27",
-                        "status": "in_progress",
+                        "status": "IN_PROGRESS",
                         "options": [
                             {"vote_option_id": 1, "content": "예", "sort_order": 1},
                             {"vote_option_id": 2, "content": "아니오", "sort_order": 2},
@@ -233,15 +240,13 @@ class VoteDetailAPIView(APIView):
         except NotFound:
             return error_response("해당 투표를 찾을 수 없습니다.", 404)
         except ValidationError as e:
-            msg = str(e)
-            if "투표를 수정할 권한이 없습니다." in msg:
-                return error_response(msg, 403)
-            if (
-                "이미 참여자가 있는 투표은 수정할 수 없습니다." in msg
-                or "이미 참여자가 있는 투표는 수정할 수 없습니다." in msg
-            ):
+            msg = e.detail[0] if isinstance(e.detail, list) else e.detail
+            msg_str = str(msg)
+            if "투표를 수정할 권한이 없습니다." in msg_str:
+                return error_response(msg_str, 403)
+            if "이미 참여자가 있는 투표" in msg_str:
                 return error_response("이미 참여자가 있는 투표는 수정할 수 없습니다.", 409)
-            return error_response(msg, 400)
+            return error_response(msg_str, 400)
 
         response_serializer = VoteUpdateResponseSerializer(body)
         return detail_response(response_serializer.data, 200)
@@ -300,12 +305,13 @@ class VoteDetailAPIView(APIView):
         except ConflictException:
             return error_response("이미 삭제된 투표입니다.", 409)
         except ValidationError as e:
-            msg = str(e)
-            if "투표를 삭제할 권한이 없습니다." in msg:
+            msg = e.detail[0] if isinstance(e.detail, list) else e.detail
+            msg_str = str(msg)
+            if "투표를 삭제할 권한이 없습니다." in msg_str:
                 return error_response("투표를 삭제할 권한이 없습니다.", 403)
-            if "이미 참여자가 있는 투표는 삭제할 수 없습니다." in msg:
+            if "이미 참여자가 있는 투표" in msg_str:
                 return error_response("이미 참여자가 있는 투표는 삭제할 수 없습니다.", 400)
 
-            return error_response(msg, 400)
+            return error_response(msg_str, 400)
 
         return detail_response("투표가 삭제되었습니다.", 200)

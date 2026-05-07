@@ -4,12 +4,22 @@ from datetime import timedelta
 
 import pytest
 from django.utils import timezone
+from rest_framework.serializers import ValidationError
 
 from apps.core.choices import VoteStatus
 from apps.posts.models import Post
-from apps.users.models import User  # 추가 (실제 경로 맞게 수정)
+from apps.users.models import User
 from apps.votes.models import Vote, VoteOption
-from apps.votes.services import create_vote, update_vote
+from apps.votes.services import create_vote, get_vote_detail, participate_vote, update_vote
+
+
+@pytest.fixture
+def other_user(db: None) -> User:
+    return User.objects.create_user(
+        email="other@test.com",
+        password="1234",
+        nickname="other",
+    )
 
 
 @pytest.fixture
@@ -83,3 +93,47 @@ class TestVoteServices:
         )
 
         assert result["vote_id"] == vote.id
+
+    def test_get_vote_detail_status_closed_after_end_at(
+        self,
+        vote_post: Post,
+        vote_owner: User,
+    ) -> None:
+        # 이미 종료된 투표 생성
+        yesterday = timezone.now() - timedelta(days=1)
+        vote = Vote.objects.create(
+            post=vote_post,
+            start_at=yesterday - timedelta(days=1),
+            end_at=yesterday,
+            status=VoteStatus.IN_PROGRESS,
+        )
+
+        result = get_vote_detail(vote_id=vote.id, user=vote_owner)
+
+        # DB에는 in_progress여도 반환값은 closed여야 함
+        assert result["status"] == VoteStatus.CLOSED
+
+    def test_participate_vote_fails_after_end_at(
+        self,
+        vote_post: Post,
+        other_user: User,
+    ) -> None:
+        # 이미 종료된 투표 생성
+        yesterday = timezone.now() - timedelta(days=1)
+        vote = Vote.objects.create(
+            post=vote_post,
+            start_at=yesterday - timedelta(days=1),
+            end_at=yesterday,
+            status=VoteStatus.IN_PROGRESS,
+        )
+        option = VoteOption.objects.create(vote=vote, content="옵션", sort_order=1)
+
+        # 종료된 투표에 참여 시도 시 ValidationError 발생해야 함
+        with pytest.raises(ValidationError) as excinfo:
+            participate_vote(
+                vote_id=vote.id,
+                user=other_user,
+                option_id=option.id,
+            )
+
+        assert "종료된 투표입니다." in str(excinfo.value)
