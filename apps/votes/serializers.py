@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date, datetime
 from typing import Any
 
 from django.utils import timezone
@@ -47,7 +48,7 @@ class VoteCreateResponseSerializer(serializers.Serializer[Any]):
     post_id = serializers.IntegerField()
     start_at = serializers.DateField(format="%Y-%m-%d")
     end_at = serializers.DateField(format="%Y-%m-%d")
-    status = serializers.ChoiceField(choices=VoteStatus.choices)
+    status = serializers.CharField()
     options = VoteOptionDetailSerializer(many=True)
 
 
@@ -90,7 +91,7 @@ class VoteUpdateResponseSerializer(serializers.Serializer[Any]):
     vote_id = serializers.IntegerField()
     start_at = serializers.DateField(format="%Y-%m-%d")
     end_at = serializers.DateField(format="%Y-%m-%d")
-    status = serializers.ChoiceField(choices=VoteStatus.choices)
+    status = serializers.CharField()
     options = VoteOptionDetailSerializer(many=True)
 
 
@@ -107,8 +108,25 @@ class VoteResultOptionSerializer(serializers.Serializer[Any]):
 
 class VoteDetailSerializer(serializers.Serializer[Any]):
     vote_id = serializers.IntegerField()
-    status = serializers.CharField()
+    status = serializers.SerializerMethodField()
     total_count = serializers.IntegerField(min_value=0)
     options = VoteResultOptionSerializer(many=True)
     is_voted = serializers.BooleanField()
     voted_option_id = serializers.IntegerField(allow_null=True, required=False)
+
+    def get_status(self, obj: Any) -> str:
+        status = getattr(obj, "status", None) if not isinstance(obj, dict) else obj.get("status")
+        end_at = getattr(obj, "end_at", None) if not isinstance(obj, dict) else obj.get("end_at")
+
+        if status == VoteStatus.CLOSED:
+            return VoteStatus.CLOSED
+
+        if end_at:
+            if isinstance(end_at, datetime):
+                if end_at < timezone.now():
+                    return VoteStatus.CLOSED
+            elif isinstance(end_at, date):
+                if end_at < timezone.localdate():
+                    return VoteStatus.CLOSED
+
+        return status or VoteStatus.IN_PROGRESS

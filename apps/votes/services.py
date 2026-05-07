@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, time
 from typing import Any
 
 from django.db import transaction
+from django.db.models import Count, Prefetch
 from django.utils import timezone
 from rest_framework.exceptions import NotFound
 from rest_framework.serializers import ValidationError
@@ -12,6 +13,23 @@ from apps.core.choices import VoteStatus
 from apps.core.exceptions import ResourceNotFoundException
 from apps.posts.models import Post
 from apps.votes.models import Vote, VoteOption, VoteParticipation
+
+
+def _get_aware_end_of_day(date_val: Any) -> datetime:
+    if isinstance(date_val, datetime):
+        return date_val
+    combined = datetime.combine(date_val, time.max)
+    return timezone.make_aware(combined)
+
+
+def _get_current_status(vote: Vote) -> str:
+    if vote.status == VoteStatus.CLOSED:
+        return VoteStatus.CLOSED.value
+
+    if vote.end_at and timezone.now() > vote.end_at:
+        return VoteStatus.CLOSED.value
+
+    return VoteStatus.IN_PROGRESS.value
 
 
 @transaction.atomic
@@ -29,15 +47,19 @@ def create_vote(
     if Vote.objects.filter(post=post).exists():
         raise ValidationError("투표 입력값이 올바르지 않습니다.")
 
+    end_at = _get_aware_end_of_day(end_at)
+
     vote = Vote.objects.create(
         post=post,
         start_at=start_at,
         end_at=end_at,
         status=VoteStatus.IN_PROGRESS,
     )
+
     VoteOption.objects.bulk_create(
         [VoteOption(vote=vote, content=option, sort_order=index) for index, option in enumerate(options, start=1)]
     )
+
     vote.refresh_from_db()
 
     options_payload = [
@@ -49,16 +71,12 @@ def create_vote(
         for opt in vote.options.all().order_by("sort_order")
     ]
 
-    status = "IN_PROGRESS"
-    if timezone.now() > (vote.end_at + timedelta(days=1)):
-        status = "CLOSED"
-
     return {
         "vote_id": vote.id,
         "post_id": post.id,
         "start_at": vote.start_at,
         "end_at": vote.end_at,
-        "status": status,
+        "status": _get_current_status(vote),
         "options": options_payload,
     }
 
@@ -66,10 +84,12 @@ def create_vote(
 @transaction.atomic
 def create_default_vote_for_post(post: Post, vote_data: dict[str, Any]) -> None:
     now = timezone.now()
+    end_at = _get_aware_end_of_day(vote_data["end_at"])
+
     vote = Vote.objects.create(
         post=post,
         start_at=now,
-        end_at=vote_data["end_at"],
+        end_at=end_at,
         status=VoteStatus.IN_PROGRESS,
     )
     VoteOption.objects.bulk_create(
@@ -91,7 +111,7 @@ def participate_vote(
     if vote is None:
         raise NotFound("해당 투표를 찾을 수 없습니다.")
 
-    if timezone.now() > (vote.end_at + timedelta(days=1)):
+    if _get_current_status(vote) == VoteStatus.CLOSED:
         raise ValidationError("종료된 투표입니다.")
 
     option = VoteOption.objects.filter(id=option_id, vote=vote).first()
@@ -134,24 +154,16 @@ def update_vote(
     if vote.participations.exists():
         raise ValidationError("이미 참여자가 있는 투표는 수정할 수 없습니다.")
 
-    if timezone.now() > (vote.end_at + timedelta(days=1)):
+    if _get_current_status(vote) == VoteStatus.CLOSED:
         raise ValidationError("진행 중인 투표만 수정할 수 있습니다.")
 
     vote.start_at = start_at
-    vote.end_at = end_at
+    vote.end_at = _get_aware_end_of_day(end_at)
     vote.save()
 
     vote.options.all().delete()
-
     VoteOption.objects.bulk_create(
-        [
-            VoteOption(
-                vote=vote,
-                content=option,
-                sort_order=index,
-            )
-            for index, option in enumerate(options, start=1)
-        ]
+        [VoteOption(vote=vote, content=option, sort_order=index) for index, option in enumerate(options, start=1)]
     )
 
     vote.refresh_from_db()
@@ -161,15 +173,11 @@ def update_vote(
         for o in vote.options.all().order_by("sort_order")
     ]
 
-    status = "IN_PROGRESS"
-    if timezone.now() > (vote.end_at + timedelta(days=1)):
-        status = "CLOSED"
-
     return {
         "vote_id": vote.id,
         "start_at": timezone.localtime(vote.start_at).date(),
         "end_at": timezone.localtime(vote.end_at).date(),
-        "status": status,
+        "status": _get_current_status(vote),
         "options": options_payload,
     }
 
@@ -191,15 +199,26 @@ def delete_vote(*, vote_id: int, user: Any) -> None:
 
 
 def get_vote_detail(*, vote_id: int, user: Any) -> dict[str, Any]:
-    vote = Vote.objects.filter(id=vote_id).prefetch_related("participations", "options__participations").first()
+    vote = (
+        Vote.objects.filter(id=vote_id)
+        .prefetch_related(
+            Prefetch(
+                "options",
+                queryset=VoteOption.objects.annotate(vote_count=Count("participations")).order_by("sort_order"),
+            )
+        )
+        .first()
+    )
+
     if vote is None:
         raise NotFound("해당 투표를 찾을 수 없습니다.")
 
-    total_count = vote.participations.count()
+    options = vote.options.all()
+    total_count = sum(getattr(opt, "vote_count", 0) for opt in options)
 
     options_payload = []
-    for option in vote.options.all().order_by("sort_order"):
-        count = option.participations.count()
+    for option in options:
+        count = getattr(option, "vote_count", 0)
         rate = round((count / total_count) * 100, 2) if total_count > 0 else 0.00
         options_payload.append(
             {
@@ -212,20 +231,15 @@ def get_vote_detail(*, vote_id: int, user: Any) -> dict[str, Any]:
 
     is_voted = False
     voted_option_id = None
-
     if user and user.is_authenticated:
         participation = VoteParticipation.objects.filter(vote=vote, user=user).first()
         if participation:
             is_voted = True
             voted_option_id = participation.vote_option_id
 
-    status = "IN_PROGRESS"
-    if timezone.now() > (vote.end_at + timedelta(days=1)):
-        status = "CLOSED"
-
     return {
         "vote_id": vote.id,
-        "status": status,
+        "status": _get_current_status(vote),
         "total_count": total_count,
         "options": options_payload,
         "is_voted": is_voted,
