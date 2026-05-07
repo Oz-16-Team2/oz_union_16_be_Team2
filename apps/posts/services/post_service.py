@@ -70,7 +70,7 @@ def feed_queryset(*, scope: str, sort_by: str, user: Any) -> Any:
 
 def _build_feed_from_qs(qs: Any, page: int, size: int, user: Any) -> tuple[list[dict[str, Any]], int]:
     total = qs.count()
-    chunk = qs[page * size : page * size + size]
+    chunk = qs[(page - 1) * size : (page - 1) * size + size]
     ids = [p.id for p in chunk]
     tags_map = get_tags_by_post_id(ids)
     posts_out = [
@@ -147,7 +147,7 @@ def search_posts(*, keyword: str, type: str | None, page: int, size: int, user: 
     qs = qs.order_by("-created_at")
 
     total = qs.count()
-    chunk = qs[page * size : page * size + size]
+    chunk = qs[(page - 1) * size : (page - 1) * size + size]
     ids = [p.id for p in chunk]
     tags_map = get_tags_by_post_id(ids)
 

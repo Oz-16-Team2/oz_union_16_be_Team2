@@ -128,7 +128,7 @@ class TestScrapViews:
 
         data = response.data
         assert data["total_count"] == 2  # 내 스크랩 2개만 카운트되어야 함 (남의 것 1개는 무시)
-        assert data["page"] == 0
+        assert data["page"] == 1
         assert data["size"] == 20
         assert len(data["posts"]) == 2
 
@@ -154,12 +154,12 @@ class TestScrapViews:
             Scrap.objects.create(user_id=user.id, post_id=p.id)
 
         api_client.force_authenticate(user=user)
-        response = api_client.get("/api/v1/posts/scraps", {"page": 0, "size": 2})
+        response = api_client.get("/api/v1/posts/scraps", {"page": 1, "size": 2})
 
         assert response.status_code == status.HTTP_200_OK
         data = response.data
         assert data["total_count"] == 3
-        assert data["page"] == 0
+        assert data["page"] == 1
         assert data["size"] == 2
         assert len(data["posts"]) == 2
 
